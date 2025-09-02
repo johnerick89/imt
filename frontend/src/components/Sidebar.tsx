@@ -1,0 +1,133 @@
+import React, { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import {
+  navigationSections,
+  type NavigationItem,
+  type NavigationSection,
+} from "../navigation";
+
+const Sidebar: React.FC = () => {
+  const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  const location = useLocation();
+
+  const toggleSubmenu = (itemId: string) => {
+    setExpandedItems((prev) =>
+      prev.includes(itemId)
+        ? prev.filter((id) => id !== itemId)
+        : [...prev, itemId]
+    );
+  };
+
+  const isActive = (path?: string) => {
+    if (!path) return false;
+    return (
+      location.pathname === path || location.pathname.startsWith(path + "/")
+    );
+  };
+
+  const isSubmenuActive = (children?: NavigationItem[]) => {
+    if (!children) return false;
+    return children.some((item) => isActive(item.path));
+  };
+
+  const renderNavigationItem = (item: NavigationItem) => (
+    <li key={item.id}>
+      {item.children ? (
+        // Menu item with submenu
+        <div>
+          <button
+            onClick={() => toggleSubmenu(item.id)}
+            className={`w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg mx-2 transition-colors duration-200 ${
+              isSubmenuActive(item.children)
+                ? "bg-primary-500 text-white"
+                : "text-gray-300 hover:bg-gray-700 hover:text-white"
+            }`}
+          >
+            <div className="flex items-center space-x-3">
+              <span className="text-lg">{item.icon}</span>
+              <span>{item.label}</span>
+            </div>
+            <span
+              className={`transform transition-transform duration-200 ${
+                expandedItems.includes(item.id) ? "rotate-180" : ""
+              }`}
+            >
+              ▼
+            </span>
+          </button>
+
+          {/* Submenu */}
+          {expandedItems.includes(item.id) && (
+            <ul className="ml-8 mt-1 space-y-1">
+              {item.children.map((subItem: NavigationItem) => (
+                <li key={subItem.id}>
+                  <Link
+                    to={subItem.path || "#"}
+                    className={`block px-4 py-2 text-sm rounded-lg mx-2 transition-colors duration-200 ${
+                      isActive(subItem.path)
+                        ? "bg-primary-600 text-white"
+                        : "text-gray-400 hover:bg-gray-700 hover:text-white"
+                    }`}
+                  >
+                    {subItem.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ) : (
+        // Regular menu item
+        <Link
+          to={item.path || "#"}
+          className={`flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-lg mx-2 transition-colors duration-200 ${
+            isActive(item.path)
+              ? "bg-primary-500 text-white"
+              : "text-gray-300 hover:bg-gray-700 hover:text-white"
+          }`}
+        >
+          <span className="text-lg">{item.icon}</span>
+          <span>{item.label}</span>
+        </Link>
+      )}
+    </li>
+  );
+
+  return (
+    <div className="bg-gray-800 text-white w-64 min-h-screen flex flex-col">
+      {/* Header */}
+      <div className="p-4 border-b border-gray-700">
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
+            <span className="text-white text-sm font-bold">M</span>
+          </div>
+          <div>
+            <h1 className="text-lg font-bold">MoneyFlow</h1>
+            <p className="text-xs text-gray-400">Money Remittance</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Navigation Menu */}
+      <nav className="flex-1 overflow-y-auto py-4">
+        {navigationSections.map((section: NavigationSection) => (
+          <div key={section.id} className="mb-6">
+            {/* Section Header */}
+            <div className="px-4 mb-2">
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                {section.label}
+              </h3>
+            </div>
+
+            {/* Section Items */}
+            <ul className="space-y-1">
+              {section.items.map(renderNavigationItem)}
+            </ul>
+          </div>
+        ))}
+      </nav>
+    </div>
+  );
+};
+
+export default Sidebar;

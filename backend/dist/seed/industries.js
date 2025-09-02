@@ -1,0 +1,38 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const industries = [
+    { name: "Agriculture" },
+    { name: "Automotive" },
+    { name: "Banking and Finance" },
+    { name: "Biotechnology" },
+    { name: "Construction" },
+    { name: "Consumer Goods" },
+    { name: "Education" },
+    { name: "Energy and Utilities" },
+    { name: "Entertainment" },
+    { name: "Healthcare" },
+    { name: "Hospitality" },
+    { name: "Information Technology" },
+    { name: "Insurance" },
+    { name: "Manufacturing" },
+    { name: "Media and Broadcasting" },
+    { name: "Mining" },
+    { name: "Pharmaceuticals" },
+    { name: "Real Estate" },
+    { name: "Retail" },
+    { name: "Telecommunications" },
+    { name: "Transportation and Logistics" },
+    { name: "Travel and Tourism" },
+    { name: "Waste Management" },
+    { name: "Gambling and Casinos" },
+    { name: "Cryptocurrency" },
+    { name: "Jewelry and Precious Metals" },
+    { name: "Cash-Intensive Businesses" },
+    { name: "Money Transfer Services" },
+    { name: "Offshore Banking" },
+    { name: "Shell Companies" },
+    { name: "Precious Metals Trading" },
+    { name: "Art and Antiquities" },
+];
+exports.default = industries;
+//# sourceMappingURL=industries.js.map
