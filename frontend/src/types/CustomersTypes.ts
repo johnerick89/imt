@@ -4,6 +4,8 @@ import type { Industry } from "./IndustriesTypes";
 import type { Currency } from "./CurrenciesTypes";
 import type { Country } from "./CountriesTypes";
 import type { User } from "./UsersTypes";
+import type { Branch } from "./BranchesTypes";
+import type { Beneficiary } from "./BeneficiariesTypes";
 
 export const CustomerType = ["INDIVIDUAL", "CORPORATE", "BUSINESS"] as const;
 export type CustomerType = (typeof CustomerType)[number];
@@ -63,10 +65,7 @@ export interface Customer {
   organisation_id: string;
   organisation: Organisation;
   branch_id: string;
-  branch: {
-    id: string;
-    name: string;
-  };
+  branch: Branch;
   created_at: Date;
   updated_at: Date;
   tax_number_type?: TaxNumberType | null;
@@ -91,6 +90,7 @@ export interface Customer {
   deleted_at?: Date | null;
   created_by_user?: User | null;
   status: CustomerStatus;
+  beneficiaries: Beneficiary[];
 }
 
 export interface CreateCustomerRequest {

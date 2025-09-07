@@ -1,9 +1,11 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { FormItem } from "./FormItem";
 import { Input } from "./Input";
 import { Select } from "./Select";
+import { SearchableSelect } from "./SearchableSelect";
 import { Textarea } from "./Textarea";
+import { useSession, useOrganisations } from "../hooks";
 import type {
   CreateIntegrationRequest,
   UpdateIntegrationRequest,
@@ -15,6 +17,7 @@ interface IntegrationFormProps {
   onSubmit: (data: CreateIntegrationRequest | UpdateIntegrationRequest) => void;
   isLoading?: boolean;
   isEdit?: boolean;
+  currentOrganisationId?: string; // For organisation profile context
 }
 
 const IntegrationForm: React.FC<IntegrationFormProps> = ({
@@ -22,16 +25,35 @@ const IntegrationForm: React.FC<IntegrationFormProps> = ({
   onSubmit,
   isLoading = false,
   isEdit = false,
+  currentOrganisationId,
 }) => {
+  const { user } = useSession();
+  const { data: organisationsData } = useOrganisations({ limit: 1000 });
+
+  const organisations = organisationsData?.data?.organisations || [];
+
+  // Filter organisations to only PARTNER or AGENCY types
+  const availableOrganisations = useMemo(() => {
+    return organisations.filter(
+      (org) =>
+        (org.type === "PARTNER" || org.type === "AGENCY") &&
+        org.id !== user?.organisation_id // Exclude current user's organisation
+    );
+  }, [organisations, user?.organisation_id]);
+
   const {
     control,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<CreateIntegrationRequest>({
     defaultValues: initialData
       ? {
           name: initialData.name,
           description: initialData.description || "",
+          organisation_id: initialData.organisation_id || "",
+          origin_organisation_id:
+            initialData.origin_organisation_id || user?.organisation_id || "",
           type: initialData.type,
           status: initialData.status,
           api_key: initialData.api_key || "",
@@ -42,6 +64,8 @@ const IntegrationForm: React.FC<IntegrationFormProps> = ({
       : {
           name: "",
           description: "",
+          organisation_id: currentOrganisationId || "",
+          origin_organisation_id: user?.organisation_id || "",
           type: "API",
           status: "ACTIVE",
           api_key: "",
@@ -51,12 +75,122 @@ const IntegrationForm: React.FC<IntegrationFormProps> = ({
         },
   });
 
+  const watchedOrganisationId = watch("organisation_id");
+
+  // Determine if we should show organisation selection
+  const showOrganisationSelection = !currentOrganisationId; // Only show when not in organisation profile context
+
+  // Check if form is valid for submission
+  const isFormValid = useMemo(() => {
+    // If user has no organisation, disable form
+    if (!user?.organisation_id) {
+      return false;
+    }
+
+    // If in organisation profile context, ensure current org != view org
+    if (
+      currentOrganisationId &&
+      currentOrganisationId === user.organisation_id
+    ) {
+      return false;
+    }
+
+    // If in standalone context, ensure organisation is selected and different from user's org
+    if (showOrganisationSelection) {
+      return (
+        watchedOrganisationId && watchedOrganisationId !== user.organisation_id
+      );
+    }
+
+    return true;
+  }, [
+    user?.organisation_id,
+    currentOrganisationId,
+    showOrganisationSelection,
+    watchedOrganisationId,
+  ]);
+
   const handleFormSubmit = (data: CreateIntegrationRequest) => {
-    onSubmit(data);
+    if (!isFormValid) return;
+
+    // Set origin_organisation_id to current user's organisation
+    const formData = {
+      ...data,
+      origin_organisation_id: user?.organisation_id,
+      organisation_id: currentOrganisationId || data.organisation_id,
+    };
+
+    onSubmit(formData);
   };
+
+  // Error message for invalid form state
+  const getFormErrorMessage = () => {
+    if (!user?.organisation_id) {
+      return "You must be assigned to an organisation to create integrations.";
+    }
+
+    if (
+      currentOrganisationId &&
+      currentOrganisationId === user.organisation_id
+    ) {
+      return "You cannot create integrations with your own organisation.";
+    }
+
+    if (
+      showOrganisationSelection &&
+      watchedOrganisationId === user.organisation_id
+    ) {
+      return "You cannot create integrations with your own organisation.";
+    }
+
+    if (showOrganisationSelection && !watchedOrganisationId) {
+      return "Please select a target organisation for this integration.";
+    }
+
+    return null;
+  };
+
+  const formErrorMessage = getFormErrorMessage();
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+      {/* Error message */}
+      {formErrorMessage && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex">
+            <div className="text-red-800 text-sm">{formErrorMessage}</div>
+          </div>
+        </div>
+      )}
+
+      {/* Organisation Selection (only when not in organisation profile context) */}
+      {showOrganisationSelection && (
+        <FormItem
+          label="Target Organisation"
+          required
+          invalid={!!errors.organisation_id}
+          errorMessage={errors.organisation_id?.message}
+        >
+          <Controller
+            name="organisation_id"
+            control={control}
+            rules={{ required: "Target organisation is required" }}
+            render={({ field }) => (
+              <SearchableSelect
+                {...field}
+                options={availableOrganisations.map((org) => ({
+                  value: org.id,
+                  label: `${org.name} (${org.type})`,
+                }))}
+                placeholder="Select target organisation"
+                disabled={isLoading}
+                invalid={!!errors.organisation_id}
+              />
+            )}
+          />
+        </FormItem>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <FormItem
           label="Name"
@@ -219,7 +353,7 @@ const IntegrationForm: React.FC<IntegrationFormProps> = ({
       <div className="flex justify-end space-x-3 pt-4">
         <button
           type="submit"
-          disabled={isLoading}
+          disabled={isLoading || !isFormValid}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading

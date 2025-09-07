@@ -72,11 +72,11 @@ const BeneficiariesTable: React.FC<BeneficiariesTableProps> = ({
       ),
     },
     {
-      accessorKey: "is_active",
+      accessorKey: "status",
       header: "Status",
       cell: ({ row }) => (
         <StatusBadge
-          status={row.original.is_active ? "ACTIVE" : "INACTIVE"}
+          status={row.original.status ? "ACTIVE" : "INACTIVE"}
           type="status"
         />
       ),

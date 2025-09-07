@@ -20,6 +20,7 @@ const CustomersTable: React.FC<CustomersTableProps> = ({
   onEdit,
   onDelete,
 }) => {
+  console.log("customers", customers);
   const columns = [
     {
       accessorKey: "full_name",

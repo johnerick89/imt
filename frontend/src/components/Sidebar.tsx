@@ -96,7 +96,7 @@ const Sidebar: React.FC = () => {
   return (
     <div className="bg-gray-800 text-white w-64 min-h-screen flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-gray-700">
+      {/* <div className="p-4 border-b border-gray-700">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
             <span className="text-white text-sm font-bold">M</span>
@@ -105,6 +105,15 @@ const Sidebar: React.FC = () => {
             <h1 className="text-lg font-bold">MoneyFlow</h1>
             <p className="text-xs text-gray-400">Money Remittance</p>
           </div>
+        </div>
+      </div> */}
+      <div className="p-4 border-b border-gray-700">
+        <div className="flex items-center">
+          <img
+            src="/logo-green.svg"
+            alt="MoneyFlow logo"
+            className="h-18 w-200" // adjust size to fit
+          />
         </div>
       </div>
 

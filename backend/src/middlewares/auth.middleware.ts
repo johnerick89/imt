@@ -1,8 +1,9 @@
-import { Request, Response, NextFunction } from "express";
+import { Response, NextFunction } from "express";
 import { verifyToken } from "../api/auth/auth.utils";
 import { IAuthUser } from "../api/auth/auth.interfaces";
+import CustomReq from "../types/CustomReq.type";
 
-export interface AuthRequest extends Request {
+export interface AuthRequest extends CustomReq {
   user?: IAuthUser;
 }
 
@@ -12,10 +13,22 @@ export const authMiddleware = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    if (req.method === "OPTIONS") return next();
     const authHeader = req.headers.authorization;
     const path = req.path;
     const isPublicPath =
-      path.startsWith("/api/v1/auth") || path.startsWith("/health");
+      path.includes("/login") ||
+      path.includes("/register") ||
+      path.includes("/health");
+
+    console.log(
+      "authHeader",
+      authHeader,
+      "isPublicPath",
+      isPublicPath,
+      "path",
+      path
+    );
 
     if (isPublicPath) {
       next();
@@ -43,6 +56,7 @@ export const authMiddleware = async (
 
     // Attach user to request
     req.user = decoded;
+    req.organisation_id = decoded.organisation_id ?? undefined;
     next();
   } catch (error) {
     console.error("Auth middleware error:", error);

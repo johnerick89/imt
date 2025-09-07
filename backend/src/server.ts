@@ -15,42 +15,75 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Security middleware
-app.use(helmet());
+// Define allowed origins
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:5175",
+  "http://localhost:5176",
+  // Add production domains here, e.g., "https://your-production-domain.com"
+];
 
 // CORS configuration
 const corsConfig = {
+  origin: (
+    origin: string | undefined,
+    callback: (err: Error | null, allow?: boolean) => void
+  ) => {
+    // Allow requests with no origin (e.g., non-browser clients like Postman)
+    if (!origin) return callback(null, true);
+
+    // Check if the origin is in the allowed list
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS policy: Origin ${origin} not allowed`));
+    }
+  },
   credentials: true,
-  origin: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  allowedHeaders: "*", // Add headers used by your app
+  optionsSuccessStatus: 200, // Ensure preflight requests return 200
 };
 
-app.use(cors(corsConfig));
+// Security middleware
+app.use(helmet());
 
+// Apply CORS middleware
+app.use(cors(corsConfig));
+app.options("*", cors(corsConfig));
+
+// Handle OPTIONS preflight requests explicitly (optional, for debugging)
+app.options("*", cors(corsConfig));
+
+// Cookie parsing
 app.use(cookieParser());
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Body parsing middleware (consolidated, with limits)
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// Rate limiting
+// Rate limiting (applied globally for better protection)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: 1000, // Limit each IP to 100 requests per windowMs
   message: {
     success: false,
     message: "Too many requests from this IP, please try again later.",
   },
 });
-app.use("/api/", limiter);
-app.use(authMiddleware);
-app.use(auditMiddleware as RequestHandler);
+app.use((req, res, next) => {
+  if (req.method === "OPTIONS") return next();
+  limiter(req, res, next);
+});
 
 // Logging middleware
 app.use(morgan("combined"));
 
-// Body parsing middleware
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+// Apply auth and audit middleware only to API routes
+app.use("/api", authMiddleware);
+app.use("/api", auditMiddleware as RequestHandler);
 
 // Health check endpoint
 app.get("/health", (req, res) => {

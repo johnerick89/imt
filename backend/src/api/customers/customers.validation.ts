@@ -40,7 +40,7 @@ export const createCustomerSchema = z.object({
   risk_rating: z.number().min(0).max(100).default(0.0),
   risk_reasons: z.string().optional(),
   organisation_id: z.string().uuid("Organisation ID must be a valid UUID"),
-  branch_id: z.string().uuid("Branch ID must be a valid UUID"),
+  branch_id: z.string().uuid("Branch ID must be a valid UUID").optional(),
   tax_number_type: z.enum(TaxNumberType).optional(),
   tax_number: z.string().optional(),
   gender: z.enum(Gender).optional(),

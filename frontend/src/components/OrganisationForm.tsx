@@ -160,13 +160,6 @@ const OrganisationForm: React.FC<OrganisationFormProps> = ({
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Basic Information */}
-        <div className="md:col-span-2">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
-            Basic Information
-          </h3>
-        </div>
-
         {/* Name */}
         <div className="md:col-span-2">
           <FormItem
@@ -224,7 +217,6 @@ const OrganisationForm: React.FC<OrganisationFormProps> = ({
                 <option value="">Select organisation type</option>
                 <option value="PARTNER">Partner</option>
                 <option value="AGENCY">Agency</option>
-                <option value="CUSTOMER">Customer</option>
               </Select>
             )}
           />
@@ -251,14 +243,6 @@ const OrganisationForm: React.FC<OrganisationFormProps> = ({
           />
         </FormItem>
 
-        {/* Contact Information */}
-        <div className="md:col-span-2">
-          <h3 className="text-lg font-medium text-gray-900 mb-4 mt-6">
-            Contact Information
-          </h3>
-        </div>
-
-        {/* Contact Person */}
         <FormItem label="Contact Person">
           <Controller
             name="contact_person"
@@ -306,18 +290,15 @@ const OrganisationForm: React.FC<OrganisationFormProps> = ({
           />
         </FormItem>
 
-        {/* Contact Address */}
-        <div className="md:col-span-2">
-          <FormItem label="Contact Address">
-            <Controller
-              name="contact_address"
-              control={control}
-              render={({ field }) => (
-                <Input type="text" placeholder="Street address" {...field} />
-              )}
-            />
-          </FormItem>
-        </div>
+        <FormItem label="Contact Address">
+          <Controller
+            name="contact_address"
+            control={control}
+            render={({ field }) => (
+              <Input type="text" placeholder="Street address" {...field} />
+            )}
+          />
+        </FormItem>
 
         {/* City */}
         <FormItem label="City">
@@ -351,13 +332,6 @@ const OrganisationForm: React.FC<OrganisationFormProps> = ({
             )}
           />
         </FormItem>
-
-        {/* Additional Information */}
-        <div className="md:col-span-2">
-          <h3 className="text-lg font-medium text-gray-900 mb-4 mt-6">
-            Additional Information
-          </h3>
-        </div>
 
         {/* Base Currency */}
         <FormItem label="Base Currency">

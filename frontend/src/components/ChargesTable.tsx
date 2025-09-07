@@ -7,8 +7,8 @@ import type { Charge } from "../types/ChargesTypes";
 interface ChargesTableProps {
   data: Charge[];
   onEdit: (charge: Charge) => void;
-  onToggleStatus: (id: string, currentStatus: string) => void;
-  onDelete: (id: string, name: string) => void;
+  onToggleStatus: (charge: Charge) => void;
+  onDelete: (charge: Charge) => void;
   isLoading?: boolean;
 }
 

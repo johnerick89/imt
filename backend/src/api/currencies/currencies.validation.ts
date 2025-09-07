@@ -54,6 +54,6 @@ export const currencyFiltersSchema = z.object({
   limit: z
     .string()
     .transform((val) => parseInt(val, 10))
-    .pipe(z.number().min(1).max(100))
+    .pipe(z.number().min(1).max(1000))
     .optional(),
 });

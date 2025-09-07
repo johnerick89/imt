@@ -1,15 +1,18 @@
+import {
+  CustomerStatus,
+  CustomerType,
+  IdType,
+  TaxNumberType,
+} from "./CustomersTypes";
+import type { Occupation } from "./OccupationsTypes";
+import type { Industry } from "./IndustriesTypes";
+
 export interface Beneficiary {
   id: string;
   name: string;
   email?: string | null;
   phone?: string | null;
-  id_type:
-    | "PASSPORT"
-    | "NATIONAL_ID"
-    | "DRIVERS_LICENSE"
-    | "ALIEN_CARD"
-    | "KRA_PIN"
-    | "OTHER";
+  id_type: IdType;
   id_number: string;
   date_of_birth?: Date | null;
   nationality_id?: string | null;
@@ -40,43 +43,55 @@ export interface Beneficiary {
     last_name: string;
     email: string;
   } | null;
-  is_active: boolean;
+  status: CustomerStatus;
+  tax_number_type: TaxNumberType;
+  tax_number: string;
+  reg_number: string;
+  occupation_id: string;
+  occupation: Occupation;
+  industry_id: string;
+  industry: Industry;
 }
 
 export interface CreateBeneficiaryRequest {
   name: string;
   email?: string;
   phone?: string;
-  id_type:
-    | "PASSPORT"
-    | "NATIONAL_ID"
-    | "DRIVERS_LICENSE"
-    | "ALIEN_CARD"
-    | "KRA_PIN"
-    | "OTHER";
+  id_type: IdType;
   id_number: string;
   date_of_birth?: string;
   nationality_id?: string;
   address?: string;
   customer_id: string;
   organisation_id: string;
+  type: CustomerType;
+  tax_number_type: TaxNumberType;
+  tax_number: string;
+  reg_number: string;
+  occupation_id: string;
+  industry_id: string;
+  residence_country_id?: string;
+  incorporation_country_id?: string;
 }
 
 export interface UpdateBeneficiaryRequest {
   name?: string;
   email?: string;
   phone?: string;
-  id_type?:
-    | "PASSPORT"
-    | "NATIONAL_ID"
-    | "DRIVERS_LICENSE"
-    | "ALIEN_CARD"
-    | "KRA_PIN"
-    | "OTHER";
+  id_type?: IdType;
   id_number?: string;
   date_of_birth?: string;
   nationality_id?: string;
   address?: string;
+  type?: CustomerType;
+  tax_number_type?: TaxNumberType;
+  tax_number?: string;
+  reg_number?: string;
+  occupation_id?: string;
+  industry_id?: string;
+  residence_country_id?: string;
+  incorporation_country_id?: string;
+  status?: CustomerStatus;
 }
 
 export interface BeneficiaryFilters {
@@ -86,9 +101,15 @@ export interface BeneficiaryFilters {
   customer_id?: string;
   organisation_id?: string;
   nationality_id?: string;
-  id_type?: string;
-  is_active?: boolean;
+  id_type?: IdType;
   created_by?: string;
+  type?: CustomerType;
+  tax_number_type?: TaxNumberType;
+  reg_number?: string;
+  occupation_id?: string;
+  industry_id?: string;
+  residence_country_id?: string;
+  status?: CustomerStatus;
 }
 
 export interface BeneficiaryListResponse {

@@ -50,6 +50,12 @@ export const navigationSections: NavigationSection[] = [
         path: "/customers",
         icon: "👥",
       },
+      {
+        id: "organisations.gl-transactions",
+        label: "GL Transactions",
+        path: "/gl-transactions",
+        icon: "📊",
+      },
     ],
   },
   {
@@ -57,48 +63,47 @@ export const navigationSections: NavigationSection[] = [
     label: "ADMINISTRATIVE",
     items: [
       {
-        id: "organisations",
+        id: "organisations.index",
         label: "Organisations",
         path: "/organisations",
         icon: "🏢",
-        children: [
-          {
-            id: "organisations.settings",
-            label: "Settings",
-            path: "/organisations",
-            icon: "🏢",
-          },
-          {
-            id: "organisations.ledgers",
-            label: "Ledgers",
-            path: "/organisations/ledgers",
-            icon: "📋",
-          },
-          {
-            id: "organisations.balances",
-            label: "Balances",
-            path: "/organisations/balances",
-            icon: "💰",
-          },
-          {
-            id: "organisations.vault",
-            label: "Vault",
-            path: "/organisations/vault",
-            icon: "🔒",
-          },
-          {
-            id: "organisations.commission-rates",
-            label: "Commission Rates",
-            path: "/organisations/commission-rates",
-            icon: "📈",
-          },
-        ],
       },
       {
-        id: "fees",
-        label: "Fees",
-        path: "/fees",
-        icon: "💳",
+        id: "organisations.corridors",
+        label: "Corridors",
+        path: "/corridors",
+        icon: "🌍",
+      },
+      {
+        id: "organisations.charges",
+        label: "Charges",
+        path: "/charges",
+        icon: "💰",
+      },
+      {
+        id: "organisations.integrations",
+        label: "Integrations",
+        path: "/integrations",
+        icon: "🔌",
+      },
+      {
+        id: "organisations.accounts",
+        label: "GL Accounts",
+        path: "/gl-accounts",
+        icon: "📋",
+      },
+
+      {
+        id: "organisations.balances",
+        label: "Organisation Balances",
+        path: "/organisation-balances",
+        icon: "💰",
+      },
+      {
+        id: "organisations.vault",
+        label: "Vaults",
+        path: "/vaults",
+        icon: "🔒",
       },
       {
         id: "exchange-rates",
@@ -113,11 +118,12 @@ export const navigationSections: NavigationSection[] = [
         icon: "🏪",
       },
       {
-        id: "taxes",
-        label: "Taxes",
-        path: "/taxes",
-        icon: "🧾",
+        id: "bank-accounts",
+        label: "Bank Accounts",
+        path: "/bank-accounts",
+        icon: "🏦",
       },
+
       {
         id: "reports",
         label: "Reports",

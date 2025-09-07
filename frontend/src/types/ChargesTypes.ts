@@ -1,21 +1,52 @@
+export const ChargeType = {
+  TAX: "TAX",
+  INTERNAL_FEE: "INTERNAL_FEE",
+  COMMISSION: "COMMISSION",
+  OTHER: "OTHER",
+} as const;
+export type ChargeType = (typeof ChargeType)[keyof typeof ChargeType];
+
+export const ApplicationMethod = {
+  PERCENTAGE: "PERCENTAGE",
+  FIXED: "FIXED",
+} as const;
+export type ApplicationMethod =
+  (typeof ApplicationMethod)[keyof typeof ApplicationMethod];
+
+export const ApplicableDirection = {
+  OUTBOUND: "OUTBOUND",
+  INBOUND: "INBOUND",
+  BOTH: "BOTH",
+} as const;
+export type ApplicableDirection =
+  (typeof ApplicableDirection)[keyof typeof ApplicableDirection];
+
+export const ChargeStatus = {
+  ACTIVE: "ACTIVE",
+  INACTIVE: "INACTIVE",
+  PENDING: "PENDING",
+  BLOCKED: "BLOCKED",
+} as const;
+export type ChargeStatus = (typeof ChargeStatus)[keyof typeof ChargeStatus];
+
 export interface Charge {
   id: string;
   name: string;
   description: string;
-  application_method: "PERCENTAGE" | "FIXED";
+  application_method: ApplicationMethod;
   currency_id?: string | null;
-  type: "TAX" | "INTERNAL_FEE" | "COMMISSION" | "OTHER";
+  type: ChargeType;
   rate: number;
   origin_organisation_id?: string | null;
   destination_organisation_id?: string | null;
   is_reversible: boolean;
-  direction: "OUTBOUND" | "INBOUND" | "BOTH";
+  direction: ApplicableDirection;
   origin_share_percentage?: number | null;
   destination_share_percentage?: number | null;
   created_at: string;
   created_by?: string | null;
   updated_at: string;
-  status: "ACTIVE" | "INACTIVE" | "PENDING" | "BLOCKED";
+  status: ChargeStatus;
   min_amount?: number | null;
   max_amount?: number | null;
   currency?: {
@@ -45,17 +76,17 @@ export interface Charge {
 export interface CreateChargeRequest {
   name: string;
   description: string;
-  application_method: "PERCENTAGE" | "FIXED";
+  application_method: ApplicationMethod;
   currency_id?: string;
-  type: "TAX" | "INTERNAL_FEE" | "COMMISSION" | "OTHER";
+  type: ChargeType;
   rate: number;
   origin_organisation_id?: string;
   destination_organisation_id?: string;
   is_reversible?: boolean;
-  direction: "OUTBOUND" | "INBOUND" | "BOTH";
+  direction: ApplicableDirection;
   origin_share_percentage?: number;
   destination_share_percentage?: number;
-  status?: "ACTIVE" | "INACTIVE" | "PENDING" | "BLOCKED";
+  status?: ChargeStatus;
   min_amount?: number;
   max_amount?: number;
 }
@@ -63,17 +94,17 @@ export interface CreateChargeRequest {
 export interface UpdateChargeRequest {
   name?: string;
   description?: string;
-  application_method?: "PERCENTAGE" | "FIXED";
+  application_method?: ApplicationMethod;
   currency_id?: string;
-  type?: "TAX" | "INTERNAL_FEE" | "COMMISSION" | "OTHER";
+  type?: ChargeType;
   rate?: number;
   origin_organisation_id?: string;
   destination_organisation_id?: string;
   is_reversible?: boolean;
-  direction?: "OUTBOUND" | "INBOUND" | "BOTH";
+  direction?: ApplicableDirection;
   origin_share_percentage?: number;
   destination_share_percentage?: number;
-  status?: "ACTIVE" | "INACTIVE" | "PENDING" | "BLOCKED";
+  status?: ChargeStatus;
   min_amount?: number;
   max_amount?: number;
 }
@@ -82,10 +113,10 @@ export interface ChargeFilters {
   page?: number;
   limit?: number;
   search?: string;
-  type?: "TAX" | "INTERNAL_FEE" | "COMMISSION" | "OTHER";
-  status?: "ACTIVE" | "INACTIVE" | "PENDING" | "BLOCKED";
-  application_method?: "PERCENTAGE" | "FIXED";
-  direction?: "OUTBOUND" | "INBOUND" | "BOTH";
+  type?: ChargeType;
+  status?: ChargeStatus;
+  application_method?: ApplicationMethod;
+  direction?: ApplicableDirection;
   currency_id?: string;
   origin_organisation_id?: string;
   destination_organisation_id?: string;

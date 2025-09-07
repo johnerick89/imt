@@ -1,4 +1,4 @@
-import { UserStatus } from "@prisma/client";
+import { UserStatus, Organisation } from "@prisma/client";
 
 export interface IUser {
   id: string;
@@ -11,6 +11,7 @@ export interface IUser {
   phone: string | null;
   address: string | null;
   organisation_id: string | null;
+  organisation?: Organisation | null;
   last_login: Date | null;
   created_at: Date;
   updated_at: Date;

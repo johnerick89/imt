@@ -114,7 +114,9 @@ const CustomerProfilePage: React.FC = () => {
   const handleToggleBeneficiaryStatus = (beneficiary: Beneficiary) => {
     updateBeneficiaryMutation.mutate({
       id: beneficiary.id,
-      data: { is_active: !beneficiary.is_active } as UpdateBeneficiaryRequest,
+      data: {
+        status: beneficiary.status === "ACTIVE" ? "INACTIVE" : "ACTIVE",
+      } as UpdateBeneficiaryRequest,
     });
   };
 
@@ -233,7 +235,7 @@ const CustomerProfilePage: React.FC = () => {
         <div className="px-6 py-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
             {/* Basic Information */}
-            <div className="space-y-6">
+            <div className="p-6">
               <div>
                 <h3 className="text-lg font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
                   Basic Information
@@ -350,7 +352,7 @@ const CustomerProfilePage: React.FC = () => {
             </div>
 
             {/* Contact & Identification */}
-            <div className="space-y-6">
+            <div className="p-6">
               <div>
                 <h3 className="text-lg font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
                   Contact & Identification
@@ -429,7 +431,7 @@ const CustomerProfilePage: React.FC = () => {
             </div>
 
             {/* System & Risk Information */}
-            <div className="space-y-6">
+            <div className="p-6">
               <div>
                 <h3 className="text-lg font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
                   System & Risk Information
@@ -462,7 +464,7 @@ const CustomerProfilePage: React.FC = () => {
                     </dd>
                   </div>
 
-                  <div>
+                  <div className="hidden">
                     <dt className="text-sm font-medium text-gray-500">
                       Risk Rating
                     </dt>

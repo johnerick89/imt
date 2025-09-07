@@ -38,6 +38,13 @@ export class IntegrationService {
               type: true,
             },
           },
+          origin_organisation: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+            },
+          },
         },
       });
 
@@ -63,6 +70,7 @@ export class IntegrationService {
         type,
         status,
         organisation_id,
+        origin_organisation_id,
         created_by,
       } = filters;
       const skip = (page - 1) * limit;
@@ -79,6 +87,8 @@ export class IntegrationService {
       if (type) where.type = type;
       if (status) where.status = status;
       if (organisation_id) where.organisation_id = organisation_id;
+      if (origin_organisation_id)
+        where.origin_organisation_id = origin_organisation_id;
       if (created_by) where.created_by = created_by;
 
       const [integrations, total] = await Promise.all([
@@ -97,6 +107,13 @@ export class IntegrationService {
               },
             },
             organisation: {
+              select: {
+                id: true,
+                name: true,
+                type: true,
+              },
+            },
+            origin_organisation: {
               select: {
                 id: true,
                 name: true,
@@ -149,6 +166,13 @@ export class IntegrationService {
               type: true,
             },
           },
+          origin_organisation: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+            },
+          },
         },
       });
 
@@ -188,6 +212,13 @@ export class IntegrationService {
             },
           },
           organisation: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+            },
+          },
+          origin_organisation: {
             select: {
               id: true,
               name: true,

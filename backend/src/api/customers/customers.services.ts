@@ -198,6 +198,12 @@ export class CustomerService {
                 email: true,
               },
             },
+            beneficiaries: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         }),
         prisma.customer.count({ where }),
@@ -209,7 +215,7 @@ export class CustomerService {
         success: true,
         message: "Customers retrieved successfully",
         data: {
-          customers: customers as ICustomer[],
+          customers: customers as unknown as ICustomer[],
           pagination: {
             page,
             limit,
@@ -293,6 +299,12 @@ export class CustomerService {
               email: true,
             },
           },
+          beneficiaries: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
         },
       });
 
@@ -303,7 +315,7 @@ export class CustomerService {
       return {
         success: true,
         message: "Customer retrieved successfully",
-        data: customer as ICustomer,
+        data: customer as unknown as ICustomer,
       };
     } catch (error) {
       console.error("Error fetching customer:", error);

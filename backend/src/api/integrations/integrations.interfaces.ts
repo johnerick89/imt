@@ -4,6 +4,7 @@ export interface IIntegration {
   name: string;
   description?: string | null;
   organisation_id?: string | null;
+  origin_organisation_id?: string | null;
   type: IntegrationType;
   status: IntegrationStatus;
   api_key?: string | null;
@@ -25,12 +26,18 @@ export interface IIntegration {
     name: string;
     type: string;
   } | null;
+  origin_organisation?: {
+    id: string;
+    name: string;
+    type: string;
+  } | null;
 }
 
 export interface CreateIntegrationRequest {
   name: string;
   description?: string;
   organisation_id?: string;
+  origin_organisation_id?: string;
   type: IntegrationType;
   status: IntegrationStatus;
   api_key?: string;
@@ -44,6 +51,7 @@ export interface UpdateIntegrationRequest {
   name?: string;
   description?: string;
   organisation_id?: string;
+  origin_organisation_id?: string;
   type?: IntegrationType;
   status?: IntegrationStatus;
   api_key?: string;
@@ -60,6 +68,7 @@ export interface IntegrationFilters {
   type?: IntegrationType;
   status?: IntegrationStatus;
   organisation_id?: string;
+  origin_organisation_id?: string;
   created_by?: string;
 }
 

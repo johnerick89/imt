@@ -19,6 +19,7 @@ export const auditMiddleware = (
   res: Response,
   next: NextFunction
 ) => {
+  if (req.method === "OPTIONS") return next();
   // Generate a unique request ID
   const requestId = generateRequestId();
 

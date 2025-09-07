@@ -12,4 +12,16 @@ const toHumanFriendly = (text: string): string => {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 };
 
-export { toHumanFriendly };
+function formatToCurrency(number: string | number): string {
+  const newNumber = typeof number === "number" ? number : parseFloat(number);
+
+  if (isNaN(newNumber)) {
+    return "0.00";
+  }
+  return newNumber.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+export { toHumanFriendly, formatToCurrency };

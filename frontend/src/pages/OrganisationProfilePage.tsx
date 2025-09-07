@@ -14,6 +14,7 @@ import {
   useCreateCharge,
   useUpdateCharge,
   useDeleteCharge,
+  useSession,
 } from "../hooks";
 import { StatusBadge } from "../components/StatusBadge";
 // import { ActionCell } from "../components/ActionCell";
@@ -46,7 +47,7 @@ const OrganisationProfilePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("integrations");
-
+  const { user } = useSession();
   // Integration state
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -86,9 +87,12 @@ const OrganisationProfilePage: React.FC = () => {
     error,
   } = useOrganisation(id || "");
 
-  // Integration hooks
+  // Integration hooks - show integrations where current user's org is origin and target org is the viewed org
   const { data: integrationsData, isLoading: integrationsLoading } =
-    useIntegrations({ organisation_id: id || "" });
+    useIntegrations({
+      origin_organisation_id: user?.organisation_id || "",
+      organisation_id: id || "",
+    });
 
   const createIntegrationMutation = useCreateIntegration();
   const updateIntegrationMutation = useUpdateIntegration();
@@ -220,8 +224,8 @@ const OrganisationProfilePage: React.FC = () => {
     setShowEditCorridorModal(true);
   };
 
-  const openDeleteCorridorModal = (id: string, name: string) => {
-    setCorridorToDelete({ id, name });
+  const openDeleteCorridorModal = (corridor: Corridor) => {
+    setCorridorToDelete(corridor);
     setShowDeleteCorridorModal(true);
   };
 
@@ -272,8 +276,8 @@ const OrganisationProfilePage: React.FC = () => {
     setShowEditChargeModal(true);
   };
 
-  const openDeleteChargeModal = (id: string, name: string) => {
-    setChargeToDelete({ id, name });
+  const openDeleteChargeModal = (charge: Charge) => {
+    setChargeToDelete(charge);
     setShowDeleteChargeModal(true);
   };
 
@@ -345,7 +349,15 @@ const OrganisationProfilePage: React.FC = () => {
               </h3>
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                disabled={!user?.organisation_id || user.organisation_id === id}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                title={
+                  !user?.organisation_id
+                    ? "You must be assigned to an organisation to create integrations"
+                    : user.organisation_id === id
+                    ? "You cannot create integrations with your own organisation"
+                    : "Add Integration"
+                }
               >
                 Add Integration
               </button>
@@ -381,7 +393,7 @@ const OrganisationProfilePage: React.FC = () => {
             <CorridorsTable
               data={corridors}
               onEdit={openEditCorridorModal}
-              onToggleStatus={(id, currentStatus) => {
+              onToggleStatus={(corridor, currentStatus) => {
                 const newStatus =
                   currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE";
                 handleEditCorridor({
@@ -413,9 +425,9 @@ const OrganisationProfilePage: React.FC = () => {
             <ChargesTable
               data={charges}
               onEdit={openEditChargeModal}
-              onToggleStatus={(id, currentStatus) => {
+              onToggleStatus={(charge) => {
                 const newStatus =
-                  currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+                  charge.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
                 handleEditCharge({
                   status: newStatus as
                     | "ACTIVE"
@@ -650,6 +662,7 @@ const OrganisationProfilePage: React.FC = () => {
         <IntegrationForm
           onSubmit={handleCreateIntegration}
           isLoading={createIntegrationMutation.isPending}
+          currentOrganisationId={id}
         />
       </Modal>
 
@@ -668,6 +681,7 @@ const OrganisationProfilePage: React.FC = () => {
           onSubmit={handleEditIntegration}
           isLoading={updateIntegrationMutation.isPending}
           isEdit={true}
+          currentOrganisationId={id}
         />
       </Modal>
 

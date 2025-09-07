@@ -1,3 +1,9 @@
+import {
+  CustomerStatus,
+  CustomerType,
+  IndividualIDType,
+  TaxNumberType,
+} from "@prisma/client";
 export interface IBeneficiary {
   id: string;
   customer_id: string;
@@ -11,7 +17,7 @@ export interface IBeneficiary {
     name: string;
     type: string;
   };
-  type: "INDIVIDUAL" | "CORPORATE" | "BUSINESS";
+  type: CustomerType;
   risk_contribution?: number | null;
   risk_contribution_details?: any;
   name: string;
@@ -35,16 +41,9 @@ export interface IBeneficiary {
     code: string;
   } | null;
   address?: string | null;
-  id_type?:
-    | "PASSPORT"
-    | "NATIONAL_ID"
-    | "DRIVERS_LICENSE"
-    | "ALIEN_CARD"
-    | "KRA_PIN"
-    | "OTHER"
-    | null;
+  id_type?: IndividualIDType | null;
   id_number?: string | null;
-  tax_number_type?: "PIN" | "TIN" | "SSN" | "KRA_PIN" | "OTHER" | null;
+  tax_number_type?: TaxNumberType | null;
   tax_number?: string | null;
   reg_number?: string | null;
   occupation_id?: string | null;
@@ -62,11 +61,12 @@ export interface IBeneficiary {
   created_at: Date;
   updated_at: Date;
   deleted_at?: Date | null;
+  status?: CustomerStatus | null;
 }
 
 export interface CreateBeneficiaryRequest {
   customer_id: string;
-  type: "INDIVIDUAL" | "CORPORATE" | "BUSINESS";
+  type: CustomerType;
   risk_contribution?: number;
   risk_contribution_details?: any;
   name: string;
@@ -75,24 +75,19 @@ export interface CreateBeneficiaryRequest {
   residence_country_id?: string;
   incorporation_country_id?: string;
   address?: string;
-  id_type?:
-    | "PASSPORT"
-    | "NATIONAL_ID"
-    | "DRIVERS_LICENSE"
-    | "ALIEN_CARD"
-    | "KRA_PIN"
-    | "OTHER";
+  id_type?: IndividualIDType | null;
   id_number?: string;
-  tax_number_type?: "PIN" | "TIN" | "SSN" | "KRA_PIN" | "OTHER";
+  tax_number_type?: TaxNumberType | null;
   tax_number?: string;
   reg_number?: string;
   occupation_id?: string;
   industry_id?: string;
   organisation_id: string;
+  status?: CustomerStatus | null;
 }
 
 export interface UpdateBeneficiaryRequest {
-  type?: "INDIVIDUAL" | "CORPORATE" | "BUSINESS";
+  type?: CustomerType | null;
   risk_contribution?: number;
   risk_contribution_details?: any;
   name?: string;
@@ -101,20 +96,14 @@ export interface UpdateBeneficiaryRequest {
   residence_country_id?: string;
   incorporation_country_id?: string;
   address?: string;
-  id_type?:
-    | "PASSPORT"
-    | "NATIONAL_ID"
-    | "DRIVERS_LICENSE"
-    | "ALIEN_CARD"
-    | "KRA_PIN"
-    | "OTHER";
+  id_type?: IndividualIDType | null;
   id_number?: string;
-  tax_number_type?: "PIN" | "TIN" | "SSN" | "KRA_PIN" | "OTHER";
+  tax_number_type?: TaxNumberType | null;
   tax_number?: string;
   reg_number?: string;
   occupation_id?: string;
   industry_id?: string;
-  organisation_id: string;
+  status?: CustomerStatus | null;
 }
 
 export interface BeneficiaryFilters {
@@ -123,11 +112,12 @@ export interface BeneficiaryFilters {
   search?: string;
   customer_id?: string;
   organisation_id?: string;
-  type?: "INDIVIDUAL" | "CORPORATE" | "BUSINESS";
+  type?: CustomerType | null;
   nationality_id?: string;
   residence_country_id?: string;
   occupation_id?: string;
   industry_id?: string;
+  status?: CustomerStatus | null;
 }
 
 export interface BeneficiaryListResponse {

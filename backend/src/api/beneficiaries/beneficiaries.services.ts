@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { CustomerStatus, PrismaClient } from "@prisma/client";
 import type {
   IBeneficiary,
   CreateBeneficiaryRequest,
@@ -21,6 +21,7 @@ export class BeneficiaryService {
         data: {
           ...data,
           created_by: userId,
+          status: data.status || CustomerStatus.ACTIVE,
         },
         include: {
           customer: {
@@ -271,9 +272,25 @@ export class BeneficiaryService {
     data: UpdateBeneficiaryRequest
   ): Promise<BeneficiaryResponse> {
     try {
+      // Filter out undefined values and prepare update data
+      const updateData: any = {};
+
+      // Only include fields that have defined values
+      Object.keys(data).forEach((key) => {
+        const value = data[key as keyof UpdateBeneficiaryRequest];
+        if (value !== undefined) {
+          updateData[key] = value;
+        }
+      });
+
+      // Set default status if not provided
+      if (updateData.status === undefined) {
+        updateData.status = CustomerStatus.ACTIVE;
+      }
+
       const beneficiary = await prisma.beneficiary.update({
         where: { id },
-        data,
+        data: updateData,
         include: {
           customer: {
             select: {
@@ -329,7 +346,7 @@ export class BeneficiaryService {
       return {
         success: true,
         message: "Beneficiary updated successfully",
-        data: beneficiary as IBeneficiary,
+        data: beneficiary as unknown as IBeneficiary,
       };
     } catch (error) {
       console.error("Error updating beneficiary:", error);

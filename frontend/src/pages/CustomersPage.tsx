@@ -5,6 +5,7 @@ import {
   useUpdateCustomer,
   useDeleteCustomer,
   useCustomerStats,
+  useSession,
 } from "../hooks";
 import type {
   Customer,
@@ -18,10 +19,13 @@ import { ConfirmModal } from "../components/ConfirmModal";
 import { FiPlus } from "react-icons/fi";
 
 const CustomersPage: React.FC = () => {
+  const { user: currentUser } = useSession();
+  const organisationId = currentUser?.organisation_id;
   const [filters, setFilters] = useState({
     page: 1,
     limit: 10,
     search: "",
+    organisation_id: organisationId,
   });
 
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -113,7 +117,7 @@ const CustomersPage: React.FC = () => {
       </div>
 
       {/* Stats Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
         <div className="bg-white p-4 rounded-lg shadow-sm border">
           <div className="flex items-center justify-between">
             <div>
@@ -230,66 +234,6 @@ const CustomersPage: React.FC = () => {
                   strokeLinejoin="round"
                   strokeWidth={2}
                   d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 00-2 2H10a2 2 0 00-2-2V4m8 0h2a2 2 0 012 2v6a2 2 0 01-2 2h-2m-8-8V6a2 2 0 012-2h4a2 2 0 012 2v2m-8 0h8m-8 0v10a2 2 0 002 2h4a2 2 0 002-2V8"
-                />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg shadow-sm border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">High Risk</p>
-              <p className="text-2xl font-bold text-red-600">
-                {statsLoading ? (
-                  <span className="animate-pulse bg-gray-200 h-8 w-16 rounded"></span>
-                ) : (
-                  stats?.highRiskCustomers?.toLocaleString() || 0
-                )}
-              </p>
-            </div>
-            <div className="p-3 bg-red-100 rounded-full">
-              <svg
-                className="w-6 h-6 text-red-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5l-6.928-12c-.77-.833-2.966-.833-3.736 0l-6.928 12c-.77.833.192 2.5 1.732 2.5z"
-                />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg shadow-sm border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Adverse Media</p>
-              <p className="text-2xl font-bold text-orange-600">
-                {statsLoading ? (
-                  <span className="animate-pulse bg-gray-200 h-8 w-16 rounded"></span>
-                ) : (
-                  stats?.adverseMediaCustomers?.toLocaleString() || 0
-                )}
-              </p>
-            </div>
-            <div className="p-3 bg-orange-100 rounded-full">
-              <svg
-                className="w-6 h-6 text-orange-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 17h5l-5 5v-5zM9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
             </div>

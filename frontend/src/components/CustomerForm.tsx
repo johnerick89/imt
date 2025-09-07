@@ -259,25 +259,30 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
             />
           </FormItem>
         )}
-
-        <FormItem
-          label="Gender"
-          invalid={!!errors.gender}
-          errorMessage={errors.gender?.message}
-        >
-          <Controller
-            name="gender"
-            control={control}
-            render={({ field }) => (
-              <Select {...field} disabled={isLoading} invalid={!!errors.gender}>
-                <option value="">Select gender</option>
-                <option value="MALE">Male</option>
-                <option value="FEMALE">Female</option>
-                <option value="OTHER">Other</option>
-              </Select>
-            )}
-          />
-        </FormItem>
+        {isIndividualCustomer && (
+          <FormItem
+            label="Gender"
+            invalid={!!errors.gender}
+            errorMessage={errors.gender?.message}
+          >
+            <Controller
+              name="gender"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  {...field}
+                  disabled={isLoading}
+                  invalid={!!errors.gender}
+                >
+                  <option value="">Select gender</option>
+                  <option value="MALE">Male</option>
+                  <option value="FEMALE">Female</option>
+                  <option value="OTHER">Other</option>
+                </Select>
+              )}
+            />
+          </FormItem>
+        )}
 
         {isIndividualCustomer && (
           <FormItem
@@ -452,7 +457,6 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
           <Controller
             name="branch_id"
             control={control}
-            rules={{ required: "Branch is required" }}
             render={({ field }) => (
               <SearchableSelect
                 value={field.value}
@@ -557,7 +561,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
       </div>
 
       {/* Additional Information */}
-      <div className="space-y-6">
+      <div className="p-6">
         <FormItem
           label="Address"
           invalid={!!errors.address}

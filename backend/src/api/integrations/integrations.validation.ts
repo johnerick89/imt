@@ -8,6 +8,7 @@ export const createIntegrationSchema = z.object({
     .max(256, "Name must be less than 256 characters"),
   description: z.string().optional(),
   organisation_id: z.string().uuid().optional(),
+  origin_organisation_id: z.string().uuid().optional(),
   type: z.enum([
     IntegrationType.API,
     IntegrationType.WEBHOOK,
@@ -37,6 +38,7 @@ export const updateIntegrationSchema = z.object({
     .optional(),
   description: z.string().optional(),
   organisation_id: z.string().uuid().optional(),
+  origin_organisation_id: z.string().uuid().optional(),
   type: z
     .enum([
       IntegrationType.API,
@@ -89,5 +91,6 @@ export const integrationFiltersSchema = z.object({
     ])
     .optional(),
   organisation_id: z.string().uuid().optional(),
+  origin_organisation_id: z.string().uuid().optional(),
   created_by: z.string().uuid().optional(),
 });

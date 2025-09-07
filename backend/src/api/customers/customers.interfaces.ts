@@ -1,4 +1,4 @@
-import { CustomerStatus } from "@prisma/client";
+import { CustomerStatus, Beneficiary } from "@prisma/client";
 
 export interface ICustomer {
   id: string;
@@ -90,6 +90,7 @@ export interface ICustomer {
     email: string;
   } | null;
   status: CustomerStatus;
+  beneficiaries?: Beneficiary[];
 }
 
 export interface CreateCustomerRequest {
@@ -112,7 +113,7 @@ export interface CreateCustomerRequest {
   risk_rating?: number;
   risk_reasons?: string;
   organisation_id: string;
-  branch_id: string;
+  branch_id?: string;
   tax_number_type?: "PIN" | "TIN" | "SSN" | "KRA_PIN" | "OTHER";
   tax_number?: string;
   gender?: "MALE" | "FEMALE" | "OTHER";
@@ -151,7 +152,7 @@ export interface UpdateCustomerRequest {
   occupation_id?: string;
   risk_rating?: number;
   risk_reasons?: string;
-  branch_id?: string;
+  branch_id?: string | null;
   tax_number_type?: "PIN" | "TIN" | "SSN" | "KRA_PIN" | "OTHER";
   tax_number?: string;
   gender?: "MALE" | "FEMALE" | "OTHER";

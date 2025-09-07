@@ -13,6 +13,17 @@ import industryRoutes from "./api/industries";
 import customerRoutes from "./api/customers";
 import beneficiaryRoutes from "./api/beneficiaries";
 import branchRoutes from "./api/branches";
+import exchangeRateRoutes from "./api/exchangerates";
+import tillRoutes from "./api/tills";
+import vaultRoutes from "./api/vaults";
+import glAccountRoutes from "./api/glaccounts";
+import roleRoutes from "./api/roles";
+import userTillRoutes from "./api/usertills";
+import bankAccountRoutes from "./api/bankaccounts";
+import balanceOperationRoutes from "./api/balanceoperations";
+import glTransactionRoutes from "./api/gltransactions";
+import transactionRoutes from "./api/transactions";
+import transactionChannelRoutes from "./api/transactionchannels";
 
 const router = Router();
 
@@ -31,6 +42,17 @@ router.use("/api/v1/industries", industryRoutes);
 router.use("/api/v1/customers", customerRoutes);
 router.use("/api/v1/beneficiaries", beneficiaryRoutes);
 router.use("/api/v1/branches", branchRoutes);
+router.use("/api/v1/exchangerates", exchangeRateRoutes);
+router.use("/api/v1/tills", tillRoutes);
+router.use("/api/v1/vaults", vaultRoutes);
+router.use("/api/v1/glaccounts", glAccountRoutes);
+router.use("/api/v1/roles", roleRoutes);
+router.use("/api/v1/usertills", userTillRoutes);
+router.use("/api/v1/bankaccounts", bankAccountRoutes);
+router.use("/api/v1/balance", balanceOperationRoutes);
+router.use("/api/v1/organisations", glTransactionRoutes);
+router.use("/api/v1/transactions", transactionRoutes);
+router.use("/api/v1/transactionchannels", transactionChannelRoutes);
 
 // Default API route
 router.get("/api", (req, res) => {
@@ -53,6 +75,16 @@ router.get("/api", (req, res) => {
       customers: "/api/v1/customers",
       beneficiaries: "/api/v1/beneficiaries",
       branches: "/api/v1/branches",
+      exchangerates: "/api/v1/exchangerates",
+      tills: "/api/v1/tills",
+      vaults: "/api/v1/vaults",
+      glaccounts: "/api/v1/glaccounts",
+      roles: "/api/v1/roles",
+      bankaccounts: "/api/v1/bankaccounts",
+      balance: "/api/v1/balance",
+      gltransactions: "/api/v1/organisations/:id/gltransactions",
+      transactions: "/api/v1/transactions",
+      transactionchannels: "/api/v1/transactionchannels",
     },
   });
 });

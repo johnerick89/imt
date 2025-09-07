@@ -15,6 +15,21 @@ import ReportsPage from "../pages/ReportsPage";
 import MyAccountPage from "../pages/MyAccountPage";
 import UsersPage from "../pages/UsersPage";
 import UserProfilePage from "../pages/UserProfilePage";
+import RolesPage from "../pages/RolesPage";
+import RoleProfilePage from "../pages/RoleProfilePage";
+import VaultsPage from "../pages/VaultsPage";
+import VaultProfilePage from "../pages/VaultProfilePage";
+import TillsPage from "../pages/TillsPage";
+import TillProfilePage from "../pages/TillProfilePage";
+import ExchangeRatesPage from "../pages/ExchangeRatesPage";
+import ExchangeRateProfilePage from "../pages/ExchangeRateProfilePage";
+import CorridorsPage from "../pages/CorridorsPage";
+import ChargesPage from "../pages/ChargesPage";
+import IntegrationsPage from "../pages/IntegrationsPage";
+import BankAccountsPage from "../pages/BankAccountsPage";
+import OrganisationBalancesPage from "../pages/OrganisationBalancesPage";
+import GlAccountsPage from "../pages/GlAccountsPage";
+import GlTransactionsPage from "../pages/GlTransactionsPage";
 
 // Public Route Component (redirects to dashboard if already authenticated)
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -99,16 +114,16 @@ const AppRoutes: React.FC = () => {
         <Route path="organisations" element={<OrganisationsPage />} />
         <Route path="organisations/:id" element={<OrganisationProfilePage />} />
         <Route
-          path="organisations/ledgers"
+          path="accounts"
           element={
             <PlaceholderPage
-              title="Ledgers"
+              title="Ledger Accounts"
               description="Manage financial ledgers"
             />
           }
         />
         <Route
-          path="organisations/balances"
+          path="balances"
           element={
             <PlaceholderPage
               title="Balances"
@@ -116,17 +131,9 @@ const AppRoutes: React.FC = () => {
             />
           }
         />
+        <Route path="vault" element={<Navigate to="/vaults" replace />} />
         <Route
-          path="organisations/vault"
-          element={
-            <PlaceholderPage
-              title="Vault"
-              description="Manage vault operations"
-            />
-          }
-        />
-        <Route
-          path="organisations/commission-rates"
+          path="commission-rates"
           element={
             <PlaceholderPage
               title="Commission Rates"
@@ -134,6 +141,19 @@ const AppRoutes: React.FC = () => {
             />
           }
         />
+
+        {/* Vaults & Tills */}
+        <Route path="vaults" element={<VaultsPage />} />
+        <Route path="vaults/:id" element={<VaultProfilePage />} />
+        <Route path="tills" element={<TillsPage />} />
+        <Route path="tills/:id" element={<TillProfilePage />} />
+        <Route path="bank-accounts" element={<BankAccountsPage />} />
+        <Route
+          path="organisation-balances"
+          element={<OrganisationBalancesPage />}
+        />
+        <Route path="gl-accounts" element={<GlAccountsPage />} />
+        <Route path="gl-transactions" element={<GlTransactionsPage />} />
 
         {/* Other Features */}
         <Route
@@ -145,24 +165,14 @@ const AppRoutes: React.FC = () => {
             />
           }
         />
+        <Route path="exchange-rates" element={<ExchangeRatesPage />} />
         <Route
-          path="exchange-rates"
-          element={
-            <PlaceholderPage
-              title="Exchange Rates"
-              description="Manage currency exchange rates"
-            />
-          }
+          path="exchange-rates/:id"
+          element={<ExchangeRateProfilePage />}
         />
-        <Route
-          path="tills"
-          element={
-            <PlaceholderPage
-              title="Tills"
-              description="Manage till operations"
-            />
-          }
-        />
+        <Route path="corridors" element={<CorridorsPage />} />
+        <Route path="charges" element={<ChargesPage />} />
+        <Route path="integrations" element={<IntegrationsPage />} />
         <Route
           path="taxes"
           element={
@@ -177,15 +187,8 @@ const AppRoutes: React.FC = () => {
         {/* User Management */}
         <Route path="users" element={<UsersPage />} />
         <Route path="users/:id" element={<UserProfilePage />} />
-        <Route
-          path="roles"
-          element={
-            <PlaceholderPage
-              title="Roles"
-              description="Manage user roles and permissions"
-            />
-          }
-        />
+        <Route path="roles" element={<RolesPage />} />
+        <Route path="roles/:id" element={<RoleProfilePage />} />
 
         {/* Account */}
         <Route path="my-account" element={<MyAccountPage />} />

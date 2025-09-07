@@ -6,6 +6,7 @@ import {
   useUserStats,
   useToggleUserStatus,
   useDeleteUser,
+  useSession,
 } from "../hooks";
 import { DataTable } from "../components/DataTable";
 import { StatusBadge } from "../components/StatusBadge";
@@ -18,12 +19,14 @@ import UserForm from "../components/UserForm";
 import type { User, UserFilters, UserStatus } from "../types/UsersTypes";
 
 const UsersPage: React.FC = () => {
+  const { user: currentUser } = useSession();
+  const organisationId = currentUser?.organisation_id;
   const navigate = useNavigate();
   const [filters, setFilters] = useState<UserFilters>({
     search: "",
     role: "",
     status: undefined,
-    organisation_id: undefined,
+    organisation_id: organisationId,
     page: 1,
     limit: 10,
   });

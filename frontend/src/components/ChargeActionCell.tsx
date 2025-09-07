@@ -3,8 +3,8 @@ import type { Charge } from "../types/ChargesTypes";
 
 interface ChargeActionCellProps {
   onEdit: (charge: Charge) => void;
-  onToggleStatus: (id: string, currentStatus: string) => void;
-  onDelete: (id: string, name: string) => void;
+  onToggleStatus: (charge: Charge) => void;
+  onDelete: (charge: Charge) => void;
 }
 
 export default function ChargeActionCell({
@@ -30,7 +30,7 @@ export default function ChargeActionCell({
           </button>
 
           <button
-            onClick={() => onToggleStatus(charge.id, charge.status)}
+            onClick={() => onToggleStatus(charge)}
             className={`p-2 rounded-lg transition-colors ${
               isActive
                 ? "text-red-600 hover:bg-red-50"
@@ -46,7 +46,7 @@ export default function ChargeActionCell({
           </button>
 
           <button
-            onClick={() => onDelete(charge.id, charge.name)}
+            onClick={() => onDelete(charge)}
             className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
             title="Delete charge"
           >

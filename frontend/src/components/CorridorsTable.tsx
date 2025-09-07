@@ -8,8 +8,8 @@ import type { Corridor } from "../types/CorridorsTypes";
 interface CorridorsTableProps {
   data: Corridor[];
   onEdit: (corridor: Corridor) => void;
-  onToggleStatus: (id: string, currentStatus: string) => void;
-  onDelete: (id: string, name: string) => void;
+  onToggleStatus: (corridor: Corridor, currentStatus: string) => void;
+  onDelete: (corridor: Corridor) => void;
   isLoading?: boolean;
 }
 
@@ -104,9 +104,9 @@ const CorridorsTable: React.FC<CorridorsTableProps> = ({
           <CorridorActionCell
             onEdit={() => onEdit(row.original)}
             onToggleStatus={() =>
-              onToggleStatus(row.original.id, row.original.status)
+              onToggleStatus(row.original, row.original.status)
             }
-            onDelete={() => onDelete(row.original.id, row.original.name)}
+            onDelete={() => onDelete(row.original)}
             status={row.original.status}
           />
         ),

@@ -8,27 +8,30 @@ import branches from "./branches";
 import { hashPassword } from "../api/auth/auth.utils";
 import occupations from "./occupations";
 import industries from "./industries";
+import organisations from "./organisations";
 
 const DEFAULT_PASSWORD = "admin1234";
 const prisma = new PrismaClient();
 
-async function seedSystemEngineerRole() {
-  const role = await prisma.role.findFirst({
-    where: { name: "System Engineer" },
-  });
-  if (role) {
-    return;
-  }
-  const roleData = roles.find((role) => role.role_name === "System Engineer");
-  await prisma.role.create({
-    data: {
-      name: roleData?.role_name || "System Engineer",
-      description:
-        roleData?.role_description ||
-        "System Engineer - Can access all system features, manage configurations, and troubleshoot issues.",
-      created_at: new Date(),
-    },
-  });
+async function seedRoles() {
+  const createdRoles = await Promise.all(
+    roles.map(async (role) => {
+      const createdRole = await prisma.role.findFirst({
+        where: { name: role.role_name },
+      });
+      if (createdRole) {
+        return createdRole;
+      }
+      return await prisma.role.create({
+        data: {
+          name: role.role_name,
+          description: role.role_description,
+          created_at: new Date(),
+        },
+      });
+    })
+  );
+  console.log("Roles created:", createdRoles.length);
 }
 
 async function seedUsers() {
@@ -61,29 +64,45 @@ async function seedUsers() {
   console.log({ user1 });
 }
 
-async function seedRoles() {
-  const otherRoles = roles.filter(
-    (role) => role.role_name !== "System Engineer"
-  );
-
-  const createdRoles = await Promise.all(
-    otherRoles.map(async (role) => {
-      const createdRole = await prisma.role.findFirst({
-        where: { name: role.role_name },
+async function seedOrganisations() {
+  const createdOrganisations = await Promise.all(
+    organisations.map(async (organisation) => {
+      let createdOrganisation = await prisma.organisation.findFirst({
+        where: { name: organisation.name },
       });
-      if (createdRole) {
-        return createdRole;
+      if (createdOrganisation) {
+        return createdOrganisation;
       }
-      return await prisma.role.create({
+      const adminUser = await prisma.user.findFirst({
+        where: { email: "johndoe@example.com" },
+      });
+      createdOrganisation = await prisma.organisation.create({
         data: {
-          name: role.role_name,
-          description: role.role_description,
-          created_at: new Date(),
+          ...organisation,
+          created_by: adminUser?.id,
         },
       });
+
+      const adminRole = await prisma.role.findFirst({
+        where: { name: "Admin" },
+      });
+
+      await prisma.user.create({
+        data: {
+          email: organisation.contact_email,
+          password: await hashPassword(DEFAULT_PASSWORD),
+          first_name: organisation.name,
+          last_name: organisation.name,
+          role: "Admin",
+          role_id: adminRole?.id,
+          organisation_id: createdOrganisation.id,
+        },
+      });
+
+      return createdOrganisation;
     })
   );
-  console.log("Roles created:", createdRoles.length);
+  console.log("Organisations created:", createdOrganisations.length);
 }
 
 async function seedAdminUser({
@@ -340,10 +359,9 @@ async function main() {
   args = args.map((arg) => arg.replace("--", "")).filter((arg) => arg !== "");
 
   const seedFunctions: { [key: string]: () => Promise<void> } = {
-    sysEngRole: seedSystemEngineerRole,
-    users: seedUsers,
-
     roles: seedRoles,
+    users: seedUsers,
+    organisations: seedOrganisations,
     permissions: seedPermissions,
     branches: seedBranches,
     countries: seedCountries,

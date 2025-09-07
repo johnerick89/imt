@@ -13,5 +13,6 @@ interface PrismaContext {
 interface CustomReq extends Request {
   user?: IAuthUser;
   prismaContext?: PrismaContext;
+  organisation_id?: string;
 }
 export default CustomReq;
