@@ -10,7 +10,7 @@ import {
 } from "../hooks/useRoles";
 import RolesTable from "../components/RolesTable";
 import RoleForm from "../components/RoleForm";
-import { Modal } from "../components/Modal";
+import { Modal } from "../components/ui/Modal";
 import { ConfirmModal } from "../components/ConfirmModal";
 import type {
   Role,

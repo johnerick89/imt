@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { Modal } from "./Modal";
-import { Button } from "./Button";
-import { Textarea } from "./Textarea";
+import { Modal } from "./ui/Modal";
+import { Button } from "./ui/Button";
+import { Textarea } from "./ui/Textarea";
 import type { GlTransaction } from "../types/GlTransactionsTypes";
 
 interface ReverseGlTransactionModalProps {

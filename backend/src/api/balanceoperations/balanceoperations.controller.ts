@@ -276,4 +276,95 @@ export class BalanceOperationController {
       });
     }
   }
+
+  // Get organisation balance history
+  async getOrgBalanceHistory(req: CustomRequest, res: Response): Promise<void> {
+    try {
+      const { orgId } = req.params;
+      const filters = req.query;
+
+      if (!orgId) {
+        res.status(400).json({
+          success: false,
+          message: "Organisation ID is required",
+        });
+        return;
+      }
+
+      const result = await balanceOperationService.getOrgBalanceHistory(
+        orgId,
+        filters
+      );
+      res.json(result);
+    } catch (error: any) {
+      console.error("Error fetching organisation balance history:", error);
+      res.status(500).json({
+        success: false,
+        message:
+          error.message || "Failed to fetch organisation balance history",
+      });
+    }
+  }
+
+  // Get till balance history
+  async getTillBalanceHistory(
+    req: CustomRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      const { tillId } = req.params;
+      const filters = req.query;
+
+      if (!tillId) {
+        res.status(400).json({
+          success: false,
+          message: "Till ID is required",
+        });
+        return;
+      }
+
+      const result = await balanceOperationService.getTillBalanceHistory(
+        tillId,
+        filters
+      );
+      res.json(result);
+    } catch (error: any) {
+      console.error("Error fetching till balance history:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "Failed to fetch till balance history",
+      });
+    }
+  }
+
+  // Get vault balance history
+  async getVaultBalanceHistory(
+    req: CustomRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      const { vaultId } = req.params;
+      const filters = req.query;
+
+      if (!vaultId) {
+        res.status(400).json({
+          success: false,
+          message: "Vault ID is required",
+        });
+        return;
+      }
+
+      const result = await balanceOperationService.getVaultBalanceHistory(
+        vaultId,
+        filters
+      );
+      res.json(result);
+    } catch (error: any) {
+      console.error("Error fetching vault balance history:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "Failed to fetch vault balance history",
+      });
+    }
+  }
 }

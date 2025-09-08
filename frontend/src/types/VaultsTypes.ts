@@ -17,6 +17,7 @@ export interface CreateVaultRequest {
   name: string;
   organisation_id: string;
   currency_id?: string;
+  opening_balance?: number;
 }
 
 export interface UpdateVaultRequest {

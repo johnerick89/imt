@@ -1,7 +1,7 @@
 import React from "react";
 import type { ColumnDef } from "@tanstack/react-table";
-import { DataTable } from "./DataTable";
-import { StatusBadge } from "./StatusBadge";
+import { DataTable } from "./ui/DataTable";
+import { StatusBadge } from "./ui/StatusBadge";
 import BeneficiaryActionCell from "./BeneficiaryActionCell";
 import type { Beneficiary } from "../types/BeneficiariesTypes";
 

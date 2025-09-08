@@ -110,3 +110,60 @@ export interface BalanceOperationResponse {
   };
   error?: string;
 }
+
+// Balance History Types
+export interface BalanceHistoryItem {
+  id: string;
+  balance: number;
+  locked_balance?: number | null;
+  created_at: string;
+  updated_at: string;
+  currency?: {
+    id: string;
+    currency_code: string;
+    currency_name: string;
+  };
+  organisation?: {
+    id: string;
+    name: string;
+    type: string;
+  };
+  base_org?: {
+    id: string;
+    name: string;
+    type: string;
+  };
+  dest_org?: {
+    id: string;
+    name: string;
+    type: string;
+  };
+}
+
+export interface BalanceHistoryResponse {
+  success: boolean;
+  message: string;
+  data: {
+    histories: BalanceHistoryItem[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  };
+  error?: string;
+}
+
+export interface BalanceHistoryFilters {
+  page?: number;
+  limit?: number;
+  currency_id?: string;
+}
+
+// Opening Balance Types
+export interface OpeningBalanceRequest {
+  amount: number;
+  currency_id: string;
+  description?: string;
+}

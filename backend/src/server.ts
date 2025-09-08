@@ -1,12 +1,10 @@
-import express, { RequestHandler } from "express";
+import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
 import routes from "./routes";
-import { authMiddleware } from "./middlewares/auth.middleware";
-import { auditMiddleware } from "./middlewares/audit.middleware";
 import cookieParser from "cookie-parser";
 
 // Load environment variables
@@ -22,6 +20,7 @@ const allowedOrigins = [
   "http://localhost:5174",
   "http://localhost:5175",
   "http://localhost:5176",
+  /^http:\/\/localhost:[0-9]{4}$/,
   // Add production domains here, e.g., "https://your-production-domain.com"
 ];
 
@@ -31,11 +30,15 @@ const corsConfig = {
     origin: string | undefined,
     callback: (err: Error | null, allow?: boolean) => void
   ) => {
-    // Allow requests with no origin (e.g., non-browser clients like Postman)
+    // Allow non-browser clients (e.g., Postman)
     if (!origin) return callback(null, true);
 
-    // Check if the origin is in the allowed list
-    if (allowedOrigins.includes(origin)) {
+    // Check if origin matches allowedOrigins or regex
+    const isAllowed = allowedOrigins.some((allowed) =>
+      typeof allowed === "string" ? allowed === origin : allowed.test(origin)
+    );
+
+    if (isAllowed) {
       callback(null, true);
     } else {
       callback(new Error(`CORS policy: Origin ${origin} not allowed`));
@@ -43,20 +46,20 @@ const corsConfig = {
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-  allowedHeaders: "*", // Add headers used by your app
-  optionsSuccessStatus: 200, // Ensure preflight requests return 200
+  allowedHeaders: ["Content-Type", "Authorization", "X-API-Key"], // Explicit headers
+  optionsSuccessStatus: 200,
 };
-
-// Security middleware
-app.use(helmet());
 
 // Apply CORS middleware
 app.use(cors(corsConfig));
 app.options("*", cors(corsConfig));
 
-// Handle OPTIONS preflight requests explicitly (optional, for debugging)
-app.options("*", cors(corsConfig));
-
+// Security middleware
+app.use(
+  helmet({
+    contentSecurityPolicy: false, // Disable CSP if causing issues; customize if needed
+  })
+);
 // Cookie parsing
 app.use(cookieParser());
 
@@ -80,10 +83,6 @@ app.use((req, res, next) => {
 
 // Logging middleware
 app.use(morgan("combined"));
-
-// Apply auth and audit middleware only to API routes
-app.use("/api", authMiddleware);
-app.use("/api", auditMiddleware as RequestHandler);
 
 // Health check endpoint
 app.get("/health", (req, res) => {

@@ -1,14 +1,10 @@
 import React from "react";
-import { ColumnDef } from "@tanstack/react-table";
-import { DataTable } from "./DataTable";
-import { StatusBadge } from "./StatusBadge";
-import { Button } from "./Button";
+import type { ColumnDef } from "@tanstack/react-table";
+import { DataTable } from "./ui/DataTable";
+import { StatusBadge } from "./ui/StatusBadge";
+import { Button } from "./ui/Button";
 import { formatToCurrency } from "../utils/textUtils";
-import type {
-  Transaction,
-  Status,
-  RemittanceStatus,
-} from "../types/TransactionsTypes";
+import type { Transaction } from "../types/TransactionsTypes";
 
 interface TransactionsTableProps {
   transactions: Transaction[];
@@ -17,44 +13,6 @@ interface TransactionsTableProps {
   onCancel?: (transaction: Transaction) => void;
   onReverse?: (transaction: Transaction) => void;
 }
-
-const getStatusColor = (status: Status): string => {
-  switch (status) {
-    case "PENDING_APPROVAL":
-      return "yellow";
-    case "APPROVED":
-      return "green";
-    case "PENDING":
-      return "blue";
-    case "FAILED":
-      return "red";
-    case "CANCELLED":
-      return "gray";
-    case "REJECTED":
-      return "red";
-    case "COMPLETED":
-      return "green";
-    case "REVERSED":
-      return "orange";
-    default:
-      return "gray";
-  }
-};
-
-const getRemittanceStatusColor = (status: RemittanceStatus): string => {
-  switch (status) {
-    case "PENDING":
-      return "yellow";
-    case "FAILED":
-      return "red";
-    case "REJECTED":
-      return "red";
-    case "COMPLETED":
-      return "green";
-    default:
-      return "gray";
-  }
-};
 
 export const TransactionsTable: React.FC<TransactionsTableProps> = ({
   transactions,
@@ -178,12 +136,13 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
         <div className="space-y-1">
           <StatusBadge
             status={row.original.status}
-            color={getStatusColor(row.original.status)}
+            type={"status"}
+            title="Transaction Status"
           />
           <StatusBadge
             status={row.original.remittance_status}
-            color={getRemittanceStatusColor(row.original.remittance_status)}
-            size="sm"
+            type={"status"}
+            title="Remittance Status"
           />
         </div>
       ),
@@ -248,7 +207,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
     <DataTable
       columns={columns}
       data={transactions}
-      isLoading={isLoading}
+      loading={isLoading}
       searchKey="transaction_no"
     />
   );

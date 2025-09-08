@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { Modal } from "./Modal";
-import { Button } from "./Button";
-import { StatusBadge } from "./StatusBadge";
+import { Modal } from "./ui/Modal";
+import { Button } from "./ui/Button";
+import { StatusBadge } from "./ui/StatusBadge";
 import { formatToCurrency } from "../utils/textUtils";
 import type {
   Transaction,

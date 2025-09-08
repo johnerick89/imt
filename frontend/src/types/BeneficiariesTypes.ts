@@ -3,9 +3,13 @@ import {
   CustomerType,
   IdType,
   TaxNumberType,
+  type Customer,
 } from "./CustomersTypes";
 import type { Occupation } from "./OccupationsTypes";
 import type { Industry } from "./IndustriesTypes";
+import type { Country } from "./CountriesTypes";
+import type { Organisation } from "./OrganisationsTypes";
+import type { User } from "./UsersTypes";
 
 export interface Beneficiary {
   id: string;
@@ -16,33 +20,16 @@ export interface Beneficiary {
   id_number: string;
   date_of_birth?: Date | null;
   nationality_id?: string | null;
-  nationality?: {
-    id: string;
-    name: string;
-    code: string;
-  } | null;
+  nationality?: Country | null;
   address?: string | null;
   customer_id: string;
-  customer: {
-    id: string;
-    full_name: string;
-    email?: string | null;
-  };
+  customer: Customer;
   organisation_id: string;
-  organisation: {
-    id: string;
-    name: string;
-    type: string;
-  };
+  organisation: Organisation;
   created_at: Date;
   updated_at: Date;
   created_by?: string | null;
-  created_by_user?: {
-    id: string;
-    first_name: string;
-    last_name: string;
-    email: string;
-  } | null;
+  created_by_user?: User | null;
   status: CustomerStatus;
   tax_number_type: TaxNumberType;
   tax_number: string;
@@ -51,6 +38,13 @@ export interface Beneficiary {
   occupation: Occupation;
   industry_id: string;
   industry: Industry;
+  bank_name?: string | null;
+  bank_address?: string | null;
+  bank_city?: string | null;
+  bank_state?: string | null;
+  bank_zip?: string | null;
+  bank_account_number?: string | null;
+  bank_account_name?: string | null;
 }
 
 export interface CreateBeneficiaryRequest {
@@ -72,6 +66,13 @@ export interface CreateBeneficiaryRequest {
   industry_id: string;
   residence_country_id?: string;
   incorporation_country_id?: string;
+  bank_name?: string;
+  bank_address?: string;
+  bank_city?: string;
+  bank_state?: string;
+  bank_zip?: string;
+  bank_account_number?: string;
+  bank_account_name?: string;
 }
 
 export interface UpdateBeneficiaryRequest {
@@ -92,6 +93,13 @@ export interface UpdateBeneficiaryRequest {
   residence_country_id?: string;
   incorporation_country_id?: string;
   status?: CustomerStatus;
+  bank_name?: string;
+  bank_address?: string;
+  bank_city?: string;
+  bank_state?: string;
+  bank_zip?: string;
+  bank_account_number?: string;
+  bank_account_name?: string;
 }
 
 export interface BeneficiaryFilters {
@@ -110,6 +118,10 @@ export interface BeneficiaryFilters {
   industry_id?: string;
   residence_country_id?: string;
   status?: CustomerStatus;
+  bank_name?: string;
+  email?: string;
+  phone?: string;
+  bank_account_name?: string;
 }
 
 export interface BeneficiaryListResponse {

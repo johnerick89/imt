@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { FiPlus, FiFilter, FiRefreshCw } from "react-icons/fi";
-import { Modal } from "../components/Modal";
-import { SearchableSelect } from "../components/SearchableSelect";
-import { Input } from "../components/Input";
-import { Textarea } from "../components/Textarea";
-import { FormItem } from "../components/FormItem";
-import { Button } from "../components/Button";
-import { DataTable } from "../components/DataTable";
+import { Modal } from "../components/ui/Modal";
+import { SearchableSelect } from "../components/ui/SearchableSelect";
+import { Input } from "../components/ui/Input";
+import { Textarea } from "../components/ui/Textarea";
+import { FormItem } from "../components/ui/FormItem";
+import { Button } from "../components/ui/Button";
+import { DataTable } from "../components/ui/DataTable";
 import {
   useSession,
   useCurrencies,

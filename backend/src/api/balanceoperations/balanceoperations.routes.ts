@@ -22,6 +22,13 @@ router.get(
   balanceOperationController.getOrgBalanceStats.bind(balanceOperationController)
 );
 
+router.get(
+  "/organisations/:orgId/balance-history",
+  balanceOperationController.getOrgBalanceHistory.bind(
+    balanceOperationController
+  )
+);
+
 // Till Balance Operations
 router.post(
   "/tills/:tillId/topup",
@@ -33,6 +40,13 @@ router.post(
   balanceOperationController.withdrawTill.bind(balanceOperationController)
 );
 
+router.get(
+  "/tills/:tillId/balance-history",
+  balanceOperationController.getTillBalanceHistory.bind(
+    balanceOperationController
+  )
+);
+
 // Vault Balance Operations
 router.post(
   "/vaults/:vaultId/topup",
@@ -42,6 +56,13 @@ router.post(
 router.post(
   "/vaults/:vaultId/withdraw",
   balanceOperationController.withdrawVault.bind(balanceOperationController)
+);
+
+router.get(
+  "/vaults/:vaultId/balance-history",
+  balanceOperationController.getVaultBalanceHistory.bind(
+    balanceOperationController
+  )
 );
 
 export default router;

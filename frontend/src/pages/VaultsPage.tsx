@@ -10,7 +10,7 @@ import {
 } from "../hooks/useVaults";
 import VaultsTable from "../components/VaultsTable";
 import VaultForm from "../components/VaultForm";
-import { Modal } from "../components/Modal";
+import { Modal } from "../components/ui/Modal";
 import { ConfirmModal } from "../components/ConfirmModal";
 import type {
   Vault,

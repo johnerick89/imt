@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiPlus, FiSearch } from "react-icons/fi";
-import { Input } from "../components/Input";
-import { SearchableSelect } from "../components/SearchableSelect";
-import { Modal } from "../components/Modal";
+import { Input } from "../components/ui/Input";
+import { SearchableSelect } from "../components/ui/SearchableSelect";
+import { Modal } from "../components/ui/Modal";
 import { ConfirmModal } from "../components/ConfirmModal";
 import TillsTable from "../components/TillsTable";
 import TillForm from "../components/TillForm";
@@ -21,6 +21,7 @@ import {
   useVaults,
   useCurrencies,
 } from "../hooks";
+import { useTopupTill, useWithdrawTill } from "../hooks/useBalanceOperations";
 import { TillStatus } from "../types/TillsTypes";
 import type {
   Till,
@@ -28,6 +29,10 @@ import type {
   UpdateTillRequest,
   TillFilters,
 } from "../types/TillsTypes";
+import type { TillTopupRequest } from "../types/BalanceOperationsTypes";
+import { Button } from "../components/ui/Button";
+import { FormItem } from "../components/ui/FormItem";
+import { Textarea } from "../components/ui/Textarea";
 
 const TillsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -48,6 +53,8 @@ const TillsPage: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showTopupModal, setShowTopupModal] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [selectedTill, setSelectedTill] = useState<Till | null>(null);
 
   // Data fetching
@@ -67,6 +74,8 @@ const TillsPage: React.FC = () => {
   const closeTillMutation = useCloseTill();
   const blockTillMutation = useBlockTill();
   const deactivateTillMutation = useDeactivateTill();
+  const topupTillMutation = useTopupTill();
+  const withdrawTillMutation = useWithdrawTill();
 
   const tills = tillsData?.data?.tills || [];
   const pagination = tillsData?.data?.pagination;
@@ -197,6 +206,29 @@ const TillsPage: React.FC = () => {
     }
   };
 
+  // Balance operation handlers
+  const handleTopupTill = async (data: TillTopupRequest) => {
+    if (!selectedTill) return;
+    try {
+      await topupTillMutation.mutateAsync({ tillId: selectedTill.id, data });
+      setShowTopupModal(false);
+      setSelectedTill(null);
+    } catch (error) {
+      console.error("Error topping up till:", error);
+    }
+  };
+
+  const handleWithdrawTill = async (data: TillTopupRequest) => {
+    if (!selectedTill) return;
+    try {
+      await withdrawTillMutation.mutateAsync({ tillId: selectedTill.id, data });
+      setShowWithdrawModal(false);
+      setSelectedTill(null);
+    } catch (error) {
+      console.error("Error withdrawing from till:", error);
+    }
+  };
+
   const openCreateModal = () => setShowCreateModal(true);
   const openEditModal = (till: Till) => {
     setSelectedTill(till);
@@ -314,6 +346,14 @@ const TillsPage: React.FC = () => {
           onClose={handleCloseTill}
           onBlock={handleBlockTill}
           onDeactivate={handleDeactivateTill}
+          onTopup={(till) => {
+            setSelectedTill(till);
+            setShowTopupModal(true);
+          }}
+          onWithdraw={(till) => {
+            setSelectedTill(till);
+            setShowWithdrawModal(true);
+          }}
         />
 
         {/* Pagination */}
@@ -391,6 +431,138 @@ const TillsPage: React.FC = () => {
         message={`Are you sure you want to delete "${selectedTill?.name}"? This action cannot be undone.`}
         isLoading={isAnyMutationLoading}
       />
+
+      {/* Topup Modal */}
+      <Modal
+        isOpen={showTopupModal}
+        onClose={() => setShowTopupModal(false)}
+        title="Topup Till"
+        size="md"
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.currentTarget);
+            const data: TillTopupRequest = {
+              amount: parseFloat(formData.get("amount") as string),
+              source_type: "VAULT",
+              source_id: formData.get("source_id") as string,
+              description: formData.get("description") as string,
+            };
+            handleTopupTill(data);
+          }}
+          className="space-y-4"
+        >
+          <FormItem label="Amount" required>
+            <Input
+              name="amount"
+              type="number"
+              step="0.01"
+              placeholder="Enter topup amount"
+              required
+            />
+          </FormItem>
+
+          <FormItem label="Source Vault" required>
+            <SearchableSelect
+              name="source_id"
+              placeholder="Select vault"
+              options={vaults.map((vault) => ({
+                value: vault.id,
+                label: vault.name,
+              }))}
+              required
+            />
+          </FormItem>
+
+          <FormItem label="Description">
+            <Textarea
+              name="description"
+              placeholder="Enter description (optional)"
+              rows={3}
+            />
+          </FormItem>
+
+          <div className="flex justify-end space-x-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowTopupModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={topupTillMutation.isPending}>
+              Topup Till
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Withdraw Modal */}
+      <Modal
+        isOpen={showWithdrawModal}
+        onClose={() => setShowWithdrawModal(false)}
+        title="Withdraw from Till"
+        size="md"
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.currentTarget);
+            const data: TillTopupRequest = {
+              amount: parseFloat(formData.get("amount") as string),
+              source_type: "VAULT",
+              source_id: formData.get("source_id") as string,
+              description: formData.get("description") as string,
+            };
+            handleWithdrawTill(data);
+          }}
+          className="space-y-4"
+        >
+          <FormItem label="Amount" required>
+            <Input
+              name="amount"
+              type="number"
+              step="0.01"
+              placeholder="Enter withdrawal amount"
+              required
+            />
+          </FormItem>
+
+          <FormItem label="Destination Vault" required>
+            <SearchableSelect
+              name="source_id"
+              placeholder="Select vault"
+              options={vaults.map((vault) => ({
+                value: vault.id,
+                label: vault.name,
+              }))}
+              required
+            />
+          </FormItem>
+
+          <FormItem label="Description">
+            <Textarea
+              name="description"
+              placeholder="Enter description (optional)"
+              rows={3}
+            />
+          </FormItem>
+
+          <div className="flex justify-end space-x-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowWithdrawModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={withdrawTillMutation.isPending}>
+              Withdraw from Till
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

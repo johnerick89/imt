@@ -7,13 +7,13 @@ import {
   useToggleOrganisationStatus,
   useDeleteOrganisation,
 } from "../hooks";
-import { DataTable } from "../components/DataTable";
-import { StatusBadge } from "../components/StatusBadge";
-import { ActionCell } from "../components/ActionCell";
+import { DataTable } from "../components/ui/DataTable";
+import { StatusBadge } from "../components/ui/StatusBadge";
+import { ActionCell } from "../components/ui/ActionCell";
 import { ConfirmModal } from "../components/ConfirmModal";
-import { Modal } from "../components/Modal";
-import { Input } from "../components/Input";
-import { Select } from "../components/Select";
+import { Modal } from "../components/ui/Modal";
+import { Input } from "../components/ui/Input";
+import { Select } from "../components/ui/Select";
 import OrganisationForm from "../components/OrganisationForm";
 import type {
   Organisation,

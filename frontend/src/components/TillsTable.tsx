@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
-import { DataTable } from "./DataTable";
-import { StatusBadge } from "./StatusBadge";
+import { DataTable } from "./ui/DataTable";
+import { StatusBadge } from "./ui/StatusBadge";
 import TillActionCell from "./TillActionCell";
 import type { Till } from "../types/TillsTypes";
 
@@ -15,6 +15,8 @@ interface TillsTableProps {
   onClose: (till: Till) => void;
   onBlock: (till: Till) => void;
   onDeactivate: (till: Till) => void;
+  onTopup: (till: Till) => void;
+  onWithdraw: (till: Till) => void;
 }
 
 const TillsTable: React.FC<TillsTableProps> = ({
@@ -27,6 +29,8 @@ const TillsTable: React.FC<TillsTableProps> = ({
   onClose,
   onBlock,
   onDeactivate,
+  onTopup,
+  onWithdraw,
 }) => {
   const columns = useMemo<ColumnDef<Till>[]>(
     () => [
@@ -113,11 +117,23 @@ const TillsTable: React.FC<TillsTableProps> = ({
             onClose={onClose}
             onBlock={onBlock}
             onDeactivate={onDeactivate}
+            onTopup={onTopup}
+            onWithdraw={onWithdraw}
           />
         ),
       },
     ],
-    [onView, onEdit, onDelete, onOpen, onClose, onBlock, onDeactivate]
+    [
+      onView,
+      onEdit,
+      onDelete,
+      onOpen,
+      onClose,
+      onBlock,
+      onDeactivate,
+      onTopup,
+      onWithdraw,
+    ]
   );
 
   return (

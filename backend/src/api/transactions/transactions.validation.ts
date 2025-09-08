@@ -12,38 +12,20 @@ export const createOutboundTransactionSchema = z.object({
   corridor_id: z.string().uuid("Invalid corridor ID"),
   till_id: z.string().uuid("Invalid till ID"),
   customer_id: z.string().uuid("Invalid customer ID"),
-  origin_amount: z
-    .string()
-    .transform((val) => parseFloat(val))
-    .pipe(z.number().positive("Origin amount must be positive")),
+  origin_amount: z.number().positive("Origin amount must be positive"),
   origin_channel_id: z.string().uuid("Invalid origin channel ID"),
   origin_currency_id: z.string().uuid("Invalid origin currency ID"),
   beneficiary_id: z.string().uuid("Invalid beneficiary ID"),
-  dest_amount: z
-    .string()
-    .transform((val) => parseFloat(val))
-    .pipe(z.number().positive("Destination amount must be positive")),
+  dest_amount: z.number().positive("Destination amount must be positive"),
   dest_channel_id: z.string().uuid("Invalid destination channel ID"),
   dest_currency_id: z.string().uuid("Invalid destination currency ID"),
-  rate: z
-    .string()
-    .transform((val) => parseFloat(val))
-    .pipe(z.number().positive("Rate must be positive")),
+  rate: z.number().positive("Rate must be positive"),
   internal_exchange_rate: z
-    .string()
-    .transform((val) => parseFloat(val))
-    .pipe(z.number().positive("Internal exchange rate must be positive"))
+    .number()
+    .positive("Internal exchange rate must be positive")
     .optional(),
-  inflation: z
-    .string()
-    .transform((val) => parseFloat(val))
-    .pipe(z.number().min(0, "Inflation cannot be negative"))
-    .optional(),
-  markup: z
-    .string()
-    .transform((val) => parseFloat(val))
-    .pipe(z.number().min(0, "Markup cannot be negative"))
-    .optional(),
+  inflation: z.number().min(0, "Inflation cannot be negative").optional(),
+  markup: z.number().min(0, "Markup cannot be negative").optional(),
   purpose: z
     .string()
     .max(256, "Purpose must be less than 256 characters")
@@ -68,6 +50,61 @@ export const createOutboundTransactionSchema = z.object({
   destination_organisation_id: z
     .string()
     .uuid("Invalid destination organisation ID")
+    .optional(),
+  origin_country_id: z.string().uuid("Invalid origin country ID").optional(),
+  destination_country_id: z
+    .string()
+    .uuid("Invalid destination country ID")
+    .optional(),
+});
+
+// Create Inbound Transaction Schema
+export const createInboundTransactionSchema = z.object({
+  corridor_id: z.string().uuid("Invalid corridor ID"),
+  customer_id: z.string().uuid("Invalid customer ID"),
+  origin_amount: z.number().positive("Origin amount must be positive"),
+  origin_channel_id: z.string().uuid("Invalid origin channel ID"),
+  origin_currency_id: z.string().uuid("Invalid origin currency ID"),
+  beneficiary_id: z.string().uuid("Invalid beneficiary ID"),
+  dest_amount: z.number().positive("Destination amount must be positive"),
+  dest_channel_id: z.string().uuid("Invalid destination channel ID"),
+  dest_currency_id: z.string().uuid("Invalid destination currency ID"),
+  rate: z.number().positive("Rate must be positive"),
+  internal_exchange_rate: z
+    .number()
+    .positive("Internal exchange rate must be positive")
+    .optional(),
+  inflation: z.number().min(0, "Inflation cannot be negative").optional(),
+  markup: z.number().min(0, "Markup cannot be negative").optional(),
+  purpose: z
+    .string()
+    .max(256, "Purpose must be less than 256 characters")
+    .optional(),
+  funds_source: z
+    .string()
+    .max(256, "Funds source must be less than 256 characters")
+    .optional(),
+  relationship: z
+    .string()
+    .max(256, "Relationship must be less than 256 characters")
+    .optional(),
+  remarks: z
+    .string()
+    .max(1024, "Remarks must be less than 1024 characters")
+    .optional(),
+  exchange_rate_id: z.string().uuid("Invalid exchange rate ID").optional(),
+  external_exchange_rate_id: z
+    .string()
+    .uuid("Invalid external exchange rate ID")
+    .optional(),
+  destination_organisation_id: z
+    .string()
+    .uuid("Invalid destination organisation ID")
+    .optional(),
+  origin_country_id: z.string().uuid("Invalid origin country ID").optional(),
+  destination_country_id: z
+    .string()
+    .uuid("Invalid destination country ID")
     .optional(),
 });
 

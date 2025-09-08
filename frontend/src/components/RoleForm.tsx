@@ -1,8 +1,8 @@
 import React from "react";
 import { useForm, Controller } from "react-hook-form";
-import { FormItem } from "./FormItem";
-import { Input } from "./Input";
-import { Textarea } from "./Textarea";
+import { FormItem } from "./ui/FormItem";
+import { Input } from "./ui/Input";
+import { Textarea } from "./ui/Textarea";
 import type {
   CreateRoleRequest,
   UpdateRoleRequest,

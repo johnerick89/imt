@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { FiPlus, FiSearch } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
-import { Input } from "../components/Input";
-import { SearchableSelect } from "../components/SearchableSelect";
-import { Modal } from "../components/Modal";
+import { Input } from "../components/ui/Input";
+import { SearchableSelect } from "../components/ui/SearchableSelect";
+import { Modal } from "../components/ui/Modal";
 import { ConfirmModal } from "../components/ConfirmModal";
 import ExchangeRatesTable from "../components/ExchangeRatesTable";
 import ExchangeRateForm from "../components/ExchangeRateForm";

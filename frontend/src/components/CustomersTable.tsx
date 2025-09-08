@@ -1,5 +1,5 @@
 import React from "react";
-import { DataTable } from "./DataTable";
+import { DataTable } from "./ui/DataTable";
 import type { Customer } from "../types/CustomersTypes";
 import CustomerActionCell from "./CustomerActionCell";
 

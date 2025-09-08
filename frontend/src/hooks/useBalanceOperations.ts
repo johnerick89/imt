@@ -2,9 +2,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { BalanceOperationsService } from "../services/BalanceOperationsService";
 import type {
   OrgBalanceFilters,
+  BalanceHistoryFilters,
   PrefundRequest,
   TillTopupRequest,
   VaultTopupRequest,
+  OpeningBalanceRequest,
 } from "../types/BalanceOperationsTypes";
 
 export const useOrgBalances = (filters: OrgBalanceFilters) => {
@@ -103,6 +105,66 @@ export const useWithdrawVault = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vaults"] });
       queryClient.invalidateQueries({ queryKey: ["bankAccounts"] });
+    },
+  });
+};
+
+// Balance History Hooks
+export const useOrgBalanceHistory = (
+  orgId: string,
+  filters: BalanceHistoryFilters = {}
+) => {
+  return useQuery({
+    queryKey: ["orgBalanceHistory", orgId, filters],
+    queryFn: () =>
+      BalanceOperationsService.getOrgBalanceHistory(orgId, filters),
+    enabled: !!orgId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+export const useTillBalanceHistory = (
+  tillId: string,
+  filters: BalanceHistoryFilters = {}
+) => {
+  return useQuery({
+    queryKey: ["tillBalanceHistory", tillId, filters],
+    queryFn: () =>
+      BalanceOperationsService.getTillBalanceHistory(tillId, filters),
+    enabled: !!tillId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+export const useVaultBalanceHistory = (
+  vaultId: string,
+  filters: BalanceHistoryFilters = {}
+) => {
+  return useQuery({
+    queryKey: ["vaultBalanceHistory", vaultId, filters],
+    queryFn: () =>
+      BalanceOperationsService.getVaultBalanceHistory(vaultId, filters),
+    enabled: !!vaultId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+// Opening Balance Hook
+export const useSetOpeningBalance = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      orgId,
+      data,
+    }: {
+      orgId: string;
+      data: OpeningBalanceRequest;
+    }) => BalanceOperationsService.setOpeningBalance(orgId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["orgBalances"] });
+      queryClient.invalidateQueries({ queryKey: ["orgBalanceStats"] });
+      queryClient.invalidateQueries({ queryKey: ["organisations"] });
     },
   });
 };

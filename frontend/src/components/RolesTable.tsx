@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { DataTable } from "./DataTable";
+import { DataTable } from "./ui/DataTable";
 import RoleActionCell from "./RoleActionCell";
 import type { Role } from "../types/RolesTypes";
 import type { ColumnDef } from "@tanstack/react-table";

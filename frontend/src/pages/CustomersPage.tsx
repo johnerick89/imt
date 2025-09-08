@@ -14,7 +14,7 @@ import type {
 } from "../types/CustomersTypes";
 import CustomersTable from "../components/CustomersTable";
 import CustomerForm from "../components/CustomerForm";
-import { Modal } from "../components/Modal";
+import { Modal } from "../components/ui/Modal";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { FiPlus } from "react-icons/fi";
 

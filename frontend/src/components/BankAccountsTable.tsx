@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
-import { DataTable } from "./DataTable";
+import { DataTable } from "./ui/DataTable";
 import BankAccountActionCell from "./BankAccountActionCell";
 import { formatToCurrency } from "../utils/textUtils";
 import type { BankAccount } from "../types/BankAccountsTypes";

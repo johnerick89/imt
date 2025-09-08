@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
-import { Modal } from "./Modal";
-import { FormItem } from "./FormItem";
-import { SearchableSelect } from "./SearchableSelect";
+import { Modal } from "./ui/Modal";
+import { FormItem } from "./ui/FormItem";
+import { SearchableSelect } from "./ui/SearchableSelect";
 import { useOrganisations } from "../hooks";
 import type { GenerateAccountsRequest } from "../types/GlAccountsTypes";
 

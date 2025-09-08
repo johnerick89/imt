@@ -1,21 +1,21 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
-import { Modal } from "./Modal";
-import { FormItem } from "./FormItem";
-import { Input } from "./Input";
-import { SearchableSelect } from "./SearchableSelect";
-import { Textarea } from "./Textarea";
-import { Button } from "./Button";
+import { Modal } from "./ui/Modal";
+import { FormItem } from "./ui/FormItem";
+import { Input } from "./ui/Input";
+import { SearchableSelect } from "./ui/SearchableSelect";
+import { Textarea } from "./ui/Textarea";
+import { Button } from "./ui/Button";
 import { useCorridors } from "../hooks/useCorridors";
-import { useTills } from "../hooks/useTills";
+import { useUserTills } from "../hooks/useTills";
 import { useCustomers } from "../hooks/useCustomers";
 import { useBeneficiaries } from "../hooks/useBeneficiaries";
-import { useCurrencies } from "../hooks/useCurrencies";
 import { useOrganisations } from "../hooks/useOrganisations";
 import { useTransactionChannels } from "../hooks/useTransactionChannels";
 import { useExchangeRates } from "../hooks/useExchangeRates";
-import { formatToCurrency } from "../utils/textUtils";
+import { useCharges } from "../hooks/useCharges";
 import type { CreateOutboundTransactionRequest } from "../types/TransactionsTypes";
+import type { UserTill } from "../types/TillsTypes";
 
 interface CreateTransactionFormProps {
   isOpen: boolean;
@@ -47,6 +47,8 @@ interface FormData {
   exchange_rate_id?: string;
   external_exchange_rate_id?: string;
   destination_organisation_id?: string;
+  origin_country_id?: string;
+  destination_country_id?: string;
 }
 
 export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
@@ -56,11 +58,50 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
   isLoading = false,
   organisationId,
 }) => {
-  const [selectedCustomer, setSelectedCustomer] = useState<string>("");
-  const [selectedOriginCurrency, setSelectedOriginCurrency] =
-    useState<string>("");
-  const [selectedDestCurrency, setSelectedDestCurrency] = useState<string>("");
-  const [selectedRate, setSelectedRate] = useState<string>("");
+  // Fetch data
+  const { data: userTillsData } = useUserTills({
+    organisation_id: organisationId,
+  });
+  const { data: customersData } = useCustomers({
+    organisation_id: organisationId,
+  });
+  const { data: organisationsData } = useOrganisations();
+  const { data: channelsData } = useTransactionChannels();
+  const { data: exchangeRatesData } = useExchangeRates({
+    organisation_id: organisationId,
+  });
+  const { data: chargesData } = useCharges({
+    origin_organisation_id: organisationId,
+  });
+
+  const customers = useMemo(
+    () => customersData?.data?.customers || [],
+    [customersData]
+  );
+  const organisations = useMemo(
+    () => organisationsData?.data?.organisations || [],
+    [organisationsData]
+  );
+  const channels = useMemo(
+    () => channelsData?.data?.channels || [],
+    [channelsData]
+  );
+  const exchangeRates = useMemo(
+    () => exchangeRatesData?.data?.exchangeRates || [],
+    [exchangeRatesData]
+  );
+  const charges = useMemo(
+    () => chargesData?.data?.charges || [],
+    [chargesData]
+  );
+  const currentOrganisation = organisationsData?.data?.organisations.find(
+    (org) => org.id === organisationId
+  );
+
+  // Get current user's open till
+  const currentUserTill = userTillsData?.data?.userTills?.find(
+    (userTill: UserTill) => userTill.status === "OPEN"
+  );
 
   const {
     control,
@@ -72,19 +113,19 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
   } = useForm<FormData>({
     defaultValues: {
       corridor_id: "",
-      till_id: "",
+      till_id: currentUserTill?.till_id || "",
       customer_id: "",
       origin_amount: "",
       origin_channel_id: "",
-      origin_currency_id: "",
+      origin_currency_id: currentOrganisation?.base_currency_id || "",
       beneficiary_id: "",
       dest_amount: "",
       dest_channel_id: "",
       dest_currency_id: "",
       rate: "",
       internal_exchange_rate: "",
-      inflation: "",
-      markup: "",
+      inflation: "0",
+      markup: "0",
       purpose: "",
       funds_source: "",
       relationship: "",
@@ -92,22 +133,9 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
       exchange_rate_id: "",
       external_exchange_rate_id: "",
       destination_organisation_id: "",
+      origin_country_id: currentOrganisation?.country_id || "",
+      destination_country_id: "",
     },
-  });
-
-  // Fetch data
-  const { data: corridorsData } = useCorridors({
-    organisation_id: organisationId,
-  });
-  const { data: tillsData } = useTills({ organisation_id: organisationId });
-  const { data: customersData } = useCustomers({
-    organisation_id: organisationId,
-  });
-  const { data: currenciesData } = useCurrencies();
-  const { data: organisationsData } = useOrganisations();
-  const { data: channelsData } = useTransactionChannels();
-  const { data: exchangeRatesData } = useExchangeRates({
-    organisation_id: organisationId,
   });
 
   // Watch for customer changes to fetch beneficiaries
@@ -115,22 +143,112 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
   const { data: beneficiariesData } = useBeneficiaries({
     customer_id: watchedCustomerId,
   });
+  const beneficiaries = beneficiariesData?.data?.beneficiaries || [];
 
   // Watch for currency changes to calculate amounts
   const watchedOriginAmount = watch("origin_amount");
   const watchedRate = watch("rate");
+  const watchedCorridorId = watch("corridor_id");
+  const watchedOriginCurrencyId = watch("origin_currency_id");
+  const watchedDestCurrencyId = watch("dest_currency_id");
 
-  // Calculate destination amount when origin amount or rate changes
+  //watch for organisation (partner/agency) changes
+  const watchedOrganisationId = watch("destination_organisation_id");
+  const { data: corridorsData } = useCorridors({
+    organisation_id: watchedOrganisationId,
+  });
+  const corridors = useMemo(
+    () => corridorsData?.data?.corridors || [],
+    [corridorsData]
+  );
+
+  // Watch for corridor changes to auto-populate exchange rates
   useEffect(() => {
-    if (watchedOriginAmount && watchedRate) {
-      const originAmount = parseFloat(watchedOriginAmount);
-      const rate = parseFloat(watchedRate);
-      if (!isNaN(originAmount) && !isNaN(rate)) {
-        const destAmount = originAmount * rate;
-        setValue("dest_amount", destAmount.toFixed(2));
+    if (watchedCorridorId && currentOrganisation) {
+      const selectedCorridor = corridors.find(
+        (c) => c.id === watchedCorridorId
+      );
+      if (selectedCorridor) {
+        // Find active exchange rate
+        const activeExchangeRate = exchangeRates.find(
+          (rate) =>
+            rate.from_currency_id === currentOrganisation.base_currency_id &&
+            rate.to_currency_id === selectedCorridor.base_currency_id &&
+            rate.origin_country_id === selectedCorridor.base_country_id &&
+            rate.destination_country_id ===
+              selectedCorridor.destination_country_id &&
+            ["ACTIVE", "APPROVED"].includes(rate.status)
+        );
+
+        if (activeExchangeRate) {
+          setValue("rate", activeExchangeRate.exchange_rate.toString());
+          setValue(
+            "internal_exchange_rate",
+            activeExchangeRate.exchange_rate.toString()
+          );
+          setValue("exchange_rate_id", activeExchangeRate.id);
+        }
       }
     }
-  }, [watchedOriginAmount, watchedRate, setValue]);
+  }, [
+    watchedCorridorId,
+    corridors,
+    exchangeRates,
+    currentOrganisation,
+    setValue,
+  ]);
+
+  // Calculate charges and destination amount
+  const calculateChargesAndDestinationAmount = () => {
+    if (
+      !watchedOriginAmount ||
+      !watchedOriginCurrencyId ||
+      !watchedDestCurrencyId
+    ) {
+      return { totalCharges: 0, destinationAmount: 0 };
+    }
+
+    const originAmount = parseFloat(watchedOriginAmount);
+    if (isNaN(originAmount)) return { totalCharges: 0, destinationAmount: 0 };
+
+    // Calculate charges in origin currency
+    let totalCharges = 0;
+    const applicableCharges = charges.filter(
+      (charge) =>
+        charge.status === "ACTIVE" &&
+        charge.direction === "OUTBOUND" &&
+        (charge.origin_organisation_id === organisationId ||
+          !charge.origin_organisation_id)
+    );
+
+    applicableCharges.forEach((charge) => {
+      if (charge.application_method === "PERCENTAGE") {
+        const chargeAmount = (originAmount * charge.rate) / 100;
+        totalCharges += chargeAmount;
+      } else {
+        totalCharges += charge.rate;
+      }
+    });
+
+    // Calculate net amount in origin currency
+    const netAmount = originAmount - totalCharges;
+
+    // Convert to destination currency using exchange rate
+    const rate = parseFloat(watchedRate) || 1;
+    const destinationAmount = netAmount * rate;
+
+    return { totalCharges, destinationAmount };
+  };
+
+  const { totalCharges, destinationAmount } =
+    calculateChargesAndDestinationAmount();
+
+  // Update destination amount when calculations change
+  useEffect(() => {
+    if (destinationAmount > 0) {
+      setValue("dest_amount", destinationAmount.toFixed(2));
+    }
+  }, [destinationAmount, setValue]);
 
   const handleFormSubmit = (data: FormData) => {
     const submitData: CreateOutboundTransactionRequest = {
@@ -148,8 +266,8 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
       internal_exchange_rate: data.internal_exchange_rate
         ? parseFloat(data.internal_exchange_rate)
         : undefined,
-      inflation: data.inflation ? parseFloat(data.inflation) : undefined,
-      markup: data.markup ? parseFloat(data.markup) : undefined,
+      inflation: 0,
+      markup: 0,
       purpose: data.purpose || undefined,
       funds_source: data.funds_source || undefined,
       relationship: data.relationship || undefined,
@@ -158,6 +276,8 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
       external_exchange_rate_id: data.external_exchange_rate_id || undefined,
       destination_organisation_id:
         data.destination_organisation_id || undefined,
+      origin_country_id: data.origin_country_id || undefined,
+      destination_country_id: data.destination_country_id || undefined,
     };
 
     onSubmit(submitData);
@@ -165,21 +285,8 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
 
   const handleClose = () => {
     reset();
-    setSelectedCustomer("");
-    setSelectedOriginCurrency("");
-    setSelectedDestCurrency("");
-    setSelectedRate("");
     onClose();
   };
-
-  const corridors = corridorsData?.data?.corridors || [];
-  const tills = tillsData?.data?.tills || [];
-  const customers = customersData?.data?.customers || [];
-  const beneficiaries = beneficiariesData?.data?.beneficiaries || [];
-  const currencies = currenciesData?.data?.currencies || [];
-  const organisations = organisationsData?.data?.organisations || [];
-  const channels = channelsData?.data?.channels || [];
-  const exchangeRates = exchangeRatesData?.data?.exchangeRates || [];
 
   return (
     <Modal
@@ -192,50 +299,9 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
         {/* Transaction Details */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormItem
-            label="Corridor"
-            error={errors.corridor_id?.message}
-            required
-          >
-            <Controller
-              name="corridor_id"
-              control={control}
-              rules={{ required: "Corridor is required" }}
-              render={({ field }) => (
-                <SearchableSelect
-                  options={corridors.map((corridor) => ({
-                    value: corridor.id,
-                    label: `${corridor.name} (${corridor.base_country.country_code} → ${corridor.destination_country.country_code})`,
-                  }))}
-                  value={field.value}
-                  onChange={field.onChange}
-                  placeholder="Select corridor..."
-                />
-              )}
-            />
-          </FormItem>
-
-          <FormItem label="Till" error={errors.till_id?.message} required>
-            <Controller
-              name="till_id"
-              control={control}
-              rules={{ required: "Till is required" }}
-              render={({ field }) => (
-                <SearchableSelect
-                  options={tills.map((till) => ({
-                    value: till.id,
-                    label: till.name,
-                  }))}
-                  value={field.value}
-                  onChange={field.onChange}
-                  placeholder="Select till..."
-                />
-              )}
-            />
-          </FormItem>
-
-          <FormItem
             label="Customer (Sender)"
-            error={errors.customer_id?.message}
+            invalid={!!errors.customer_id}
+            errorMessage={errors.customer_id?.message}
             required
           >
             <Controller
@@ -251,8 +317,9 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
                   value={field.value}
                   onChange={(value) => {
                     field.onChange(value);
-                    setSelectedCustomer(value);
                     setValue("beneficiary_id", ""); // Reset beneficiary when customer changes
+                    setValue("destination_organisation_id", ""); // Reset partner/agency when customer changes
+                    setValue("corridor_id", ""); // Reset corridor when customer changes
                   }}
                   placeholder="Select customer..."
                 />
@@ -262,7 +329,8 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
 
           <FormItem
             label="Beneficiary"
-            error={errors.beneficiary_id?.message}
+            invalid={!!errors.beneficiary_id}
+            errorMessage={errors.beneficiary_id?.message}
             required
           >
             <Controller
@@ -273,12 +341,125 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
                 <SearchableSelect
                   options={beneficiaries.map((beneficiary) => ({
                     value: beneficiary.id,
-                    label: `${beneficiary.name} (${beneficiary.bank_name})`,
+                    label: `${beneficiary.name} (${beneficiary?.bank_name})`,
                   }))}
                   value={field.value}
-                  onChange={field.onChange}
+                  onChange={(value) => {
+                    field.onChange(value);
+                    setValue("destination_organisation_id", ""); // Reset partner/agency when beneficiary changes
+                    setValue("corridor_id", ""); // Reset corridor when beneficiary changes
+                  }}
                   placeholder="Select beneficiary..."
                   disabled={!watchedCustomerId}
+                />
+              )}
+            />
+          </FormItem>
+
+          <FormItem
+            label="Partner/Agency"
+            invalid={!!errors.destination_organisation_id}
+            errorMessage={errors.destination_organisation_id?.message}
+            required
+          >
+            <Controller
+              name="destination_organisation_id"
+              control={control}
+              rules={{ required: "Partner/Agency is required" }}
+              render={({ field }) => (
+                <SearchableSelect
+                  options={organisations
+                    .filter((org) => org.id !== organisationId)
+                    .map((org) => ({
+                      value: org.id,
+                      label: `${org.name} (${org.type})`,
+                    }))}
+                  value={field.value}
+                  onChange={(value) => {
+                    field.onChange(value);
+                    setValue("corridor_id", ""); // Reset corridor when partner/agency changes
+                  }}
+                  placeholder="Select partner/agency..."
+                  disabled={!watchedCustomerId || !watch("beneficiary_id")}
+                />
+              )}
+            />
+          </FormItem>
+
+          <FormItem
+            label="Corridor"
+            invalid={!!errors.corridor_id}
+            errorMessage={errors.corridor_id?.message}
+            required
+          >
+            <Controller
+              name="corridor_id"
+              control={control}
+              rules={{ required: "Corridor is required" }}
+              render={({ field }) => (
+                <SearchableSelect
+                  options={corridors.map((corridor) => ({
+                    value: corridor.id,
+                    label: `${corridor.name} (${corridor?.base_country?.code} → ${corridor?.destination_country?.code})`,
+                  }))}
+                  value={field.value}
+                  onChange={(value) => {
+                    field.onChange(value);
+                    // Auto-populate fields based on corridor selection
+                    const selectedCorridor = corridors.find(
+                      (c) => c.id === value
+                    );
+                    if (selectedCorridor) {
+                      setValue(
+                        "origin_country_id",
+                        selectedCorridor.base_country_id
+                      );
+                      setValue(
+                        "destination_country_id",
+                        selectedCorridor.destination_country_id
+                      );
+                      setValue(
+                        "dest_currency_id",
+                        selectedCorridor.base_currency_id
+                      );
+                      setValue(
+                        "origin_currency_id",
+                        currentOrganisation?.base_currency_id || ""
+                      );
+
+                      // Auto-populate exchange rate
+                      const activeExchangeRate = exchangeRates.find(
+                        (rate) =>
+                          rate.from_currency_id ===
+                            currentOrganisation?.base_currency_id &&
+                          rate.to_currency_id ===
+                            selectedCorridor.base_currency_id &&
+                          rate.origin_country_id ===
+                            selectedCorridor.base_country_id &&
+                          rate.destination_country_id ===
+                            selectedCorridor.destination_country_id &&
+                          ["ACTIVE", "APPROVED"].includes(rate.status)
+                      );
+
+                      if (activeExchangeRate) {
+                        setValue(
+                          "rate",
+                          activeExchangeRate.exchange_rate.toString()
+                        );
+                        setValue("exchange_rate_id", activeExchangeRate.id);
+                        setValue(
+                          "internal_exchange_rate",
+                          activeExchangeRate.exchange_rate.toString()
+                        );
+                      }
+                    }
+                  }}
+                  placeholder="Select corridor..."
+                  disabled={
+                    !watchedCustomerId ||
+                    !watch("beneficiary_id") ||
+                    !watch("destination_organisation_id")
+                  }
                 />
               )}
             />
@@ -289,7 +470,8 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormItem
             label="Origin Amount"
-            error={errors.origin_amount?.message}
+            invalid={!!errors.origin_amount}
+            errorMessage={errors.origin_amount?.message}
             required
           >
             <Controller
@@ -315,32 +497,11 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
           </FormItem>
 
           <FormItem
-            label="Origin Currency"
-            error={errors.origin_currency_id?.message}
+            label="Exchange Rate"
+            invalid={!!errors.rate}
+            errorMessage={errors.rate?.message}
             required
           >
-            <Controller
-              name="origin_currency_id"
-              control={control}
-              rules={{ required: "Origin currency is required" }}
-              render={({ field }) => (
-                <SearchableSelect
-                  options={currencies.map((currency) => ({
-                    value: currency.id,
-                    label: `${currency.currency_code} - ${currency.currency_name}`,
-                  }))}
-                  value={field.value}
-                  onChange={(value) => {
-                    field.onChange(value);
-                    setSelectedOriginCurrency(value);
-                  }}
-                  placeholder="Select origin currency..."
-                />
-              )}
-            />
-          </FormItem>
-
-          <FormItem label="Exchange Rate" error={errors.rate?.message} required>
             <Controller
               name="rate"
               control={control}
@@ -365,7 +526,8 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
 
           <FormItem
             label="Destination Amount"
-            error={errors.dest_amount?.message}
+            invalid={!!errors.dest_amount}
+            errorMessage={errors.dest_amount?.message}
             required
           >
             <Controller
@@ -384,62 +546,14 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
               )}
             />
           </FormItem>
-
-          <FormItem
-            label="Destination Currency"
-            error={errors.dest_currency_id?.message}
-            required
-          >
-            <Controller
-              name="dest_currency_id"
-              control={control}
-              rules={{ required: "Destination currency is required" }}
-              render={({ field }) => (
-                <SearchableSelect
-                  options={currencies.map((currency) => ({
-                    value: currency.id,
-                    label: `${currency.currency_code} - ${currency.currency_name}`,
-                  }))}
-                  value={field.value}
-                  onChange={(value) => {
-                    field.onChange(value);
-                    setSelectedDestCurrency(value);
-                  }}
-                  placeholder="Select destination currency..."
-                />
-              )}
-            />
-          </FormItem>
-
-          <FormItem
-            label="Destination Organisation"
-            error={errors.destination_organisation_id?.message}
-          >
-            <Controller
-              name="destination_organisation_id"
-              control={control}
-              render={({ field }) => (
-                <SearchableSelect
-                  options={organisations
-                    .filter((org) => org.id !== organisationId)
-                    .map((org) => ({
-                      value: org.id,
-                      label: `${org.name} (${org.type})`,
-                    }))}
-                  value={field.value}
-                  onChange={field.onChange}
-                  placeholder="Select destination organisation..."
-                />
-              )}
-            />
-          </FormItem>
         </div>
 
         {/* Channel Details */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormItem
             label="Origin Channel"
-            error={errors.origin_channel_id?.message}
+            invalid={!!errors.origin_channel_id}
+            errorMessage={errors.origin_channel_id?.message}
             required
           >
             <Controller
@@ -462,7 +576,8 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
 
           <FormItem
             label="Destination Channel"
-            error={errors.dest_channel_id?.message}
+            invalid={!!errors.dest_channel_id}
+            errorMessage={errors.dest_channel_id?.message}
             required
           >
             <Controller
@@ -485,10 +600,11 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
         </div>
 
         {/* Additional Details */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormItem
             label="Internal Exchange Rate"
-            error={errors.internal_exchange_rate?.message}
+            invalid={!!errors.internal_exchange_rate}
+            errorMessage={errors.internal_exchange_rate?.message}
           >
             <Controller
               name="internal_exchange_rate"
@@ -499,48 +615,76 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
                   step="0.000001"
                   min="0"
                   {...field}
-                  placeholder="Enter internal rate..."
+                  placeholder="Auto-populated..."
+                  readOnly
                 />
               )}
             />
           </FormItem>
 
-          <FormItem label="Inflation (%)" error={errors.inflation?.message}>
-            <Controller
-              name="inflation"
-              control={control}
-              render={({ field }) => (
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  {...field}
-                  placeholder="Enter inflation..."
-                />
-              )}
-            />
-          </FormItem>
-
-          <FormItem label="Markup (%)" error={errors.markup?.message}>
-            <Controller
-              name="markup"
-              control={control}
-              render={({ field }) => (
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  {...field}
-                  placeholder="Enter markup..."
-                />
-              )}
-            />
-          </FormItem>
+          {/* Charges Display */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Total Charges
+            </label>
+            <div className="p-3 bg-gray-50 rounded-md">
+              <div className="text-sm text-gray-600">
+                {totalCharges > 0 ? (
+                  <>
+                    <span className="font-medium">
+                      {totalCharges.toFixed(2)}{" "}
+                      {currentOrganisation?.base_currency?.currency_code ||
+                        "USD"}
+                    </span>
+                    <span className="text-gray-500 ml-2">
+                      (
+                      {(
+                        (totalCharges /
+                          parseFloat(watchedOriginAmount || "1")) *
+                        100
+                      ).toFixed(2)}
+                      % of origin amount)
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-gray-500">No charges applicable</span>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
+
+        {/* Destination Amount Display */}
+        {destinationAmount > 0 && (
+          <div className="grid grid-cols-1 gap-6">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Net Destination Amount
+              </label>
+              <div className="p-4 bg-blue-50 rounded-md border border-blue-200">
+                <div className="text-lg font-semibold text-blue-900">
+                  {destinationAmount.toFixed(2)}{" "}
+                  {watchedDestCurrencyId
+                    ? corridors.find((c) => c.id === watchedCorridorId)
+                        ?.base_currency?.currency_code || "USD"
+                    : "USD"}
+                </div>
+                <div className="text-sm text-blue-700 mt-1">
+                  After deducting charges of {totalCharges.toFixed(2)}{" "}
+                  {currentOrganisation?.base_currency?.currency_code || "USD"}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Purpose and Source */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormItem label="Purpose" error={errors.purpose?.message}>
+          <FormItem
+            label="Purpose"
+            invalid={!!errors.purpose}
+            errorMessage={errors.purpose?.message}
+          >
             <Controller
               name="purpose"
               control={control}
@@ -550,7 +694,11 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
             />
           </FormItem>
 
-          <FormItem label="Funds Source" error={errors.funds_source?.message}>
+          <FormItem
+            label="Funds Source"
+            invalid={!!errors.funds_source}
+            errorMessage={errors.funds_source?.message}
+          >
             <Controller
               name="funds_source"
               control={control}
@@ -563,10 +711,15 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
 
         {/* Relationship and Remarks */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormItem label="Relationship" error={errors.relationship?.message}>
+          <FormItem
+            label="Relationship"
+            invalid={!!errors.relationship}
+            errorMessage={errors.relationship?.message}
+          >
             <Controller
               name="relationship"
               control={control}
+              defaultValue={"N/A"}
               render={({ field }) => (
                 <Input {...field} placeholder="Enter relationship..." />
               )}
@@ -575,7 +728,8 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
 
           <FormItem
             label="Exchange Rate Reference"
-            error={errors.exchange_rate_id?.message}
+            invalid={!!errors.exchange_rate_id}
+            errorMessage={errors.exchange_rate_id?.message}
           >
             <Controller
               name="exchange_rate_id"
@@ -584,7 +738,9 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
                 <SearchableSelect
                   options={exchangeRates.map((rate) => ({
                     value: rate.id,
-                    label: `${rate.currency_pair} - ${rate.rate}`,
+                    label: `${rate.from_currency?.currency_code || "N/A"} → ${
+                      rate.to_currency?.currency_code || "N/A"
+                    } - ${rate.exchange_rate}`,
                   }))}
                   value={field.value}
                   onChange={field.onChange}
@@ -595,7 +751,11 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
           </FormItem>
         </div>
 
-        <FormItem label="Remarks" error={errors.remarks?.message}>
+        <FormItem
+          label="Remarks"
+          invalid={!!errors.remarks}
+          errorMessage={errors.remarks?.message}
+        >
           <Controller
             name="remarks"
             control={control}

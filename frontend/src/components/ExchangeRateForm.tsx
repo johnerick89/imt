@@ -1,8 +1,8 @@
 import React from "react";
 import { useForm, Controller } from "react-hook-form";
-import { FormItem } from "./FormItem";
-import { Input } from "./Input";
-import { SearchableSelect } from "./SearchableSelect";
+import { FormItem } from "./ui/FormItem";
+import { Input } from "./ui/Input";
+import { SearchableSelect } from "./ui/SearchableSelect";
 import { useCurrencies, useCountries, useSession } from "../hooks";
 import type {
   CreateExchangeRateRequest,

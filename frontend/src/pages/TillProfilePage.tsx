@@ -8,8 +8,8 @@ import {
   FiShield,
   FiXCircle,
 } from "react-icons/fi";
-import { StatusBadge } from "../components/StatusBadge";
-import { Modal } from "../components/Modal";
+import { StatusBadge } from "../components/ui/StatusBadge";
+import { Modal } from "../components/ui/Modal";
 import { ConfirmModal } from "../components/ConfirmModal";
 import TillForm from "../components/TillForm";
 import UserTillsTable from "../components/UserTillsTable";

@@ -1,6 +1,6 @@
 import type { ColumnDef } from "@tanstack/react-table";
-import { DataTable } from "./DataTable";
-import { StatusBadge } from "./StatusBadge";
+import { DataTable } from "./ui/DataTable";
+import { StatusBadge } from "./ui/StatusBadge";
 import ChargeActionCell from "./ChargeActionCell";
 import type { Charge } from "../types/ChargesTypes";
 

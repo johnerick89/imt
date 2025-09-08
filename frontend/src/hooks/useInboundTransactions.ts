@@ -1,0 +1,101 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import InboundTransactionService from "../services/InboundTransactionService";
+import type {
+  InboundTransactionFilters,
+  ApproveTransactionRequest,
+  ReverseTransactionRequest,
+} from "../types/TransactionsTypes";
+
+const inboundTransactionService = InboundTransactionService.getInstance();
+
+// Hook to get inbound transactions
+export const useInboundTransactions = (
+  organisationId: string,
+  filters?: InboundTransactionFilters
+) => {
+  return useQuery({
+    queryKey: ["inboundTransactions", organisationId, filters],
+    queryFn: () =>
+      inboundTransactionService.getInboundTransactions(organisationId, filters),
+    enabled: !!organisationId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+// Hook to get a single inbound transaction
+export const useInboundTransaction = (transactionId: string) => {
+  return useQuery({
+    queryKey: ["inboundTransaction", transactionId],
+    queryFn: () =>
+      inboundTransactionService.getInboundTransactionById(transactionId),
+    enabled: !!transactionId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+// Hook to get inbound transaction stats
+export const useInboundTransactionStats = (organisationId: string) => {
+  return useQuery({
+    queryKey: ["inboundTransactionStats", organisationId],
+    queryFn: () =>
+      inboundTransactionService.getInboundTransactionStats(organisationId),
+    enabled: !!organisationId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+// Hook to approve an inbound transaction
+export const useApproveInboundTransaction = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      transactionId,
+      data,
+    }: {
+      transactionId: string;
+      data: ApproveTransactionRequest;
+    }) =>
+      inboundTransactionService.approveInboundTransaction(transactionId, data),
+    onSuccess: (data, variables) => {
+      // Invalidate and refetch inbound transactions
+      queryClient.invalidateQueries({
+        queryKey: ["inboundTransactions"],
+      });
+
+      // Update the specific transaction in cache
+      queryClient.setQueryData(
+        ["inboundTransaction", variables.transactionId],
+        data
+      );
+    },
+  });
+};
+
+// Hook to reverse an inbound transaction
+export const useReverseInboundTransaction = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      transactionId,
+      data,
+    }: {
+      transactionId: string;
+      data: ReverseTransactionRequest;
+    }) =>
+      inboundTransactionService.reverseInboundTransaction(transactionId, data),
+    onSuccess: (data, variables) => {
+      // Invalidate and refetch inbound transactions
+      queryClient.invalidateQueries({
+        queryKey: ["inboundTransactions"],
+      });
+
+      // Update the specific transaction in cache
+      queryClient.setQueryData(
+        ["inboundTransaction", variables.transactionId],
+        data
+      );
+    },
+  });
+};

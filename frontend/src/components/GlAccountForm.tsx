@@ -1,9 +1,9 @@
 import React from "react";
 import { useForm, Controller } from "react-hook-form";
-import { FormItem } from "./FormItem";
-import { Input } from "./Input";
-import { Select } from "./Select";
-import { SearchableSelect } from "./SearchableSelect";
+import { FormItem } from "./ui/FormItem";
+import { Input } from "./ui/Input";
+import { Select } from "./ui/Select";
+import { SearchableSelect } from "./ui/SearchableSelect";
 import { useCurrencies, useOrganisations, useBankAccounts } from "../hooks";
 import type {
   CreateGlAccountRequest,

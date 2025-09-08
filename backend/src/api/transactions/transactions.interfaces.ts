@@ -5,6 +5,18 @@ import {
   RequestStatus,
   ChargeType,
   TransactionChargeStatus,
+  TransactionParty,
+  Customer,
+  Beneficiary,
+  Till,
+  Corridor,
+  Currency,
+  ExchangeRate,
+  TransactionChannel,
+  Organisation,
+  User,
+  Charge,
+  Country,
 } from "@prisma/client";
 
 // Base Transaction Interface
@@ -46,80 +58,31 @@ export interface ITransaction {
   amount_receivable: number | null;
   origin_organisation_id: string | null;
   destination_organisation_id: string | null;
+  sender_trasaction_party_id: string | null;
+  receiver_trasaction_party_id: string | null;
+  origin_country_id: string | null;
+  destination_country_id: string | null;
 
   // Relations
-  corridor?: {
-    id: string;
-    name: string;
-    base_country: { id: string; name: string; country_code: string };
-    destination_country: { id: string; name: string; country_code: string };
-    base_currency: { id: string; currency_code: string; currency_name: string };
-  };
-  till?: {
-    id: string;
-    name: string;
-    organisation: { id: string; name: string };
-  };
-  customer?: {
-    id: string;
-    first_name: string;
-    last_name: string;
-    email: string;
-    phone: string;
-  };
-  origin_channel?: {
-    id: string;
-    name: string;
-    description: string;
-  };
-  origin_currency?: {
-    id: string;
-    currency_code: string;
-    currency_name: string;
-  };
-  beneficiary?: {
-    id: string;
-    name: string;
-    account_number: string;
-    bank_name: string;
-  };
-  dest_channel?: {
-    id: string;
-    name: string;
-    description: string;
-  };
-  dest_currency?: {
-    id: string;
-    currency_code: string;
-    currency_name: string;
-  };
-  exchange_rate?: {
-    id: string;
-    rate: number;
-    currency_pair: string;
-  };
-  external_exchange_rate?: {
-    id: string;
-    rate: number;
-    currency_pair: string;
-  };
-  created_by_user?: {
-    id: string;
-    first_name: string;
-    last_name: string;
-    email: string;
-  };
-  origin_organisation?: {
-    id: string;
-    name: string;
-    type: string;
-  };
-  destination_organisation?: {
-    id: string;
-    name: string;
-    type: string;
-  };
+  corridor?: Corridor | null;
+  till?: Till | null;
+  customer?: Customer | null;
+  origin_channel?: TransactionChannel | null;
+  origin_currency?: Currency | null;
+  beneficiary?: Beneficiary | null;
+  dest_channel?: TransactionChannel | null;
+  dest_currency?: Currency | null;
+  exchange_rate?: ExchangeRate | null;
+  external_exchange_rate?: ExchangeRate | null;
+  created_by_user?: User | null;
+  origin_organisation?: Organisation | null;
+  destination_organisation?: Organisation | null;
   transaction_charges?: ITransactionCharge[];
+  sender_trasaction_party?: TransactionParty | null;
+  receiver_trasaction_party?: TransactionParty | null;
+  origin_country?: Country | null;
+  destination_country?: Country | null;
+  transaction_parties?: TransactionParty[];
 }
 
 // Transaction Charge Interface
@@ -136,20 +99,9 @@ export interface ITransactionCharge {
   updated_at: Date | string;
   status: TransactionChargeStatus;
   organisation_id: string | null;
-
   // Relations
-  charge?: {
-    id: string;
-    name: string;
-    description: string;
-    type: ChargeType;
-    rate: number;
-    application_method: string;
-  };
-  organisation?: {
-    id: string;
-    name: string;
-  };
+  charge?: Charge | null;
+  organisation?: Organisation | null;
 }
 
 // Create Outbound Transaction Request

@@ -6,7 +6,6 @@ import { useSession } from "../hooks";
 // Page Components
 import LoginPage from "../components/LoginPage";
 import DashboardPage from "../components/Dashboard";
-import TransactionsPage from "../pages/TransactionsPage";
 import CustomersPage from "../pages/CustomersPage";
 import CustomerProfilePage from "../pages/CustomerProfilePage";
 import OrganisationsPage from "../pages/OrganisationsPage";
@@ -30,6 +29,10 @@ import BankAccountsPage from "../pages/BankAccountsPage";
 import OrganisationBalancesPage from "../pages/OrganisationBalancesPage";
 import GlAccountsPage from "../pages/GlAccountsPage";
 import GlTransactionsPage from "../pages/GlTransactionsPage";
+import OutboundTransactionsPage from "../pages/OutboundTransactionsPage";
+import InboundTransactionsPage from "../pages/InboundTransactionsPage";
+import ChargesPaymentsPage from "../pages/ChargesPaymentsPage";
+import ChargesPaymentDetailsPage from "../pages/ChargesPaymentDetailsPage";
 
 // Public Route Component (redirects to dashboard if already authenticated)
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -86,24 +89,21 @@ const AppRoutes: React.FC = () => {
         <Route path="dashboard" element={<DashboardPage />} />
 
         {/* Transactions */}
-        <Route path="transactions" element={<TransactionsPage />} />
-        <Route
-          path="transactions/inbound"
-          element={
-            <PlaceholderPage
-              title="Inbound Transactions"
-              description="Manage incoming transactions"
-            />
-          }
-        />
+        <Route path="transactions" />
         <Route
           path="transactions/outbound"
-          element={
-            <PlaceholderPage
-              title="Outbound Transactions"
-              description="Manage outgoing transactions"
-            />
-          }
+          element={<OutboundTransactionsPage />}
+        />
+        <Route
+          path="transactions/inbound"
+          element={<InboundTransactionsPage />}
+        />
+
+        {/* Charges Payments */}
+        <Route path="charges-payments" element={<ChargesPaymentsPage />} />
+        <Route
+          path="charges-payments/:paymentId"
+          element={<ChargesPaymentDetailsPage />}
         />
 
         {/* Customers */}

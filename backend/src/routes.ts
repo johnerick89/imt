@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { RequestHandler, Router } from "express";
 import authRoutes from "./api/auth";
 import usersRoutes from "./api/users";
 import organisationsRoutes from "./api/organisations";
@@ -24,8 +24,14 @@ import balanceOperationRoutes from "./api/balanceoperations";
 import glTransactionRoutes from "./api/gltransactions";
 import transactionRoutes from "./api/transactions";
 import transactionChannelRoutes from "./api/transactionchannels";
+import chargesPaymentRoutes from "./api/chargespayments";
+import { authMiddleware } from "./middlewares/auth.middleware";
+import { auditMiddleware } from "./middlewares/audit.middleware";
 
 const router = Router();
+
+router.use("/api", authMiddleware);
+router.use("/api", auditMiddleware as RequestHandler);
 
 // API v1 routes
 router.use("/api/v1/auth", authRoutes);
@@ -53,6 +59,7 @@ router.use("/api/v1/balance", balanceOperationRoutes);
 router.use("/api/v1/organisations", glTransactionRoutes);
 router.use("/api/v1/transactions", transactionRoutes);
 router.use("/api/v1/transactionchannels", transactionChannelRoutes);
+router.use("/api/v1/chargespayments", chargesPaymentRoutes);
 
 // Default API route
 router.get("/api", (req, res) => {
@@ -85,6 +92,7 @@ router.get("/api", (req, res) => {
       gltransactions: "/api/v1/organisations/:id/gltransactions",
       transactions: "/api/v1/transactions",
       transactionchannels: "/api/v1/transactionchannels",
+      chargespayments: "/api/v1/chargespayments",
     },
   });
 });

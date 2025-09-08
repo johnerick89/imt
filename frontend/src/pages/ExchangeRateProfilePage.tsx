@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { FiArrowLeft, FiEdit2, FiTrash2, FiCheck, FiX } from "react-icons/fi";
-import { StatusBadge } from "../components/StatusBadge";
-import { Modal } from "../components/Modal";
+import { StatusBadge } from "../components/ui/StatusBadge";
+import { Modal } from "../components/ui/Modal";
 import { ConfirmModal } from "../components/ConfirmModal";
 import ExchangeRateForm from "../components/ExchangeRateForm";
 import {

@@ -1,9 +1,9 @@
 import React, { useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { useCreateUser, useUpdateUser, useUser } from "../hooks";
-import { FormItem } from "./FormItem";
-import { Input } from "./Input";
-import { Select } from "./Select";
+import { FormItem } from "./ui/FormItem";
+import { Input } from "./ui/Input";
+import { Select } from "./ui/Select";
 import type { UpdateUserRequest } from "../types/UsersTypes";
 
 interface UserFormProps {

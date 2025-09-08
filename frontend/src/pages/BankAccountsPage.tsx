@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 import { FiPlus, FiFilter, FiRefreshCw } from "react-icons/fi";
-import { Modal } from "../components/Modal";
+import { Modal } from "../components/ui/Modal";
 import { ConfirmModal } from "../components/ConfirmModal";
 import BankAccountForm from "../components/BankAccountForm";
 import BankAccountsTable from "../components/BankAccountsTable";
 import BalanceOperationModal from "../components/BalanceOperationModal";
-import { SearchableSelect } from "../components/SearchableSelect";
-import { Input } from "../components/Input";
-import { Button } from "../components/Button";
+import { SearchableSelect } from "../components/ui/SearchableSelect";
+import { Input } from "../components/ui/Input";
+import { Button } from "../components/ui/Button";
 import { useSession, useCurrencies, useOrganisations } from "../hooks";
 import {
   useBankAccounts,

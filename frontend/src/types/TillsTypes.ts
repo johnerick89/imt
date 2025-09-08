@@ -64,6 +64,7 @@ export interface CreateTillRequest {
   organisation_id?: string;
   opened_at?: string;
   closed_at?: string;
+  opening_balance?: number;
 }
 
 export interface UpdateTillRequest {

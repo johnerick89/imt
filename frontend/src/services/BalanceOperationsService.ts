@@ -3,10 +3,13 @@ import type {
   OrgBalanceListResponse,
   OrgBalanceStatsResponse,
   BalanceOperationResponse,
+  BalanceHistoryResponse,
   OrgBalanceFilters,
+  BalanceHistoryFilters,
   PrefundRequest,
   TillTopupRequest,
   VaultTopupRequest,
+  OpeningBalanceRequest,
 } from "../types/BalanceOperationsTypes";
 
 export const BalanceOperationsService = {
@@ -85,6 +88,52 @@ export const BalanceOperationsService = {
   ): Promise<BalanceOperationResponse> {
     const response = await axios.post(
       `/api/v1/balance/vaults/${vaultId}/withdraw`,
+      data
+    );
+    return response.data;
+  },
+
+  // Balance History Operations
+  async getOrgBalanceHistory(
+    orgId: string,
+    filters: BalanceHistoryFilters = {}
+  ): Promise<BalanceHistoryResponse> {
+    const response = await axios.get(
+      `/api/v1/balance/organisations/${orgId}/balance-history`,
+      { params: filters }
+    );
+    return response.data;
+  },
+
+  async getTillBalanceHistory(
+    tillId: string,
+    filters: BalanceHistoryFilters = {}
+  ): Promise<BalanceHistoryResponse> {
+    const response = await axios.get(
+      `/api/v1/balance/tills/${tillId}/balance-history`,
+      { params: filters }
+    );
+    return response.data;
+  },
+
+  async getVaultBalanceHistory(
+    vaultId: string,
+    filters: BalanceHistoryFilters = {}
+  ): Promise<BalanceHistoryResponse> {
+    const response = await axios.get(
+      `/api/v1/balance/vaults/${vaultId}/balance-history`,
+      { params: filters }
+    );
+    return response.data;
+  },
+
+  // Opening Balance Operations
+  async setOpeningBalance(
+    orgId: string,
+    data: OpeningBalanceRequest
+  ): Promise<BalanceOperationResponse> {
+    const response = await axios.post(
+      `/api/v1/balance/organisations/${orgId}/opening-balance`,
       data
     );
     return response.data;

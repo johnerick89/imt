@@ -1,4 +1,8 @@
-import { ExchangeRateStatus, PrismaClient } from "@prisma/client";
+import {
+  ExchangeRateOperatorStatus,
+  ExchangeRateStatus,
+  PrismaClient,
+} from "@prisma/client";
 import type {
   IExchangeRate,
   CreateExchangeRateRequest,

@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
-import { DataTable } from "./DataTable";
-import { StatusBadge } from "./StatusBadge";
+import { DataTable } from "./ui/DataTable";
+import { StatusBadge } from "./ui/StatusBadge";
 import UserTillActionCell from "./UserTillActionCell";
 import type { UserTill } from "../types/TillsTypes";
 import { formatToCurrency } from "../utils/textUtils";

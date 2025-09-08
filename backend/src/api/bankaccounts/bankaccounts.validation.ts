@@ -52,16 +52,22 @@ export const updateBankAccountSchema = z.object({
     .optional(),
   currency_id: z.string().uuid("Invalid currency ID").optional(),
   organisation_id: z.string().uuid("Invalid organisation ID").optional(),
-  balance: z
-    .string()
-    .transform((val) => parseFloat(val))
-    .pipe(z.number().positive("Balance must be positive"))
-    .optional(),
-  locked_balance: z
-    .string()
-    .transform((val) => parseFloat(val))
-    .pipe(z.number().positive("Locked balance must be positive"))
-    .optional(),
+  balance: z.preprocess((val) => {
+    if (typeof val === "string") {
+      if (val === "") return undefined;
+      const parsed = parseFloat(val);
+      return isNaN(parsed) ? undefined : parsed;
+    }
+    return val;
+  }, z.number().positive().optional()),
+  locked_balance: z.preprocess((val) => {
+    if (typeof val === "string") {
+      if (val === "") return undefined;
+      const parsed = parseFloat(val);
+      return isNaN(parsed) ? undefined : parsed;
+    }
+    return val;
+  }, z.number().positive().optional()),
 });
 
 export const bankAccountFiltersSchema = z.object({

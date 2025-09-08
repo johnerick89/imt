@@ -12,13 +12,12 @@ import { useCurrencies } from "../hooks/useCurrencies";
 import { useCorridors } from "../hooks/useCorridors";
 import { useTills } from "../hooks/useTills";
 import { useCustomers } from "../hooks/useCustomers";
-import { useOrganisations } from "../hooks/useOrganisations";
 import TransactionsTable from "../components/TransactionsTable";
 import CreateTransactionForm from "../components/CreateTransactionForm";
 import TransactionDetailsModal from "../components/TransactionDetailsModal";
-import { SearchableSelect } from "../components/SearchableSelect";
-import { Input } from "../components/Input";
-import { Button } from "../components/Button";
+import { SearchableSelect } from "../components/ui/SearchableSelect";
+import { Input } from "../components/ui/Input";
+import { Button } from "../components/ui/Button";
 import { formatToCurrency } from "../utils/textUtils";
 import type {
   Transaction,
@@ -27,10 +26,9 @@ import type {
   Direction,
   Status,
   RemittanceStatus,
-  RequestStatus,
 } from "../types/TransactionsTypes";
 
-const TransactionsPage: React.FC = () => {
+const OutboundTransactionsPage: React.FC = () => {
   const { id: organisationId } = useParams<{ id: string }>();
   const { user } = useSession();
   const [selectedTransaction, setSelectedTransaction] =
@@ -65,7 +63,6 @@ const TransactionsPage: React.FC = () => {
   const { data: customersData } = useCustomers({
     organisation_id: effectiveOrganisationId || "",
   });
-  const { data: organisationsData } = useOrganisations();
 
   // Mutations
   const createTransactionMutation = useCreateOutboundTransaction();
@@ -148,7 +145,7 @@ const TransactionsPage: React.FC = () => {
       <div className="p-6">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            Transactions
+            Outbound Transactions
           </h1>
           <p className="text-gray-600">No organisation selected.</p>
         </div>
@@ -166,7 +163,7 @@ const TransactionsPage: React.FC = () => {
         <div className="flex justify-between items-center mb-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Transactions
+              Outbound Transactions
             </h1>
             <p className="text-gray-600">
               Manage outbound money transfer transactions for your organisation.
@@ -571,4 +568,4 @@ const TransactionsPage: React.FC = () => {
   );
 };
 
-export default TransactionsPage;
+export default OutboundTransactionsPage;

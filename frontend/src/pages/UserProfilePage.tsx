@@ -7,8 +7,8 @@ import {
   useDeleteUser,
   useUserAuditHistory,
 } from "../hooks";
-import { StatusBadge } from "../components/StatusBadge";
-import { DataTable } from "../components/DataTable";
+import { StatusBadge } from "../components/ui/StatusBadge";
+import { DataTable } from "../components/ui/DataTable";
 import { ConfirmModal } from "../components/ConfirmModal";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { UserActivity } from "../types/UserActivityTypes";

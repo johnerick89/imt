@@ -13,8 +13,8 @@ import { useCustomers } from "../hooks/useCustomers";
 import GlTransactionsTable from "../components/GlTransactionsTable";
 import GlTransactionDetailsModal from "../components/GlTransactionDetailsModal";
 import ReverseGlTransactionModal from "../components/ReverseGlTransactionModal";
-import { SearchableSelect } from "../components/SearchableSelect";
-import { Input } from "../components/Input";
+import { SearchableSelect } from "../components/ui/SearchableSelect";
+import { Input } from "../components/ui/Input";
 import { formatToCurrency } from "../utils/textUtils";
 import type {
   GlTransaction,

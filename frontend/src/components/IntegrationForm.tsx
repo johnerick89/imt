@@ -1,10 +1,10 @@
 import React, { useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
-import { FormItem } from "./FormItem";
-import { Input } from "./Input";
-import { Select } from "./Select";
-import { SearchableSelect } from "./SearchableSelect";
-import { Textarea } from "./Textarea";
+import { FormItem } from "./ui/FormItem";
+import { Input } from "./ui/Input";
+import { Select } from "./ui/Select";
+import { SearchableSelect } from "./ui/SearchableSelect";
+import { Textarea } from "./ui/Textarea";
 import { useSession, useOrganisations } from "../hooks";
 import type {
   CreateIntegrationRequest,

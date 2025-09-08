@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 import { FiPlus, FiFilter, FiRefreshCw, FiSettings } from "react-icons/fi";
-import { Modal } from "../components/Modal";
+import { Modal } from "../components/ui/Modal";
 import { ConfirmModal } from "../components/ConfirmModal";
 import GlAccountForm from "../components/GlAccountForm";
 import GlAccountsTable from "../components/GlAccountsTable";
 import GenerateAccountsModal from "../components/GenerateAccountsModal";
-import { SearchableSelect } from "../components/SearchableSelect";
-import { Input } from "../components/Input";
-import { Button } from "../components/Button";
+import { SearchableSelect } from "../components/ui/SearchableSelect";
+import { Input } from "../components/ui/Input";
+import { Button } from "../components/ui/Button";
 import { useSession, useCurrencies } from "../hooks";
 import {
   useGlAccounts,

@@ -8,7 +8,7 @@ import {
   useDeleteBeneficiary,
 } from "../hooks";
 
-import { Modal } from "../components/Modal";
+import { Modal } from "../components/ui/Modal";
 import { ConfirmModal } from "../components/ConfirmModal";
 import BeneficiaryForm from "../components/BeneficiaryForm";
 import BeneficiariesTable from "../components/BeneficiariesTable";
@@ -18,7 +18,7 @@ import type {
   UpdateBeneficiaryRequest,
 } from "../types/BeneficiariesTypes";
 import { FiArrowLeft, FiPlus } from "react-icons/fi";
-import { StatusBadge } from "../components/StatusBadge";
+import { StatusBadge } from "../components/ui/StatusBadge";
 
 const CustomerProfilePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();

@@ -7,11 +7,11 @@ import {
   useAllCurrencies,
   useAllCountries,
 } from "../hooks";
-import { FormItem } from "./FormItem";
-import { Input } from "./Input";
-import { Select } from "./Select";
-import { Textarea } from "./Textarea";
-import { SearchableSelect } from "./SearchableSelect";
+import { FormItem } from "./ui/FormItem";
+import { Input } from "./ui/Input";
+import { Select } from "./ui/Select";
+import { Textarea } from "./ui/Textarea";
+import { SearchableSelect } from "./ui/SearchableSelect";
 import type {
   UpdateOrganisationRequest,
   OrganisationType,

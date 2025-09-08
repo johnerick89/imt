@@ -7,6 +7,8 @@ import {
   FiSquare,
   FiShield,
   FiXCircle,
+  FiPlus,
+  FiMinus,
 } from "react-icons/fi";
 import { TillStatus } from "../types/TillsTypes";
 import type { Till } from "../types/TillsTypes";
@@ -20,6 +22,8 @@ interface TillActionCellProps {
   onClose: (till: Till) => void;
   onBlock: (till: Till) => void;
   onDeactivate: (till: Till) => void;
+  onTopup: (till: Till) => void;
+  onWithdraw: (till: Till) => void;
 }
 
 const TillActionCell: React.FC<TillActionCellProps> = ({
@@ -31,6 +35,8 @@ const TillActionCell: React.FC<TillActionCellProps> = ({
   onClose,
   onBlock,
   onDeactivate,
+  onTopup,
+  onWithdraw,
 }) => {
   // Check if till can be opened (assigned to user)
   const canOpen =
@@ -108,6 +114,24 @@ const TillActionCell: React.FC<TillActionCellProps> = ({
           <FiXCircle className="h-4 w-4" />
         </button>
       )}
+
+      {/* Topup */}
+      <button
+        onClick={() => onTopup(till)}
+        className="p-1 text-green-600 hover:text-green-900 hover:bg-green-50 rounded transition-colors duration-200"
+        title="Topup till"
+      >
+        <FiPlus className="h-4 w-4" />
+      </button>
+
+      {/* Withdraw */}
+      <button
+        onClick={() => onWithdraw(till)}
+        className="p-1 text-orange-600 hover:text-orange-900 hover:bg-orange-50 rounded transition-colors duration-200"
+        title="Withdraw from till"
+      >
+        <FiMinus className="h-4 w-4" />
+      </button>
 
       {/* Delete */}
       <button

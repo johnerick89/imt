@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { DataTable } from "./DataTable";
+import { DataTable } from "./ui/DataTable";
 import VaultActionCell from "./VaultActionCell";
 import type { Vault } from "../types/VaultsTypes";
 import type { ColumnDef } from "@tanstack/react-table";

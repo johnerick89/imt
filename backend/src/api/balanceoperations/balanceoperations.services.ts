@@ -1012,4 +1012,179 @@ export class BalanceOperationService {
       throw new Error("Failed to fetch organisation balance stats");
     }
   }
+
+  // Get organisation balance history
+  async getOrgBalanceHistory(orgId: string, filters: any = {}): Promise<any> {
+    try {
+      const { page = 1, limit = 10, currency_id } = filters;
+      const skip = (page - 1) * limit;
+
+      const where: any = {
+        OR: [{ base_org_id: orgId }, { dest_org_id: orgId }],
+      };
+
+      if (currency_id) {
+        where.currency_id = currency_id;
+      }
+
+      const [histories, total] = await Promise.all([
+        prisma.orgBalance.findMany({
+          where,
+          include: {
+            base_org: {
+              select: { id: true, name: true, type: true },
+            },
+            dest_org: {
+              select: { id: true, name: true, type: true },
+            },
+            currency: {
+              select: { id: true, currency_code: true, currency_name: true },
+            },
+          },
+          orderBy: { updated_at: "desc" },
+          skip,
+          take: limit,
+        }),
+        prisma.orgBalance.count({ where }),
+      ]);
+
+      return {
+        success: true,
+        message: "Organisation balance history retrieved successfully",
+        data: {
+          histories: histories.map((balance) => ({
+            ...balance,
+            balance: parseFloat(balance.balance.toString()),
+            locked_balance: balance.locked_balance
+              ? parseFloat(balance.locked_balance.toString())
+              : null,
+          })),
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages: Math.ceil(total / limit),
+          },
+        },
+      };
+    } catch (error) {
+      console.error("Error fetching organisation balance history:", error);
+      throw new Error("Failed to fetch organisation balance history");
+    }
+  }
+
+  // Get till balance history
+  async getTillBalanceHistory(tillId: string, filters: any = {}): Promise<any> {
+    try {
+      const { page = 1, limit = 10 } = filters;
+      const skip = (page - 1) * limit;
+
+      const [histories, total] = await Promise.all([
+        prisma.tillBalance.findMany({
+          where: { till_id: tillId },
+          include: {
+            currency: {
+              select: { id: true, currency_code: true, currency_name: true },
+            },
+            till: {
+              select: {
+                id: true,
+                name: true,
+                organisation: {
+                  select: { id: true, name: true, type: true },
+                },
+              },
+            },
+          },
+          orderBy: { updated_at: "desc" },
+          skip,
+          take: limit,
+        }),
+        prisma.tillBalance.count({ where: { till_id: tillId } }),
+      ]);
+
+      return {
+        success: true,
+        message: "Till balance history retrieved successfully",
+        data: {
+          histories: histories.map((balance) => ({
+            ...balance,
+            balance: parseFloat(balance.balance.toString()),
+            locked_balance: balance.locked_balance
+              ? parseFloat(balance.locked_balance.toString())
+              : null,
+            organisation: balance.till?.organisation,
+          })),
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages: Math.ceil(total / limit),
+          },
+        },
+      };
+    } catch (error) {
+      console.error("Error fetching till balance history:", error);
+      throw new Error("Failed to fetch till balance history");
+    }
+  }
+
+  // Get vault balance history
+  async getVaultBalanceHistory(
+    vaultId: string,
+    filters: any = {}
+  ): Promise<any> {
+    try {
+      const { page = 1, limit = 10 } = filters;
+      const skip = (page - 1) * limit;
+
+      const [histories, total] = await Promise.all([
+        prisma.vaultBalance.findMany({
+          where: { vault_id: vaultId },
+          include: {
+            currency: {
+              select: { id: true, currency_code: true, currency_name: true },
+            },
+            vault: {
+              select: {
+                id: true,
+                name: true,
+                organisation: {
+                  select: { id: true, name: true, type: true },
+                },
+              },
+            },
+          },
+          orderBy: { updated_at: "desc" },
+          skip,
+          take: limit,
+        }),
+        prisma.vaultBalance.count({ where: { vault_id: vaultId } }),
+      ]);
+
+      return {
+        success: true,
+        message: "Vault balance history retrieved successfully",
+        data: {
+          histories: histories.map((balance) => ({
+            ...balance,
+            balance: parseFloat(balance.balance.toString()),
+            locked_balance: balance.locked_balance
+              ? parseFloat(balance.locked_balance.toString())
+              : null,
+            organisation: balance.vault?.organisation,
+          })),
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages: Math.ceil(total / limit),
+          },
+        },
+      };
+    } catch (error) {
+      console.error("Error fetching vault balance history:", error);
+      throw new Error("Failed to fetch vault balance history");
+    }
+  }
 }

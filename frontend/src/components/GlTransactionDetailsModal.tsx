@@ -1,6 +1,6 @@
 import React from "react";
-import { Modal } from "./Modal";
-import { StatusBadge } from "./StatusBadge";
+import { Modal } from "./ui/Modal";
+import { StatusBadge } from "./ui/StatusBadge";
 import { formatToCurrency } from "../utils/textUtils";
 import type { GlTransaction } from "../types/GlTransactionsTypes";
 

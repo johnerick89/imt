@@ -31,16 +31,16 @@ export const navigationSections: NavigationSection[] = [
         icon: "💸",
         children: [
           {
-            id: "inbound",
-            label: "Inbound",
-            path: "/transactions/inbound",
-            icon: "📥",
-          },
-          {
             id: "outbound",
             label: "Outbound",
             path: "/transactions/outbound",
             icon: "📤",
+          },
+          {
+            id: "inbound",
+            label: "Inbound",
+            path: "/transactions/inbound",
+            icon: "📥",
           },
         ],
       },
@@ -55,6 +55,12 @@ export const navigationSections: NavigationSection[] = [
         label: "GL Transactions",
         path: "/gl-transactions",
         icon: "📊",
+      },
+      {
+        id: "charges-payments",
+        label: "Charges Payments",
+        path: "/charges-payments",
+        icon: "💰",
       },
     ],
   },

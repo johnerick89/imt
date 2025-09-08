@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Sidebar from "./Sidebar";
-import { Input } from "./Input";
+import { Input } from "./ui/Input";
 import { useSession } from "../hooks";
 
 interface LayoutProps {

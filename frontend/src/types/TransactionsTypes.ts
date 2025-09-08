@@ -53,6 +53,60 @@ export const TransactionChargeStatus = {
 export type TransactionChargeStatus =
   (typeof TransactionChargeStatus)[keyof typeof TransactionChargeStatus];
 
+export const PartyRole = {
+  SENDER: "SENDER",
+  RECEIVER: "RECEIVER",
+} as const;
+export type PartyRole = (typeof PartyRole)[keyof typeof PartyRole];
+
+export const IndividualIDType = {
+  PASSPORT: "PASSPORT",
+  NATIONAL_ID: "NATIONAL_ID",
+  DRIVERS_LICENSE: "DRIVERS_LICENSE",
+  OTHER: "OTHER",
+} as const;
+export type IndividualIDType =
+  (typeof IndividualIDType)[keyof typeof IndividualIDType];
+
+// Transaction Party Interface
+export interface TransactionParty {
+  id: string;
+  transaction_id: string;
+  role: PartyRole;
+  name: string;
+  id_type: IndividualIDType | null;
+  id_number: string | null;
+  nationality_id: string | null;
+  payout_method_channel_id: string | null;
+  payout_bank_name: string | null;
+  payout_bank_account_number: string | null;
+  payout_bank_account_name: string | null;
+  payout_phone: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+  organisation_id: string;
+  created_by: string | null;
+
+  // Relations
+  nationality?: {
+    id: string;
+    name: string;
+    country_code: string;
+  };
+  payout_method_channel?: {
+    id: string;
+    name: string;
+    description: string;
+  };
+  created_by_user?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+  };
+}
+
 // Base Transaction Interface
 export interface Transaction {
   id: string;
@@ -166,6 +220,7 @@ export interface Transaction {
     type: string;
   };
   transaction_charges?: TransactionCharge[];
+  transaction_parties?: TransactionParty[];
 }
 
 // Transaction Charge Interface
@@ -350,3 +405,18 @@ export interface OutboundTransactionResult {
   totalCharges: number;
   netAmount: number;
 }
+
+// Inbound Transaction Filters
+export type InboundTransactionFilters = TransactionFilters;
+
+// Inbound Transaction List Response
+export type InboundTransactionListResponse = TransactionListResponse;
+
+// Inbound Transaction Response
+export type InboundTransactionResponse = TransactionResponse;
+
+// Inbound Transaction Stats
+export type InboundTransactionStats = TransactionStats;
+
+// Inbound Transaction Stats Response
+export type InboundTransactionStatsResponse = TransactionStatsResponse;

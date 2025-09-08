@@ -1,9 +1,9 @@
 import React from "react";
 import { useForm, Controller } from "react-hook-form";
-import { FormItem } from "./FormItem";
-import { Input } from "./Input";
-import { Textarea } from "./Textarea";
-import { SearchableSelect } from "./SearchableSelect";
+import { FormItem } from "./ui/FormItem";
+import { Input } from "./ui/Input";
+import { Textarea } from "./ui/Textarea";
+import { SearchableSelect } from "./ui/SearchableSelect";
 import {
   useVaults,
   useCurrencies,
@@ -46,6 +46,7 @@ const TillForm: React.FC<TillFormProps> = ({
       currency_id: initialData?.currency_id || "",
       organisation_id:
         initialData?.organisation_id || currentOrganisationId || "",
+      opening_balance: 0,
     },
   });
 
@@ -216,6 +217,27 @@ const TillForm: React.FC<TillFormProps> = ({
                   placeholder="Select currency (optional)"
                   disabled={isLoading}
                   invalid={!!errors.currency_id}
+                />
+              )}
+            />
+          </FormItem>
+
+          <FormItem
+            label="Opening Balance"
+            invalid={!!errors.opening_balance}
+            errorMessage={errors.opening_balance?.message}
+          >
+            <Controller
+              name="opening_balance"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  type="number"
+                  step="0.01"
+                  placeholder="Enter opening balance"
+                  disabled={isLoading}
+                  invalid={!!errors.opening_balance}
                 />
               )}
             />

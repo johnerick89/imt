@@ -14,6 +14,32 @@ router.post(
   transactionController.createOutboundTransaction.bind(transactionController)
 );
 
+// Inbound Transactions
+router.get(
+  "/organisations/:orgId/inbound",
+  transactionController.getInboundTransactions.bind(transactionController)
+);
+
+router.get(
+  "/inbound/:transactionId",
+  transactionController.getInboundTransactionById.bind(transactionController)
+);
+
+router.post(
+  "/inbound/:transactionId/approve",
+  transactionController.approveInboundTransaction.bind(transactionController)
+);
+
+router.post(
+  "/inbound/:transactionId/reverse",
+  transactionController.reverseInboundTransaction.bind(transactionController)
+);
+
+router.get(
+  "/organisations/:orgId/inbound/stats",
+  transactionController.getInboundTransactionStats.bind(transactionController)
+);
+
 // Transaction Management
 router.put(
   "/transactions/:transactionId",

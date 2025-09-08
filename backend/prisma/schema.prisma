@@ -68,6 +68,7 @@ model User {
   vault_balances          VaultBalance[]
   bank_accounts           BankAccount[]
   transaction_parties     TransactionParty[]
+  ChargesPayment          ChargesPayment[]
 
   @@index([email])
   @@index([id])
@@ -114,6 +115,7 @@ model Currency {
   vault_balances        VaultBalance[]
   balance_histories     BalanceHistory[]
   bank_accounts         BankAccount[]
+  ChargesPayment        ChargesPayment[]
 
   @@index([currency_name])
   @@index([currency_code])
@@ -173,53 +175,54 @@ enum OrganisationStatus {
 }
 
 model Organisation {
-  id                       String              @id @default(uuid()) @db.Uuid
-  name                     String
-  description              String?
-  type                     OrganisationType    @default(PARTNER)
-  integration_mode         IntegrationMethod   @default(INTERNAL)
-  contact_person           String?
-  contact_email            String?
-  contact_phone            String?
-  contact_address          String?
-  contact_city             String?
-  contact_state            String?
-  contact_zip              String?
-  status                   OrganisationStatus  @default(PENDING)
-  base_currency_id         String?             @db.Uuid
-  base_currency            Currency?           @relation(fields: [base_currency_id], references: [id])
-  created_at               DateTime            @default(now())
-  updated_at               DateTime            @updatedAt
-  users                    User[]              @relation("UserOrganisation")
-  country_id               String?             @db.Uuid
-  country                  Country?            @relation(fields: [country_id], references: [id])
-  created_by               String?             @db.Uuid
-  created_by_user          User?               @relation("CreatedByUser", fields: [created_by], references: [id])
-  integrations             Integration[]       @relation("Organisation")
-  user_activities          UserActivity[]
-  branches                 Branch[]
-  origin_charges           Charge[]            @relation("OriginOrganisation")
-  destination_charges      Charge[]            @relation("DestinationOrganisation")
-  customers                Customer[]
-  beneficiaries            Beneficiary[]
-  origin_transactions      Transaction[]       @relation("OriginOrganisation")
-  destination_transactions Transaction[]       @relation("DestinationOrganisation")
-  exchange_rates           ExchangeRate[]
-  origin_corridors         Corridor[]          @relation("OriginOrganisation")
-  destination_corridors    Corridor[]          @relation("DestinationOrganisation")
-  vaults                   Vault[]
-  gl_accounts              GlAccount[]
-  transaction_charges      TransactionCharge[]
-  gl_transactions          GLTransaction[]
-  tills                    Till[]
-  user_tills               UserTill[]
-  origin_integrations      Integration[]       @relation("OriginOrganisation")
-  base_org_balances        OrgBalance[]        @relation("BaseOrgBalance")
-  dest_org_balances        OrgBalance[]        @relation("DestOrgBalance")
-  bank_accounts            BankAccount[]
-  transaction_parties      TransactionParty[]
+  id                           String              @id @default(uuid()) @db.Uuid
+  name                         String
+  description                  String?
+  type                         OrganisationType    @default(PARTNER)
+  integration_mode             IntegrationMethod   @default(INTERNAL)
+  contact_person               String?
+  contact_email                String?
+  contact_phone                String?
+  contact_address              String?
+  contact_city                 String?
+  contact_state                String?
+  contact_zip                  String?
+  status                       OrganisationStatus  @default(PENDING)
+  base_currency_id             String?             @db.Uuid
+  base_currency                Currency?           @relation(fields: [base_currency_id], references: [id])
+  created_at                   DateTime            @default(now())
+  updated_at                   DateTime            @updatedAt
+  users                        User[]              @relation("UserOrganisation")
+  country_id                   String?             @db.Uuid
+  country                      Country?            @relation(fields: [country_id], references: [id])
+  created_by                   String?             @db.Uuid
+  created_by_user              User?               @relation("CreatedByUser", fields: [created_by], references: [id])
+  integrations                 Integration[]       @relation("Organisation")
+  user_activities              UserActivity[]
+  branches                     Branch[]
+  origin_charges               Charge[]            @relation("OriginOrganisation")
+  destination_charges          Charge[]            @relation("DestinationOrganisation")
+  customers                    Customer[]
+  beneficiaries                Beneficiary[]
+  origin_transactions          Transaction[]       @relation("OriginOrganisation")
+  destination_transactions     Transaction[]       @relation("DestinationOrganisation")
+  exchange_rates               ExchangeRate[]
+  origin_corridors             Corridor[]          @relation("OriginOrganisation")
+  destination_corridors        Corridor[]          @relation("DestinationOrganisation")
+  vaults                       Vault[]
+  gl_accounts                  GlAccount[]
+  transaction_charges          TransactionCharge[]
+  gl_transactions              GLTransaction[]
+  tills                        Till[]
+  user_tills                   UserTill[]
+  origin_integrations          Integration[]       @relation("OriginOrganisation")
+  base_org_balances            OrgBalance[]        @relation("BaseOrgBalance")
+  dest_org_balances            OrgBalance[]        @relation("DestOrgBalance")
+  bank_accounts                BankAccount[]
+  transaction_parties          TransactionParty[]
+  charges_payments             ChargesPayment[]    @relation("Organisation")
+  destination_charges_payments ChargesPayment[]    @relation("DestinationOrganisation")
 
-  @@index([name])
   @@index([id])
   @@index([description])
   @@index([created_at])
@@ -679,6 +682,15 @@ model Beneficiary {
   created_by                String?           @db.Uuid
   created_by_user           User?             @relation(fields: [created_by], references: [id])
   status                    CustomerStatus    @default(ACTIVE)
+  email                     String?
+  phone                     String?
+  bank_name                 String?
+  bank_address              String?
+  bank_city                 String?
+  bank_state                String?
+  bank_zip                  String?
+  bank_account_number       String?
+  bank_account_name         String?
 
   @@unique([customer_id, organisation_id])
   @@index([customer_id])
@@ -693,6 +705,13 @@ model Beneficiary {
   @@index([reg_number])
   @@index([occupation_id])
   @@index([industry_id])
+  @@index([email])
+  @@index([phone])
+  @@index([bank_name])
+  @@index([bank_address])
+  @@index([bank_city])
+  @@index([bank_state])
+  @@index([bank_zip])
   @@map("beneficiaries")
 }
 
@@ -861,71 +880,75 @@ enum RequestStatus {
 }
 
 model Transaction {
-  id                          String              @id @default(uuid()) @db.Uuid
-  transaction_no              String?             @db.VarChar(128)
-  corridor_id                 String              @db.Uuid
-  corridor                    Corridor?           @relation(fields: [corridor_id], references: [id])
-  till_id                     String              @db.Uuid
-  till                        Till?               @relation(fields: [till_id], references: [id])
-  direction                   Direction
-  customer_id                 String              @db.Uuid
-  customer                    Customer?           @relation("Customer", fields: [customer_id], references: [id])
-  origin_amount               Decimal             @db.Decimal(22, 9)
-  origin_channel_id           String              @db.Uuid
-  origin_channel              TransactionChannel? @relation("OriginChannel", fields: [origin_channel_id], references: [id])
-  origin_currency_id          String              @db.Uuid
-  origin_currency             Currency            @relation("OriginCurrency", fields: [origin_currency_id], references: [id])
-  beneficiary_id              String              @db.Uuid
-  beneficiary                 Beneficiary?        @relation("Beneficiary", fields: [beneficiary_id], references: [id])
-  dest_amount                 Decimal             @db.Decimal(22, 9)
-  dest_channel_id             String              @db.Uuid
-  dest_channel                TransactionChannel? @relation("DestChannel", fields: [dest_channel_id], references: [id])
-  dest_currency_id            String              @db.Uuid
-  dest_currency               Currency            @relation("DestCurrency", fields: [dest_currency_id], references: [id])
-  rate                        Decimal             @db.Decimal(22, 9)
-  internal_exchange_rate      Decimal?            @db.Decimal(18, 9)
-  inflation                   Decimal?            @db.Decimal(18, 9)
-  markup                      Decimal?            @db.Decimal(18, 9)
-  purpose                     String?             @db.VarChar(256)
-  funds_source                String?             @db.VarChar(256)
-  relationship                String?             @db.VarChar(256)
-  remarks                     String?             @db.VarChar(1024)
-  status                      Status              @default(PENDING_APPROVAL)
-  remittance_status           RemittanceStatus    @default(PENDING)
-  remittance_status_details   String?             @db.VarChar(1024)
-  request_status              RequestStatus       @default(UNDER_REVIEW)
-  remitted_at                 DateTime?
-  exchange_rate_id            String?             @db.Uuid
-  exchange_rate               ExchangeRate?       @relation("InternalExchangeRates", fields: [exchange_rate_id], references: [id])
-  external_exchange_rate_id   String?             @db.Uuid
-  external_exchange_rate      ExchangeRate?       @relation("ExternalExchangeRates", fields: [external_exchange_rate_id], references: [id])
-  created_by                  String              @db.Uuid
-  created_by_user             User?               @relation(fields: [created_by], references: [id])
-  created_at                  DateTime?           @default(now())
-  updated_at                  DateTime?           @updatedAt
-  deleted_at                  DateTime?
-  received_at                 DateTime?
-  amount_payable              Decimal?            @db.Decimal(22, 9)
-  amount_receivable           Decimal?            @db.Decimal(22, 9)
-  origin_organisation_id      String?             @db.Uuid
-  origin_organisation         Organisation?       @relation("OriginOrganisation", fields: [origin_organisation_id], references: [id])
-  destination_organisation_id String?             @db.Uuid
-  destination_organisation    Organisation?       @relation("DestinationOrganisation", fields: [destination_organisation_id], references: [id])
-  integration_id              String?             @db.Uuid
-  integration                 Integration?        @relation(fields: [integration_id], references: [id])
-  total_taxes                 Decimal?            @db.Decimal(22, 9) // Sum of all taxes
-  internal_charges            Decimal?            @db.Decimal(22, 9) // Internal profit charges
-  commissions                 Decimal?            @db.Decimal(22, 9) // Commissions to partners/agencies
-  reversal_status             String? // e.g., "reversed", "partial_reversal" for refunds
-  reversal_date               DateTime? // Timestamp for reversal
-  transaction_charges         TransactionCharge[]
-  gl_transactions             GLTransaction[]
-  balance_histories           BalanceHistory[]
-  transaction_parties         TransactionParty[]
-  origin_country_id           String?             @db.Uuid
-  origin_country              Country?            @relation("OriginCountry", fields: [origin_country_id], references: [id])
-  destination_country_id      String?             @db.Uuid
-  destination_country         Country?            @relation("DestinationCountry", fields: [destination_country_id], references: [id])
+  id                           String              @id @default(uuid()) @db.Uuid
+  transaction_no               String?             @db.VarChar(128)
+  corridor_id                  String              @db.Uuid
+  corridor                     Corridor?           @relation(fields: [corridor_id], references: [id])
+  till_id                      String              @db.Uuid
+  till                         Till?               @relation(fields: [till_id], references: [id])
+  direction                    Direction
+  customer_id                  String              @db.Uuid
+  customer                     Customer?           @relation("Customer", fields: [customer_id], references: [id])
+  origin_amount                Decimal             @db.Decimal(22, 9)
+  origin_channel_id            String              @db.Uuid
+  origin_channel               TransactionChannel? @relation("OriginChannel", fields: [origin_channel_id], references: [id])
+  origin_currency_id           String              @db.Uuid
+  origin_currency              Currency            @relation("OriginCurrency", fields: [origin_currency_id], references: [id])
+  beneficiary_id               String              @db.Uuid
+  beneficiary                  Beneficiary?        @relation("Beneficiary", fields: [beneficiary_id], references: [id])
+  dest_amount                  Decimal             @db.Decimal(22, 9)
+  dest_channel_id              String              @db.Uuid
+  dest_channel                 TransactionChannel? @relation("DestChannel", fields: [dest_channel_id], references: [id])
+  dest_currency_id             String              @db.Uuid
+  dest_currency                Currency            @relation("DestCurrency", fields: [dest_currency_id], references: [id])
+  rate                         Decimal             @db.Decimal(22, 9)
+  internal_exchange_rate       Decimal?            @db.Decimal(18, 9)
+  inflation                    Decimal?            @db.Decimal(18, 9)
+  markup                       Decimal?            @db.Decimal(18, 9)
+  purpose                      String?             @db.VarChar(256)
+  funds_source                 String?             @db.VarChar(256)
+  relationship                 String?             @db.VarChar(256)
+  remarks                      String?             @db.VarChar(1024)
+  status                       Status              @default(PENDING_APPROVAL)
+  remittance_status            RemittanceStatus    @default(PENDING)
+  remittance_status_details    String?             @db.VarChar(1024)
+  request_status               RequestStatus       @default(UNDER_REVIEW)
+  remitted_at                  DateTime?
+  exchange_rate_id             String?             @db.Uuid
+  exchange_rate                ExchangeRate?       @relation("InternalExchangeRates", fields: [exchange_rate_id], references: [id])
+  external_exchange_rate_id    String?             @db.Uuid
+  external_exchange_rate       ExchangeRate?       @relation("ExternalExchangeRates", fields: [external_exchange_rate_id], references: [id])
+  created_by                   String              @db.Uuid
+  created_by_user              User?               @relation(fields: [created_by], references: [id])
+  created_at                   DateTime?           @default(now())
+  updated_at                   DateTime?           @updatedAt
+  deleted_at                   DateTime?
+  received_at                  DateTime?
+  amount_payable               Decimal?            @db.Decimal(22, 9)
+  amount_receivable            Decimal?            @db.Decimal(22, 9)
+  origin_organisation_id       String?             @db.Uuid
+  origin_organisation          Organisation?       @relation("OriginOrganisation", fields: [origin_organisation_id], references: [id])
+  destination_organisation_id  String?             @db.Uuid
+  destination_organisation     Organisation?       @relation("DestinationOrganisation", fields: [destination_organisation_id], references: [id])
+  integration_id               String?             @db.Uuid
+  integration                  Integration?        @relation(fields: [integration_id], references: [id])
+  total_taxes                  Decimal?            @db.Decimal(22, 9) // Sum of all taxes
+  internal_charges             Decimal?            @db.Decimal(22, 9) // Internal profit charges
+  commissions                  Decimal?            @db.Decimal(22, 9) // Commissions to partners/agencies
+  reversal_status              String? // e.g., "reversed", "partial_reversal" for refunds
+  reversal_date                DateTime? // Timestamp for reversal
+  transaction_charges          TransactionCharge[]
+  gl_transactions              GLTransaction[]
+  balance_histories            BalanceHistory[]
+  transaction_parties          TransactionParty[]
+  origin_country_id            String?             @db.Uuid
+  origin_country               Country?            @relation("OriginCountry", fields: [origin_country_id], references: [id])
+  destination_country_id       String?             @db.Uuid
+  destination_country          Country?            @relation("DestinationCountry", fields: [destination_country_id], references: [id])
+  sender_trasaction_party_id   String?             @db.Uuid
+  sender_trasaction_party      TransactionParty?   @relation("SenderTransactionParty", fields: [sender_trasaction_party_id], references: [id])
+  receiver_trasaction_party_id String?             @db.Uuid
+  receiver_trasaction_party    TransactionParty?   @relation("ReceiverTransactionParty", fields: [receiver_trasaction_party_id], references: [id])
 
   @@index([corridor_id])
   @@index([till_id])
@@ -983,6 +1006,7 @@ model TransactionCharge {
   status              TransactionChargeStatus @default(PENDING)
   organisation_id     String?                 @db.Uuid
   organisation        Organisation?           @relation(fields: [organisation_id], references: [id])
+  ChargesPaymentItem  ChargesPaymentItem[]
 
   @@index([transaction_id])
   @@index([type])
@@ -1273,26 +1297,30 @@ enum PartyRole {
 }
 
 model TransactionParty {
-  id                       String              @id @default(uuid()) @db.Uuid
-  transaction_id           String              @db.Uuid
-  transaction              Transaction         @relation(fields: [transaction_id], references: [id], onDelete: Cascade)
-  role                     PartyRole // SENDER or RECEIVER
-  name                     String // Full name (required for compliance/payout)
-  id_type                  IndividualIDType? // e.g., PASSPORT, NATIONAL_ID (for sender; optional for receiver)
-  id_number                String? // ID number (for sender verification)
-  nationality_id           String?             @db.Uuid
-  nationality              Country?            @relation(fields: [nationality_id], references: [id], onDelete: SetNull)
-  payout_method_channel_id String?             @db.Uuid
-  payout_method_channel    TransactionChannel? @relation(fields: [payout_method_channel_id], references: [id], onDelete: SetNull)
-  payout_account           String? // For RECEIVER: Bank/mobile wallet account number, agent ID, etc.
-  payout_phone             String? // For RECEIVER: Phone number
-  metadata                 Json? // Optional extras: {"phone": "123-456-7890", "address": "123 Main St", "email": "example@email.com"}
-  created_at               DateTime            @default(now())
-  updated_at               DateTime            @updatedAt
-  organisation_id          String              @db.Uuid
-  organisation             Organisation        @relation(fields: [organisation_id], references: [id], onDelete: Cascade)
-  created_by               String?             @db.Uuid
-  created_by_user          User?               @relation(fields: [created_by], references: [id])
+  id                         String              @id @default(uuid()) @db.Uuid
+  transaction_id             String              @db.Uuid
+  transaction                Transaction         @relation(fields: [transaction_id], references: [id], onDelete: Cascade)
+  role                       PartyRole // SENDER or RECEIVER
+  name                       String // Full name (required for compliance/payout)
+  id_type                    IndividualIDType? // e.g., PASSPORT, NATIONAL_ID (for sender; optional for receiver)
+  id_number                  String? // ID number (for sender verification)
+  nationality_id             String?             @db.Uuid
+  nationality                Country?            @relation(fields: [nationality_id], references: [id], onDelete: SetNull)
+  payout_method_channel_id   String?             @db.Uuid
+  payout_method_channel      TransactionChannel? @relation(fields: [payout_method_channel_id], references: [id], onDelete: SetNull)
+  payout_bank_name           String? // For RECEIVER: Bank name
+  payout_bank_account_number String? // For RECEIVER: Bank account number
+  payout_bank_account_name   String? // For RECEIVER: Bank account name
+  payout_phone               String? // For RECEIVER: Phone number
+  metadata                   Json? // Optional extras: {"phone": "123-456-7890", "address": "123 Main St", "email": "example@email.com"}
+  created_at                 DateTime            @default(now())
+  updated_at                 DateTime            @updatedAt
+  organisation_id            String              @db.Uuid
+  organisation               Organisation        @relation(fields: [organisation_id], references: [id], onDelete: Cascade)
+  created_by                 String?             @db.Uuid
+  created_by_user            User?               @relation(fields: [created_by], references: [id])
+  sender_transactions        Transaction[]       @relation("SenderTransactionParty")
+  receiver_transactions      Transaction[]       @relation("ReceiverTransactionParty")
 
   @@unique([transaction_id, role]) // One sender and one receiver per transaction
   @@index([transaction_id])
@@ -1300,4 +1328,56 @@ model TransactionParty {
   @@index([nationality_id])
   @@index([organisation_id])
   @@map("transaction_parties")
+}
+
+enum ChargesPaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+model ChargesPayment {
+  id                    String               @id @default(uuid()) @db.Uuid
+  type                  ChargeType // Matches charge_type from charges table
+  internal_total_amount Decimal              @db.Decimal(22, 9) // Aggregated internal share (e.g., your org's $3)
+  external_total_amount Decimal              @db.Decimal(22, 9) // Aggregated external share (e.g., partner's $2)
+  reference_number      String               @unique // e.g., "PAY-2025-09-01-COMMISSION-ORGX"
+  date_completed        DateTime             @db.Timestamp(0) // When the batch was marked paid
+  currency_id           String               @db.Uuid
+  currency              Currency             @relation(fields: [currency_id], references: [id])
+  destination_org_id    String?              @db.Uuid // Partner org (e.g., Org X)
+  destination_org       Organisation?        @relation("DestinationOrganisation", fields: [destination_org_id], references: [id], onDelete: SetNull)
+  status                ChargesPaymentStatus @default(PENDING) // e.g., "COMPLETED", "FAILED", "PENDING_REVIEW"
+  notes                 String? // Optional notes (e.g., "Monthly settlement")
+  created_at            DateTime             @default(now())
+  updated_at            DateTime             @updatedAt
+  created_by            String?              @db.Uuid
+  created_by_user       User?                @relation(fields: [created_by], references: [id])
+  organisation_id       String               @db.Uuid // Your org (multi-tenant)
+  organisation          Organisation         @relation("Organisation", fields: [organisation_id], references: [id], onDelete: Cascade)
+  payment_items         ChargesPaymentItem[] // Junction to settled transaction_charges
+
+  @@index([type])
+  @@index([currency_id])
+  @@index([destination_org_id])
+  @@index([date_completed])
+  @@index([organisation_id])
+  @@index([reference_number])
+  @@map("charges_payments")
+}
+
+model ChargesPaymentItem {
+  id                      String            @id @default(uuid()) @db.Uuid
+  charges_payment_id      String            @db.Uuid
+  charges_payment         ChargesPayment    @relation(fields: [charges_payment_id], references: [id], onDelete: Cascade)
+  transaction_charges_id  String            @db.Uuid
+  transaction_charges     TransactionCharge @relation(fields: [transaction_charges_id], references: [id], onDelete: Cascade)
+  internal_amount_settled Decimal           @db.Decimal(22, 9) // Portion of internal_amount marked paid in this batch
+  external_amount_settled Decimal           @db.Decimal(22, 9) // Portion of external_amount marked paid
+  created_at              DateTime          @default(now())
+
+  @@unique([charges_payment_id, transaction_charges_id]) // One item per transaction_charge per payment
+  @@index([charges_payment_id])
+  @@index([transaction_charges_id])
+  @@map("charges_payment_items")
 }

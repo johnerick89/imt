@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
-import { DataTable } from "./DataTable";
-import { StatusBadge } from "./StatusBadge";
+import { DataTable } from "./ui/DataTable";
+import { StatusBadge } from "./ui/StatusBadge";
 import { formatToCurrency } from "../utils/textUtils";
 import type { GlTransaction } from "../types/GlTransactionsTypes";
 
