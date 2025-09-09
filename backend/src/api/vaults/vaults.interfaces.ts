@@ -1,4 +1,4 @@
-import { Organisation, Currency } from "@prisma/client";
+import { Organisation, Currency, User } from "@prisma/client";
 export interface IVault {
   id: string;
   name: string;
@@ -6,6 +6,10 @@ export interface IVault {
   organisation: Organisation | null;
   currency_id?: string | null;
   currency?: Currency | null;
+  balance?: number | null;
+  locked_balance?: number | null;
+  created_by: string;
+  created_by_user: User | null;
   created_at: Date;
   updated_at: Date;
 }

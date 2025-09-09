@@ -15,7 +15,7 @@ export const GlTransactionsService = {
     filters: GlTransactionFilters
   ): Promise<GlTransactionListResponse> {
     const response = await axios.get(
-      `/organisations/${organisationId}/gltransactions`,
+      `/api/v1/organisations/${organisationId}/gltransactions`,
       {
         params: filters,
       }
@@ -29,7 +29,7 @@ export const GlTransactionsService = {
     transactionId: string
   ): Promise<GlTransactionResponse> {
     const response = await axios.get(
-      `/organisations/${organisationId}/gltransactions/${transactionId}`
+      `/api/v1/organisations/${organisationId}/gltransactions/${transactionId}`
     );
     return response.data;
   },
@@ -39,7 +39,7 @@ export const GlTransactionsService = {
     organisationId: string
   ): Promise<GlTransactionStatsResponse> {
     const response = await axios.get(
-      `/organisations/${organisationId}/gltransactions/stats`
+      `/api/v1/organisations/${organisationId}/gltransactions/stats`
     );
     return response.data;
   },
@@ -51,7 +51,7 @@ export const GlTransactionsService = {
     data: ReverseGlTransactionRequest
   ): Promise<ReverseGlTransactionResponse> {
     const response = await axios.post(
-      `/organisations/${organisationId}/gltransactions/${transactionId}/reverse`,
+      `/api/v1/organisations/${organisationId}/gltransactions/${transactionId}/reverse`,
       data
     );
     return response.data;

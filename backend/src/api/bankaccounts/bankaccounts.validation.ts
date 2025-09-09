@@ -19,14 +19,10 @@ export const createBankAccountSchema = z.object({
     .optional(),
   currency_id: z.string().uuid("Invalid currency ID"),
   organisation_id: z.string().uuid("Invalid organisation ID").optional(),
-  balance: z
-    .string()
-    .transform((val) => parseFloat(val))
-    .pipe(z.number().positive("Balance must be positive")),
+  balance: z.number().min(0, "Balance must be non-negative"),
   locked_balance: z
-    .string()
-    .transform((val) => parseFloat(val))
-    .pipe(z.number().positive("Locked balance must be positive"))
+    .number()
+    .min(0, "Locked balance must be non-negative")
     .optional(),
 });
 
@@ -79,7 +75,7 @@ export const bankAccountFiltersSchema = z.object({
   limit: z
     .string()
     .transform((val) => parseInt(val, 10))
-    .pipe(z.number().min(1).max(100))
+    .pipe(z.number().min(1).max(1000))
     .default(10),
   search: z.string().optional(),
   currency_id: z.string().uuid().optional(),

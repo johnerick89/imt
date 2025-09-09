@@ -8,7 +8,7 @@ import BalanceOperationModal from "../components/BalanceOperationModal";
 import { SearchableSelect } from "../components/ui/SearchableSelect";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
-import { useSession, useCurrencies, useOrganisations } from "../hooks";
+import { useSession, useCurrencies } from "../hooks";
 import {
   useBankAccounts,
   useBankAccountStats,
@@ -30,14 +30,14 @@ import type {
 
 const BankAccountsPage: React.FC = () => {
   const { user } = useSession();
+  const organisationId = user?.organisation_id;
 
   // Filter state
   const [filters, setFilters] = useState<BankAccountFilters>({
     page: 1,
     limit: 10,
     search: "",
-    currency_id: "",
-    organisation_id: user?.organisation_id || "",
+    organisation_id: organisationId || "",
   });
 
   // Modal states
@@ -52,14 +52,12 @@ const BankAccountsPage: React.FC = () => {
   // Data fetching
   const { data: bankAccountsData, isLoading: bankAccountsLoading } =
     useBankAccounts(filters);
-  const { data: statsData } = useBankAccountStats(user?.organisation_id);
+  const { data: statsData } = useBankAccountStats(organisationId);
   const { data: currenciesData } = useCurrencies({ limit: 1000 });
-  const { data: organisationsData } = useOrganisations({ limit: 1000 });
 
   const bankAccounts = bankAccountsData?.data?.bankAccounts || [];
   const stats = statsData?.data;
   const currencies = currenciesData?.data?.currencies || [];
-  const organisations = organisationsData?.data?.organisations || [];
 
   // Mutations
   const createBankAccountMutation = useCreateBankAccount();
@@ -287,21 +285,6 @@ const BankAccountsPage: React.FC = () => {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Organisation
-            </label>
-            <SearchableSelect
-              value={filters.organisation_id || ""}
-              onChange={(value) => handleFilterChange("organisation_id", value)}
-              options={organisations.map((org) => ({
-                value: org.id,
-                label: `${org.name} (${org.type})`,
-              }))}
-              placeholder="Filter by organisation"
-            />
-          </div>
-
           <div className="flex items-end">
             <Button
               onClick={() =>
@@ -309,8 +292,7 @@ const BankAccountsPage: React.FC = () => {
                   page: 1,
                   limit: 10,
                   search: "",
-                  currency_id: "",
-                  organisation_id: user?.organisation_id || "",
+                  organisation_id: organisationId || "",
                 })
               }
               variant="outline"

@@ -8,8 +8,10 @@ import {
   useUpdateVault,
   useDeleteVault,
 } from "../hooks/useVaults";
+import { useTopupVault, useWithdrawVault } from "../hooks/useBalanceOperations";
 import VaultsTable from "../components/VaultsTable";
 import VaultForm from "../components/VaultForm";
+import VaultTopupForm from "../components/VaultTopupForm";
 import { Modal } from "../components/ui/Modal";
 import { ConfirmModal } from "../components/ConfirmModal";
 import type {
@@ -17,6 +19,7 @@ import type {
   CreateVaultRequest,
   UpdateVaultRequest,
 } from "../types/VaultsTypes";
+import type { VaultTopupRequest } from "../types/BalanceOperationsTypes";
 import { useSession } from "../hooks";
 
 const VaultsPage: React.FC = () => {
@@ -31,6 +34,8 @@ const VaultsPage: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showTopupModal, setShowTopupModal] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [selectedVault, setSelectedVault] = useState<Vault | null>(null);
   const [vaultToDelete, setVaultToDelete] = useState<{
     id: string;
@@ -52,6 +57,8 @@ const VaultsPage: React.FC = () => {
   const createVaultMutation = useCreateVault();
   const updateVaultMutation = useUpdateVault();
   const deleteVaultMutation = useDeleteVault();
+  const topupVaultMutation = useTopupVault();
+  const withdrawVaultMutation = useWithdrawVault();
 
   // Handlers
   const handleCreateVault = (data: CreateVaultRequest) => {
@@ -97,6 +104,42 @@ const VaultsPage: React.FC = () => {
   const handleDeleteClick = (vault: Vault) => {
     setVaultToDelete({ id: vault.id, name: vault.name });
     setShowDeleteModal(true);
+  };
+
+  const handleTopupClick = (vault: Vault) => {
+    setSelectedVault(vault);
+    setShowTopupModal(true);
+  };
+
+  const handleWithdrawClick = (vault: Vault) => {
+    setSelectedVault(vault);
+    setShowWithdrawModal(true);
+  };
+
+  const handleTopupVault = (data: VaultTopupRequest) => {
+    if (!selectedVault) return;
+    topupVaultMutation.mutate(
+      { vaultId: selectedVault.id, data },
+      {
+        onSuccess: () => {
+          setShowTopupModal(false);
+          setSelectedVault(null);
+        },
+      }
+    );
+  };
+
+  const handleWithdrawVault = (data: VaultTopupRequest) => {
+    if (!selectedVault) return;
+    withdrawVaultMutation.mutate(
+      { vaultId: selectedVault.id, data },
+      {
+        onSuccess: () => {
+          setShowWithdrawModal(false);
+          setSelectedVault(null);
+        },
+      }
+    );
   };
 
   const vaults = vaultsData?.data?.vaults || [];
@@ -211,6 +254,8 @@ const VaultsPage: React.FC = () => {
           onView={handleViewVault}
           onEdit={handleEditClick}
           onDelete={handleDeleteClick}
+          onTopup={handleTopupClick}
+          onWithdraw={handleWithdrawClick}
         />
 
         {/* Pagination */}
@@ -289,6 +334,42 @@ const VaultsPage: React.FC = () => {
         confirmText="Delete"
         isLoading={deleteVaultMutation.isPending}
       />
+
+      {/* Topup Vault Modal */}
+      <Modal
+        isOpen={showTopupModal}
+        onClose={() => {
+          setShowTopupModal(false);
+          setSelectedVault(null);
+        }}
+        title="Topup Vault"
+        size="md"
+      >
+        <VaultTopupForm
+          onSubmit={handleTopupVault}
+          isLoading={topupVaultMutation.isPending}
+          operation="topup"
+          vaultCurrencyId={selectedVault?.currency_id || undefined}
+        />
+      </Modal>
+
+      {/* Withdraw Vault Modal */}
+      <Modal
+        isOpen={showWithdrawModal}
+        onClose={() => {
+          setShowWithdrawModal(false);
+          setSelectedVault(null);
+        }}
+        title="Withdraw from Vault"
+        size="md"
+      >
+        <VaultTopupForm
+          onSubmit={handleWithdrawVault}
+          isLoading={withdrawVaultMutation.isPending}
+          operation="withdraw"
+          vaultCurrencyId={selectedVault?.currency_id || undefined}
+        />
+      </Modal>
     </div>
   );
 };

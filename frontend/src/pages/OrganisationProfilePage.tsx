@@ -1032,11 +1032,11 @@ const OrganisationProfilePage: React.FC = () => {
 
           <FormItem label="Source Bank Account" required>
             <SearchableSelect
-              name="source_id"
+              field="source_id"
               placeholder="Select bank account"
               options={bankAccounts.map((account) => ({
                 value: account.id,
-                label: `${account.account_name} - ${account.account_number}`,
+                label: `${account.name} - ${account.account_number}`,
               }))}
               required
             />

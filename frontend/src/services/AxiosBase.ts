@@ -8,8 +8,13 @@ const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
+    Accept: "application/json",
+    "X-Requested-With": "XMLHttpRequest",
   },
   withCredentials: true,
+  timeout: 30000, // 30 seconds timeout
+  // Ensure proper handling of CORS
+  validateStatus: (status) => status < 500, // Don't throw for 4xx errors
 });
 
 // Request interceptor to add auth token
@@ -26,10 +31,28 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Response interceptor to handle auth errors
+// Response interceptor to handle auth errors and CORS issues
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Handle CORS errors specifically
+    if (error.code === "ERR_NETWORK" || error.message?.includes("CORS")) {
+      console.error("CORS Error:", error.message);
+      console.error(
+        "This might be a temporary network issue. Please try again."
+      );
+      // Don't throw the error immediately, let the user retry
+      return Promise.reject(
+        new Error("Network error. Please check your connection and try again.")
+      );
+    }
+
+    // Handle timeout errors
+    if (error.code === "ECONNABORTED") {
+      console.error("Request timeout:", error.message);
+      return Promise.reject(new Error("Request timed out. Please try again."));
+    }
+
     if (error.response?.status === 401) {
       // Log the 401 error but don't automatically clear session
       // Let the application handle it gracefully

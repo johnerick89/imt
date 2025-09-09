@@ -130,6 +130,7 @@ export interface GenerateAccountsRequest {
   generate_for_tills?: boolean;
   generate_for_vaults?: boolean;
   generate_for_charges?: boolean;
+  generate_for_org_balances?: boolean;
 }
 
 export interface GenerateAccountsResponse {

@@ -24,7 +24,7 @@ const BankAccountForm: React.FC<BankAccountFormProps> = ({
   isEdit = false,
 }) => {
   const { data: currenciesData } = useCurrencies({ limit: 1000 });
-  const { data: organisationsData } = useOrganisations({ limit: 1000 });
+  const { data: organisationsData } = useOrganisations({ limit: 100 });
   const { user } = useSession();
   const organisationId = user?.organisation_id;
 

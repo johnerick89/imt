@@ -35,6 +35,10 @@ export const createTillSchema = z.object({
     }
     return val;
   }, z.string().optional()),
+  opening_balance: z.preprocess(
+    (val) => (val === "" ? undefined : val),
+    z.number().optional()
+  ),
 });
 
 export const updateTillSchema = z.object({
@@ -72,6 +76,10 @@ export const updateTillSchema = z.object({
     }
     return val;
   }, z.string().optional()),
+  opening_balance: z.preprocess(
+    (val) => (val === "" ? undefined : val),
+    z.number().optional()
+  ),
 });
 
 export const tillFiltersSchema = z.object({

@@ -84,21 +84,21 @@ const BankAccountsTable: React.FC<BankAccountsTableProps> = ({
           </div>
         ),
       },
-      {
-        accessorKey: "organisation",
-        header: "Organisation",
-        cell: ({ row }) => {
-          const org = row.original.organisation;
-          return org ? (
-            <div>
-              <div className="font-medium text-gray-900">{org.name}</div>
-              <div className="text-sm text-gray-500">{org.type}</div>
-            </div>
-          ) : (
-            <span className="text-gray-400">-</span>
-          );
-        },
-      },
+      // {
+      //   accessorKey: "organisation",
+      //   header: "Organisation",
+      //   cell: ({ row }) => {
+      //     const org = row.original.organisation;
+      //     return org ? (
+      //       <div>
+      //         <div className="font-medium text-gray-900">{org.name}</div>
+      //         <div className="text-sm text-gray-500">{org.type}</div>
+      //       </div>
+      //     ) : (
+      //       <span className="text-gray-400">-</span>
+      //     );
+      //   },
+      // },
       {
         accessorKey: "created_by_user",
         header: "Created By",

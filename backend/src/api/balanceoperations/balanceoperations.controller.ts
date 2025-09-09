@@ -7,39 +7,28 @@ import {
   orgBalanceFiltersSchema,
 } from "./balanceoperations.validation";
 import type CustomRequest from "../../types/CustomReq.type";
+import { AppError } from "../../utils/AppError";
+import { asyncHandler } from "../../middlewares/error.middleware";
 
 const balanceOperationService = new BalanceOperationService();
 
 export class BalanceOperationController {
   // Organisation Balance Operations
-  async prefundOrganisation(req: CustomRequest, res: Response): Promise<void> {
-    try {
+  prefundOrganisation = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { orgId } = req.params;
       if (!orgId) {
-        res.status(400).json({
-          success: false,
-          message: "Organisation ID is required",
-        });
-        return;
+        throw new AppError("Organisation ID is required", 400);
       }
 
       const validation = orgBalanceOperationSchema.safeParse(req.body);
       if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: "Validation error",
-          error: validation.error.issues,
-        });
-        return;
+        throw new AppError("Validation error", 400);
       }
 
       const userId = req.user?.id;
       if (!userId) {
-        res.status(401).json({
-          success: false,
-          message: "User not authenticated",
-        });
-        return;
+        throw new AppError("User not authenticated", 401);
       }
 
       const result = await balanceOperationService.prefundOrganisation(
@@ -48,43 +37,25 @@ export class BalanceOperationController {
         userId
       );
       res.json(result);
-    } catch (error: any) {
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to prefund organisation",
-      });
     }
-  }
+  );
 
   // Till Balance Operations
-  async topupTill(req: CustomRequest, res: Response): Promise<void> {
-    try {
+  topupTill = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { tillId } = req.params;
       if (!tillId) {
-        res.status(400).json({
-          success: false,
-          message: "Till ID is required",
-        });
-        return;
+        throw new AppError("Till ID is required", 400);
       }
 
       const validation = tillBalanceOperationSchema.safeParse(req.body);
       if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: "Validation error",
-          error: validation.error.issues,
-        });
-        return;
+        throw new AppError("Validation error", 400);
       }
 
       const userId = req.user?.id;
       if (!userId) {
-        res.status(401).json({
-          success: false,
-          message: "User not authenticated",
-        });
-        return;
+        throw new AppError("User not authenticated", 401);
       }
 
       const result = await balanceOperationService.topupTill(
@@ -93,43 +64,25 @@ export class BalanceOperationController {
         userId
       );
       res.json(result);
-    } catch (error: any) {
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to top up till",
-      });
     }
-  }
+  );
 
   // Vault Balance Operations
-  async topupVault(req: CustomRequest, res: Response): Promise<void> {
-    try {
+  topupVault = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { vaultId } = req.params;
       if (!vaultId) {
-        res.status(400).json({
-          success: false,
-          message: "Vault ID is required",
-        });
-        return;
+        throw new AppError("Vault ID is required", 400);
       }
 
       const validation = vaultBalanceOperationSchema.safeParse(req.body);
       if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: "Validation error",
-          error: validation.error.issues,
-        });
-        return;
+        throw new AppError("Validation error", 400);
       }
 
       const userId = req.user?.id;
       if (!userId) {
-        res.status(401).json({
-          success: false,
-          message: "User not authenticated",
-        });
-        return;
+        throw new AppError("User not authenticated", 401);
       }
 
       const result = await balanceOperationService.topupVault(
@@ -138,43 +91,25 @@ export class BalanceOperationController {
         userId
       );
       res.json(result);
-    } catch (error: any) {
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to top up vault",
-      });
     }
-  }
+  );
 
   // Till Withdrawal Operations
-  async withdrawTill(req: CustomRequest, res: Response): Promise<void> {
-    try {
+  withdrawTill = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { tillId } = req.params;
       if (!tillId) {
-        res.status(400).json({
-          success: false,
-          message: "Till ID is required",
-        });
-        return;
+        throw new AppError("Till ID is required", 400);
       }
 
       const validation = tillBalanceOperationSchema.safeParse(req.body);
       if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: "Validation error",
-          error: validation.error.issues,
-        });
-        return;
+        throw new AppError("Validation error", 400);
       }
 
       const userId = req.user?.id;
       if (!userId) {
-        res.status(401).json({
-          success: false,
-          message: "User not authenticated",
-        });
-        return;
+        throw new AppError("User not authenticated", 401);
       }
 
       const result = await balanceOperationService.withdrawTill(
@@ -183,43 +118,25 @@ export class BalanceOperationController {
         userId
       );
       res.json(result);
-    } catch (error: any) {
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to withdraw from till",
-      });
     }
-  }
+  );
 
   // Vault Withdrawal Operations
-  async withdrawVault(req: CustomRequest, res: Response): Promise<void> {
-    try {
+  withdrawVault = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { vaultId } = req.params;
       if (!vaultId) {
-        res.status(400).json({
-          success: false,
-          message: "Vault ID is required",
-        });
-        return;
+        throw new AppError("Vault ID is required", 400);
       }
 
       const validation = vaultBalanceOperationSchema.safeParse(req.body);
       if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: "Validation error",
-          error: validation.error.issues,
-        });
-        return;
+        throw new AppError("Validation error", 400);
       }
 
       const userId = req.user?.id;
       if (!userId) {
-        res.status(401).json({
-          success: false,
-          message: "User not authenticated",
-        });
-        return;
+        throw new AppError("User not authenticated", 401);
       }
 
       const result = await balanceOperationService.withdrawVault(
@@ -228,67 +145,43 @@ export class BalanceOperationController {
         userId
       );
       res.json(result);
-    } catch (error: any) {
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to withdraw from vault",
-      });
     }
-  }
+  );
 
   // Get Organisation Balances
-  async getOrgBalances(req: CustomRequest, res: Response): Promise<void> {
-    try {
+  getOrgBalances = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const validation = orgBalanceFiltersSchema.safeParse(req.query);
       if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: "Validation error",
-          error: validation.error.issues,
-        });
-        return;
+        throw new AppError("Validation error", 400);
       }
 
       const result = await balanceOperationService.getOrgBalances(
         validation.data
       );
       res.json(result);
-    } catch (error: any) {
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to fetch organisation balances",
-      });
     }
-  }
+  );
 
   // Get Organisation Balance Stats
-  async getOrgBalanceStats(req: CustomRequest, res: Response): Promise<void> {
-    try {
+  getOrgBalanceStats = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const organisationId = req.query.organisation_id as string;
       const result = await balanceOperationService.getOrgBalanceStats(
         organisationId
       );
       res.json(result);
-    } catch (error: any) {
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to fetch organisation balance stats",
-      });
     }
-  }
+  );
 
   // Get organisation balance history
-  async getOrgBalanceHistory(req: CustomRequest, res: Response): Promise<void> {
-    try {
+  getOrgBalanceHistory = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { orgId } = req.params;
       const filters = req.query;
 
       if (!orgId) {
-        res.status(400).json({
-          success: false,
-          message: "Organisation ID is required",
-        });
-        return;
+        throw new AppError("Organisation ID is required", 400);
       }
 
       const result = await balanceOperationService.getOrgBalanceHistory(
@@ -296,31 +189,17 @@ export class BalanceOperationController {
         filters
       );
       res.json(result);
-    } catch (error: any) {
-      console.error("Error fetching organisation balance history:", error);
-      res.status(500).json({
-        success: false,
-        message:
-          error.message || "Failed to fetch organisation balance history",
-      });
     }
-  }
+  );
 
   // Get till balance history
-  async getTillBalanceHistory(
-    req: CustomRequest,
-    res: Response
-  ): Promise<void> {
-    try {
+  getTillBalanceHistory = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { tillId } = req.params;
       const filters = req.query;
 
       if (!tillId) {
-        res.status(400).json({
-          success: false,
-          message: "Till ID is required",
-        });
-        return;
+        throw new AppError("Till ID is required", 400);
       }
 
       const result = await balanceOperationService.getTillBalanceHistory(
@@ -328,30 +207,17 @@ export class BalanceOperationController {
         filters
       );
       res.json(result);
-    } catch (error: any) {
-      console.error("Error fetching till balance history:", error);
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to fetch till balance history",
-      });
     }
-  }
+  );
 
   // Get vault balance history
-  async getVaultBalanceHistory(
-    req: CustomRequest,
-    res: Response
-  ): Promise<void> {
-    try {
+  getVaultBalanceHistory = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { vaultId } = req.params;
       const filters = req.query;
 
       if (!vaultId) {
-        res.status(400).json({
-          success: false,
-          message: "Vault ID is required",
-        });
-        return;
+        throw new AppError("Vault ID is required", 400);
       }
 
       const result = await balanceOperationService.getVaultBalanceHistory(
@@ -359,12 +225,6 @@ export class BalanceOperationController {
         filters
       );
       res.json(result);
-    } catch (error: any) {
-      console.error("Error fetching vault balance history:", error);
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to fetch vault balance history",
-      });
     }
-  }
+  );
 }

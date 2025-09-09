@@ -1,5 +1,6 @@
 import type { Currency } from "./CurrenciesTypes";
 import type { Organisation } from "./OrganisationsTypes";
+import type { User } from "./UsersTypes";
 
 export interface Vault {
   id: string;
@@ -8,7 +9,10 @@ export interface Vault {
   organisation: Organisation | null;
   currency_id?: string | null;
   currency?: Currency | null;
-
+  balance?: number | null;
+  locked_balance?: number | null;
+  created_by: string;
+  created_by_user: User | null;
   created_at: Date;
   updated_at: Date;
 }

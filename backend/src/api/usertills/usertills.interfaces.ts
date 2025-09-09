@@ -12,6 +12,7 @@ export interface IUserTill {
   status: UserTillStatus;
   created_at?: Date;
   updated_at?: Date;
+  net_transactions_total?: number;
 }
 
 export interface CreateUserTillRequest {

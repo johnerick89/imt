@@ -219,31 +219,34 @@ export class DashboardService {
     organisationId: string
   ): Promise<FinancialBalances> {
     // Till balances
-    const tillBalances = await prisma.tillBalance.findMany({
-      where: {
-        till: { organisation_id: organisationId },
-      },
+    const tills = await prisma.till.findMany({
+      where: { organisation_id: organisationId },
       include: {
-        till: { select: { id: true, name: true } },
         currency: { select: { currency_code: true } },
       },
     });
 
-    const totalTillBalance = tillBalances.reduce((sum, balance) => {
+    const totalTillBalance = tills.reduce((sum, balance) => {
+      if (balance.balance === null || balance.balance === undefined) {
+        return sum;
+      }
       return sum + parseFloat(balance.balance.toString());
     }, 0);
 
     // Vault balances
-    const vaultBalances = await prisma.vaultBalance.findMany({
+    const vaults = await prisma.vault.findMany({
       where: {
-        vault: { organisation_id: organisationId },
+        organisation_id: organisationId,
       },
       include: {
         currency: { select: { currency_code: true } },
       },
     });
 
-    const totalVaultBalance = vaultBalances.reduce((sum, balance) => {
+    const totalVaultBalance = vaults.reduce((sum, balance) => {
+      if (balance.balance === null || balance.balance === undefined) {
+        return sum;
+      }
       return sum + parseFloat(balance.balance.toString());
     }, 0);
 
@@ -277,13 +280,21 @@ export class DashboardService {
 
     // Low balance alerts (simplified - would need GL account min balances)
     const lowBalanceAlerts = [
-      ...tillBalances
-        .filter((balance) => parseFloat(balance.balance.toString()) < 1000) // Example threshold
+      ...tills
+        .filter(
+          (balance) =>
+            balance.balance !== null &&
+            parseFloat(balance.balance.toString()) < 1000 &&
+            (balance as any).till // Ensure till property exists
+        )
         .map((balance) => ({
           type: "TILL" as const,
-          id: balance.till.id,
-          name: balance.till.name,
-          balance: parseFloat(balance.balance.toString()),
+          id: (balance as any).till?.id || balance.id,
+          name: (balance as any).till?.name || "",
+          balance:
+            balance.balance !== null
+              ? parseFloat(balance.balance.toString())
+              : 0,
           minBalance: 1000,
           currency: balance.currency?.currency_code || "USD",
         })),
@@ -292,14 +303,14 @@ export class DashboardService {
     return {
       tillBalances: {
         total: totalTillBalance,
-        currency: tillBalances[0]?.currency?.currency_code || "USD",
+        currency: tills[0]?.currency?.currency_code || "USD",
         lowBalanceTills: lowBalanceAlerts.filter(
           (alert) => alert.type === "TILL"
         ),
       },
       vaultBalances: {
         total: totalVaultBalance,
-        currency: vaultBalances[0]?.currency?.currency_code || "USD",
+        currency: vaults[0]?.currency?.currency_code || "USD",
       },
       bankAccountBalances: {
         total: totalBankBalance,
@@ -311,7 +322,10 @@ export class DashboardService {
         partners: partnerBalances.map((balance) => ({
           orgId: balance.dest_org?.id || balance.base_org?.id || "",
           orgName: balance.dest_org?.name || balance.base_org?.name || "",
-          balance: parseFloat(balance.balance.toString()),
+          balance:
+            balance.balance !== null
+              ? parseFloat(balance.balance.toString())
+              : 0,
           currency: balance.currency?.currency_code || "USD",
         })),
       },

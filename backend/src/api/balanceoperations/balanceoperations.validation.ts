@@ -9,7 +9,10 @@ export const balanceOperationSchema = z.object({
   source_id: z.string().uuid("Invalid source ID").optional(),
   destination_type: z.enum(["BANK_ACCOUNT", "VAULT", "TILL"]).optional(),
   destination_id: z.string().uuid("Invalid destination ID").optional(),
-  description: z.string().max(500, "Description must be less than 500 characters").optional(),
+  description: z
+    .string()
+    .max(500, "Description must be less than 500 characters")
+    .optional(),
 });
 
 export const orgBalanceOperationSchema = z.object({
@@ -17,9 +20,12 @@ export const orgBalanceOperationSchema = z.object({
     .string()
     .transform((val) => parseFloat(val))
     .pipe(z.number().positive("Amount must be positive")),
-  source_type: z.literal("BANK_ACCOUNT"),
+  source_type: z.literal("BANK_ACCOUNT").optional().default("BANK_ACCOUNT"),
   source_id: z.string().uuid("Invalid source ID"),
-  description: z.string().max(500, "Description must be less than 500 characters").optional(),
+  description: z
+    .string()
+    .max(500, "Description must be less than 500 characters")
+    .optional(),
 });
 
 export const tillBalanceOperationSchema = z.object({
@@ -27,9 +33,12 @@ export const tillBalanceOperationSchema = z.object({
     .string()
     .transform((val) => parseFloat(val))
     .pipe(z.number().positive("Amount must be positive")),
-  source_type: z.literal("VAULT"),
+  source_type: z.literal("VAULT").optional().default("VAULT"),
   source_id: z.string().uuid("Invalid source ID"),
-  description: z.string().max(500, "Description must be less than 500 characters").optional(),
+  description: z
+    .string()
+    .max(500, "Description must be less than 500 characters")
+    .optional(),
 });
 
 export const vaultBalanceOperationSchema = z.object({
@@ -37,9 +46,12 @@ export const vaultBalanceOperationSchema = z.object({
     .string()
     .transform((val) => parseFloat(val))
     .pipe(z.number().positive("Amount must be positive")),
-  source_type: z.literal("BANK_ACCOUNT"),
+  source_type: z.literal("BANK_ACCOUNT").optional().default("BANK_ACCOUNT"),
   source_id: z.string().uuid("Invalid source ID"),
-  description: z.string().max(500, "Description must be less than 500 characters").optional(),
+  description: z
+    .string()
+    .max(500, "Description must be less than 500 characters")
+    .optional(),
 });
 
 export const orgBalanceFiltersSchema = z.object({

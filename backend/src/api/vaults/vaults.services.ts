@@ -12,10 +12,19 @@ import type {
 const prisma = new PrismaClient();
 
 export class VaultService {
-  async createVault(data: CreateVaultRequest): Promise<VaultResponse> {
+  async createVault({
+    data,
+    userId,
+  }: {
+    data: CreateVaultRequest;
+    userId: string;
+  }): Promise<VaultResponse> {
     try {
       const vault = await prisma.vault.create({
-        data,
+        data: {
+          ...data,
+          created_by: userId,
+        },
         include: {
           organisation: {
             select: {
@@ -30,6 +39,13 @@ export class VaultService {
               currency_name: true,
               currency_code: true,
               currency_symbol: true,
+            },
+          },
+          created_by_user: {
+            select: {
+              id: true,
+              first_name: true,
+              last_name: true,
             },
           },
         },
@@ -77,21 +93,8 @@ export class VaultService {
           take: limit,
           orderBy: { created_at: "desc" },
           include: {
-            organisation: {
-              select: {
-                id: true,
-                name: true,
-                type: true,
-              },
-            },
-            currency: {
-              select: {
-                id: true,
-                currency_name: true,
-                currency_code: true,
-                currency_symbol: true,
-              },
-            },
+            organisation: true,
+            currency: true,
           },
         }),
         prisma.vault.count({ where }),
@@ -123,21 +126,8 @@ export class VaultService {
       const vault = await prisma.vault.findUnique({
         where: { id },
         include: {
-          organisation: {
-            select: {
-              id: true,
-              name: true,
-              type: true,
-            },
-          },
-          currency: {
-            select: {
-              id: true,
-              currency_name: true,
-              currency_code: true,
-              currency_symbol: true,
-            },
-          },
+          organisation: true,
+          currency: true,
         },
       });
 

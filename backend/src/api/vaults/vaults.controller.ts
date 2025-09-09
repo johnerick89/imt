@@ -23,7 +23,10 @@ export class VaultController {
         return;
       }
 
-      const result = await vaultService.createVault(validation.data);
+      const result = await vaultService.createVault({
+        data: validation.data,
+        userId: req.user?.id || "",
+      });
       res.status(201).json(result);
     } catch (error: any) {
       console.error("Error in createVault:", error);

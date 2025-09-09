@@ -103,6 +103,13 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
     (userTill: UserTill) => userTill.status === "OPEN"
   );
 
+  console.log(
+    "currentUserTill",
+    currentUserTill,
+    "userTillsData",
+    userTillsData
+  );
+
   const {
     control,
     handleSubmit,

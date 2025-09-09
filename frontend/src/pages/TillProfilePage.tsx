@@ -7,6 +7,9 @@ import {
   FiSquare,
   FiShield,
   FiXCircle,
+  FiPlus,
+  FiMinus,
+  FiUnlock,
 } from "react-icons/fi";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { Modal } from "../components/ui/Modal";
@@ -14,6 +17,7 @@ import { ConfirmModal } from "../components/ConfirmModal";
 import TillForm from "../components/TillForm";
 import UserTillsTable from "../components/UserTillsTable";
 import UserTillForm from "../components/UserTillForm";
+import TillTopupForm from "../components/TillTopupForm";
 import {
   useTill,
   useUpdateTill,
@@ -27,6 +31,8 @@ import {
   useDeleteUserTill,
   useCloseUserTill,
   useBlockUserTill,
+  useTopupTill,
+  useWithdrawTill,
 } from "../hooks";
 import { TillStatus } from "../types/TillsTypes";
 import type {
@@ -35,6 +41,7 @@ import type {
   CreateUserTillRequest,
   UpdateUserTillRequest,
 } from "../types/TillsTypes";
+import type { TillTopupRequest } from "../types/BalanceOperationsTypes";
 
 const TillProfilePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -46,6 +53,8 @@ const TillProfilePage: React.FC = () => {
   const [showCreateUserTillModal, setShowCreateUserTillModal] = useState(false);
   const [showEditUserTillModal, setShowEditUserTillModal] = useState(false);
   const [showDeleteUserTillModal, setShowDeleteUserTillModal] = useState(false);
+  const [showTopupModal, setShowTopupModal] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [selectedUserTill, setSelectedUserTill] = useState<UserTill | null>(
     null
   );
@@ -68,6 +77,8 @@ const TillProfilePage: React.FC = () => {
   const deleteUserTillMutation = useDeleteUserTill();
   const closeUserTillMutation = useCloseUserTill();
   const blockUserTillMutation = useBlockUserTill();
+  const topupTillMutation = useTopupTill();
+  const withdrawTillMutation = useWithdrawTill();
 
   const till = tillData?.data;
   const userTills = userTillsData?.data?.userTills || [];
@@ -110,6 +121,7 @@ const TillProfilePage: React.FC = () => {
 
   const canClose = till.current_teller_user_id && till.opened_at;
   const canBlock = till.status !== TillStatus.BLOCKED;
+  const canUnblock = till.status === TillStatus.BLOCKED;
   const canDeactivate = till.status !== TillStatus.INACTIVE;
 
   // Handlers
@@ -128,7 +140,7 @@ const TillProfilePage: React.FC = () => {
   };
 
   const handleTillOperation = async (
-    operation: "open" | "close" | "block" | "deactivate"
+    operation: "open" | "close" | "block" | "unblock" | "deactivate"
   ) => {
     try {
       let result;
@@ -141,6 +153,12 @@ const TillProfilePage: React.FC = () => {
           break;
         case "block":
           result = await blockTillMutation.mutateAsync(till.id);
+          break;
+        case "unblock":
+          result = await updateTillMutation.mutateAsync({
+            id: till.id,
+            data: { status: TillStatus.ACTIVE },
+          });
           break;
         case "deactivate":
           result = await deactivateTillMutation.mutateAsync(till.id);
@@ -239,6 +257,37 @@ const TillProfilePage: React.FC = () => {
     console.log("View user till:", userTill);
   };
 
+  // Balance operation handlers
+  const handleTopupTill = async (data: TillTopupRequest) => {
+    try {
+      await topupTillMutation.mutateAsync({
+        tillId: till.id,
+        data,
+      });
+      // If we reach here, the mutation was successful
+      setShowTopupModal(false);
+    } catch (error) {
+      // Error handling is done in the hook with toast notifications
+      // Don't close modal on error so user can retry
+      console.error("Failed to topup till:", error);
+    }
+  };
+
+  const handleWithdrawTill = async (data: TillTopupRequest) => {
+    try {
+      await withdrawTillMutation.mutateAsync({
+        tillId: till.id,
+        data,
+      });
+      // If we reach here, the mutation was successful
+      setShowWithdrawModal(false);
+    } catch (error) {
+      // Error handling is done in the hook with toast notifications
+      // Don't close modal on error so user can retry
+      console.error("Failed to withdraw from till:", error);
+    }
+  };
+
   const isAnyMutationLoading =
     updateTillMutation.isPending ||
     openTillMutation.isPending ||
@@ -249,7 +298,9 @@ const TillProfilePage: React.FC = () => {
     updateUserTillMutation.isPending ||
     deleteUserTillMutation.isPending ||
     closeUserTillMutation.isPending ||
-    blockUserTillMutation.isPending;
+    blockUserTillMutation.isPending ||
+    topupTillMutation.isPending ||
+    withdrawTillMutation.isPending;
 
   return (
     <div className="p-6">
@@ -298,6 +349,16 @@ const TillProfilePage: React.FC = () => {
               Block Till
             </button>
           )}
+          {canUnblock && (
+            <button
+              onClick={() => handleTillOperation("unblock")}
+              disabled={isAnyMutationLoading}
+              className="flex items-center gap-2 px-3 py-2 text-green-600 border border-green-600 rounded-lg hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+            >
+              <FiUnlock className="h-4 w-4" />
+              Unblock Till
+            </button>
+          )}
           {canDeactivate && (
             <button
               onClick={() => handleTillOperation("deactivate")}
@@ -308,6 +369,22 @@ const TillProfilePage: React.FC = () => {
               Deactivate
             </button>
           )}
+          <button
+            onClick={() => setShowTopupModal(true)}
+            disabled={isAnyMutationLoading}
+            className="flex items-center gap-2 px-3 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+          >
+            <FiPlus className="h-4 w-4" />
+            Topup Till
+          </button>
+          <button
+            onClick={() => setShowWithdrawModal(true)}
+            disabled={isAnyMutationLoading}
+            className="flex items-center gap-2 px-3 py-2 text-purple-600 border border-purple-600 rounded-lg hover:bg-purple-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+          >
+            <FiMinus className="h-4 w-4" />
+            Withdraw
+          </button>
           <button
             onClick={() => setShowEditModal(true)}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
@@ -389,6 +466,31 @@ const TillProfilePage: React.FC = () => {
                 Financial Information
               </h3>
               <div className="space-y-3">
+                <div>
+                  <span className="text-sm font-medium text-gray-500">
+                    Balance
+                  </span>
+                  <p className="mt-1 text-sm text-gray-900 font-semibold">
+                    {till.balance !== null && till.balance !== undefined
+                      ? `${till.currency?.currency_symbol || ""} ${parseFloat(
+                          till.balance.toString()
+                        ).toFixed(2)}`
+                      : "-"}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-gray-500">
+                    Locked Balance
+                  </span>
+                  <p className="mt-1 text-sm text-gray-900">
+                    {till.locked_balance !== null &&
+                    till.locked_balance !== undefined
+                      ? `${till.currency?.currency_symbol || ""} ${parseFloat(
+                          till.locked_balance.toString()
+                        ).toFixed(2)}`
+                      : "-"}
+                  </p>
+                </div>
                 <div>
                   <span className="text-sm font-medium text-gray-500">
                     Vault
@@ -558,6 +660,36 @@ const TillProfilePage: React.FC = () => {
         message={`Are you sure you want to delete this user till? This action cannot be undone.`}
         isLoading={isAnyMutationLoading}
       />
+
+      {/* Topup Till Modal */}
+      <Modal
+        isOpen={showTopupModal}
+        onClose={() => setShowTopupModal(false)}
+        title="Topup Till"
+        size="md"
+      >
+        <TillTopupForm
+          onSubmit={handleTopupTill}
+          isLoading={topupTillMutation.isPending}
+          operation="topup"
+          tillCurrencyId={till.currency_id || undefined}
+        />
+      </Modal>
+
+      {/* Withdraw Till Modal */}
+      <Modal
+        isOpen={showWithdrawModal}
+        onClose={() => setShowWithdrawModal(false)}
+        title="Withdraw from Till"
+        size="md"
+      >
+        <TillTopupForm
+          onSubmit={handleWithdrawTill}
+          isLoading={withdrawTillMutation.isPending}
+          operation="withdraw"
+          tillCurrencyId={till.currency_id || undefined}
+        />
+      </Modal>
     </div>
   );
 };

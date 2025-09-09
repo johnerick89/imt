@@ -1,13 +1,32 @@
-import React from "react";
+import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { FiArrowLeft, FiArchive, FiDollarSign } from "react-icons/fi";
+import {
+  FiArrowLeft,
+  FiArchive,
+  FiDollarSign,
+  FiPlus,
+  FiMinus,
+} from "react-icons/fi";
 import { useVault } from "../hooks/useVaults";
+import { useTopupVault, useWithdrawVault } from "../hooks/useBalanceOperations";
+import VaultTopupForm from "../components/VaultTopupForm";
+import { Modal } from "../components/ui/Modal";
+import type { VaultTopupRequest } from "../types/BalanceOperationsTypes";
 
 const VaultProfilePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
+  // State
+  const [showTopupModal, setShowTopupModal] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+
+  // Data fetching
   const { data: vaultData, isLoading, error } = useVault(id || "");
+
+  // Mutations
+  const topupVaultMutation = useTopupVault();
+  const withdrawVaultMutation = useWithdrawVault();
 
   if (isLoading) {
     return (
@@ -66,6 +85,31 @@ const VaultProfilePage: React.FC = () => {
       .slice(0, 2);
   };
 
+  // Handlers
+  const handleTopupVault = (data: VaultTopupRequest) => {
+    if (!id) return;
+    topupVaultMutation.mutate(
+      { vaultId: id, data },
+      {
+        onSuccess: () => {
+          setShowTopupModal(false);
+        },
+      }
+    );
+  };
+
+  const handleWithdrawVault = (data: VaultTopupRequest) => {
+    if (!id) return;
+    withdrawVaultMutation.mutate(
+      { vaultId: id, data },
+      {
+        onSuccess: () => {
+          setShowWithdrawModal(false);
+        },
+      }
+    );
+  };
+
   return (
     <div className="p-6">
       {/* Header */}
@@ -81,6 +125,28 @@ const VaultProfilePage: React.FC = () => {
             <h1 className="text-2xl font-bold text-gray-900">Vault Profile</h1>
             <p className="text-gray-600 mt-1">View and manage vault details</p>
           </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowTopupModal(true)}
+            disabled={
+              topupVaultMutation.isPending || withdrawVaultMutation.isPending
+            }
+            className="flex items-center gap-2 px-3 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+          >
+            <FiPlus className="h-4 w-4" />
+            Topup Vault
+          </button>
+          <button
+            onClick={() => setShowWithdrawModal(true)}
+            disabled={
+              topupVaultMutation.isPending || withdrawVaultMutation.isPending
+            }
+            className="flex items-center gap-2 px-3 py-2 text-purple-600 border border-purple-600 rounded-lg hover:bg-purple-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+          >
+            <FiMinus className="h-4 w-4" />
+            Withdraw
+          </button>
         </div>
       </div>
 
@@ -146,6 +212,35 @@ const VaultProfilePage: React.FC = () => {
 
                   <div>
                     <dt className="text-sm font-medium text-gray-500">
+                      Balance
+                    </dt>
+                    <dd className="mt-1 text-sm text-gray-900 font-semibold">
+                      {vault.balance !== null && vault.balance !== undefined
+                        ? `${
+                            vault.currency?.currency_symbol || ""
+                          } ${parseFloat(vault.balance.toString()).toFixed(2)}`
+                        : "-"}
+                    </dd>
+                  </div>
+
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">
+                      Locked Balance
+                    </dt>
+                    <dd className="mt-1 text-sm text-gray-900">
+                      {vault.locked_balance !== null &&
+                      vault.locked_balance !== undefined
+                        ? `${
+                            vault.currency?.currency_symbol || ""
+                          } ${parseFloat(
+                            vault.locked_balance.toString()
+                          ).toFixed(2)}`
+                        : "-"}
+                    </dd>
+                  </div>
+
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">
                       Created Date
                     </dt>
                     <dd className="mt-1 text-sm text-gray-900">
@@ -194,6 +289,36 @@ const VaultProfilePage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Topup Vault Modal */}
+      <Modal
+        isOpen={showTopupModal}
+        onClose={() => setShowTopupModal(false)}
+        title="Topup Vault"
+        size="md"
+      >
+        <VaultTopupForm
+          onSubmit={handleTopupVault}
+          isLoading={topupVaultMutation.isPending}
+          operation="topup"
+          vaultCurrencyId={vault.currency_id || undefined}
+        />
+      </Modal>
+
+      {/* Withdraw Vault Modal */}
+      <Modal
+        isOpen={showWithdrawModal}
+        onClose={() => setShowWithdrawModal(false)}
+        title="Withdraw from Vault"
+        size="md"
+      >
+        <VaultTopupForm
+          onSubmit={handleWithdrawVault}
+          isLoading={withdrawVaultMutation.isPending}
+          operation="withdraw"
+          vaultCurrencyId={vault.currency_id || undefined}
+        />
+      </Modal>
     </div>
   );
 };

@@ -1,9 +1,7 @@
 import React, { useState } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { Modal } from "./ui/Modal";
-import { FormItem } from "./ui/FormItem";
-import { SearchableSelect } from "./ui/SearchableSelect";
-import { useOrganisations } from "../hooks";
+import { useSession } from "../hooks";
 import type { GenerateAccountsRequest } from "../types/GlAccountsTypes";
 
 interface GenerateAccountsModalProps {
@@ -19,28 +17,25 @@ const GenerateAccountsModal: React.FC<GenerateAccountsModalProps> = ({
   onSubmit,
   isLoading = false,
 }) => {
-  const { data: organisationsData } = useOrganisations({ limit: 1000 });
-  const organisations = organisationsData?.data?.organisations || [];
+  const { user } = useSession();
+  const organisationId = user?.organisation_id;
 
   const [selectedOptions, setSelectedOptions] = useState({
     generate_for_bank_accounts: true,
     generate_for_tills: true,
     generate_for_vaults: true,
     generate_for_charges: true,
+    generate_for_org_balances: true,
   });
 
-  const {
-    control,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<GenerateAccountsRequest>({
+  const { handleSubmit, reset } = useForm<GenerateAccountsRequest>({
     defaultValues: {
-      organisation_id: "",
+      organisation_id: organisationId || "",
       generate_for_bank_accounts: true,
       generate_for_tills: true,
       generate_for_vaults: true,
       generate_for_charges: true,
+      generate_for_org_balances: true,
     },
   });
 
@@ -59,6 +54,7 @@ const GenerateAccountsModal: React.FC<GenerateAccountsModalProps> = ({
       generate_for_tills: true,
       generate_for_vaults: true,
       generate_for_charges: true,
+      generate_for_org_balances: true,
     });
     onClose();
   };
@@ -78,31 +74,6 @@ const GenerateAccountsModal: React.FC<GenerateAccountsModalProps> = ({
       size="md"
     >
       <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
-        <FormItem
-          label="Organisation"
-          required
-          invalid={!!errors.organisation_id}
-          errorMessage={errors.organisation_id?.message}
-        >
-          <Controller
-            name="organisation_id"
-            control={control}
-            rules={{ required: "Organisation is required" }}
-            render={({ field }) => (
-              <SearchableSelect
-                {...field}
-                options={organisations.map((org) => ({
-                  value: org.id,
-                  label: `${org.name} (${org.type})`,
-                }))}
-                placeholder="Select organisation"
-                disabled={isLoading}
-                invalid={!!errors.organisation_id}
-              />
-            )}
-          />
-        </FormItem>
-
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-3">
             Generate accounts for:
@@ -159,6 +130,19 @@ const GenerateAccountsModal: React.FC<GenerateAccountsModalProps> = ({
               />
               <span className="ml-2 text-sm text-gray-700">
                 Charges (Revenue accounts)
+              </span>
+            </label>
+
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={selectedOptions.generate_for_org_balances}
+                onChange={() => handleOptionChange("generate_for_org_balances")}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                disabled={isLoading}
+              />
+              <span className="ml-2 text-sm text-gray-700">
+                Organisation Balances (Liability accounts)
               </span>
             </label>
           </div>

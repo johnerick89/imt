@@ -33,6 +33,8 @@ export interface Till {
   currency?: Currency | null;
   organisation_id?: string | null;
   organisation?: Organisation | null;
+  balance?: number | null;
+  locked_balance?: number | null;
   opened_at?: Date | null;
   closed_at?: Date | null;
   created_at: Date;

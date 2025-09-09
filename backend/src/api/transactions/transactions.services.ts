@@ -463,6 +463,56 @@ export class TransactionService {
           },
         });
 
+        // Update till balance for outbound transaction
+        if (transaction.till_id) {
+          const till = await tx.till.findUnique({
+            where: { id: transaction.till_id },
+          });
+
+          if (till) {
+            const currentBalance = parseFloat(till.balance?.toString() || "0");
+            const transactionAmount = parseFloat(
+              transaction.origin_amount.toString()
+            );
+            const newBalance = currentBalance - transactionAmount;
+
+            // Update till balance
+            await tx.till.update({
+              where: { id: transaction.till_id },
+              data: {
+                balance: newBalance,
+                updated_at: new Date(),
+              },
+            });
+
+            // Update user_tills for active sessions
+            await tx.userTill.updateMany({
+              where: {
+                till_id: transaction.till_id,
+                status: "OPEN",
+                organisation_id: till.organisation_id,
+              },
+              data: {
+                net_transactions_total: { increment: -transactionAmount },
+              },
+            });
+
+            // Create balance history record
+            await tx.balanceHistory.create({
+              data: {
+                entity_type: "TILL",
+                entity_id: transaction.till_id,
+                currency_id: transaction.origin_currency_id,
+                old_balance: currentBalance,
+                new_balance: newBalance,
+                change_amount: -transactionAmount,
+                description: `Outbound transaction approved: ${transaction.id}`,
+                created_by: userId,
+              },
+            });
+          }
+        }
+
         // Create GL Transaction for the approved transaction
         await this.createGLTransactionForApprovedTransaction(
           transaction,
@@ -589,6 +639,56 @@ export class TransactionService {
             updated_at: new Date(),
           },
         });
+
+        // Reverse till balance for outbound transaction
+        if (transaction.till_id) {
+          const till = await tx.till.findUnique({
+            where: { id: transaction.till_id },
+          });
+
+          if (till) {
+            const currentBalance = parseFloat(till.balance?.toString() || "0");
+            const transactionAmount = parseFloat(
+              transaction.origin_amount.toString()
+            );
+            const newBalance = currentBalance + transactionAmount;
+
+            // Update till balance
+            await tx.till.update({
+              where: { id: transaction.till_id },
+              data: {
+                balance: newBalance,
+                updated_at: new Date(),
+              },
+            });
+
+            // Update user_tills for active sessions
+            await tx.userTill.updateMany({
+              where: {
+                till_id: transaction.till_id,
+                status: "OPEN",
+                organisation_id: till.organisation_id,
+              },
+              data: {
+                net_transactions_total: { increment: transactionAmount },
+              },
+            });
+
+            // Create balance history record
+            await tx.balanceHistory.create({
+              data: {
+                entity_type: "TILL",
+                entity_id: transaction.till_id,
+                currency_id: transaction.origin_currency_id,
+                old_balance: currentBalance,
+                new_balance: newBalance,
+                change_amount: transactionAmount,
+                description: `Outbound transaction reversed: ${transaction.id} - ${data.reason}`,
+                created_by: userId,
+              },
+            });
+          }
+        }
 
         // Create reverse GL Transaction
         await this.createReverseGLTransactionForTransaction(
@@ -1055,12 +1155,20 @@ export class TransactionService {
             { origin_organisation_id: null, destination_organisation_id: null }, // Global charges
           ],
         },
+        orderBy: [
+          { type: "asc" }, // Sort by type ascending: Non-TAX first, TAX last
+        ],
       });
 
       const calculatedCharges = [];
+      let nonTaxChargesTotal = 0;
       let totalCharges = 0;
 
-      for (const charge of charges) {
+      // Process charges in two passes: non-TAX first, then TAX
+      const nonTaxCharges = charges.filter((charge) => charge.type !== "TAX");
+      const taxCharges = charges.filter((charge) => charge.type === "TAX");
+
+      for (const charge of nonTaxCharges) {
         let amount = 0;
 
         if (charge.application_method === "PERCENTAGE") {
@@ -1098,8 +1206,51 @@ export class TransactionService {
             : null,
         });
 
+        nonTaxChargesTotal += amount;
+      }
+
+      // Calculate TAX charges based on nonTaxChargesTotal
+      for (const charge of taxCharges) {
+        let amount = 0;
+
+        if (charge.application_method === "PERCENTAGE") {
+          amount = (nonTaxChargesTotal * charge.rate) / 100; // Tax on non-tax total
+        } else {
+          amount = charge.rate;
+        }
+
+        // Apply min/max limits
+        if (charge.min_amount && amount < charge.min_amount) {
+          amount = charge.min_amount;
+        }
+        if (charge.max_amount && amount > charge.max_amount) {
+          amount = charge.max_amount;
+        }
+
+        calculatedCharges.push({
+          charge_id: charge.id,
+          type: charge.type,
+          amount,
+          rate: charge.application_method === "PERCENTAGE" ? charge.rate : null,
+          description: `${charge.name}: ${charge.description}`,
+          is_reversible: charge.is_reversible,
+          internal_amount: charge.origin_share_percentage
+            ? (nonTaxChargesTotal * charge.origin_share_percentage) / 100
+            : null,
+          internal_percentage: charge.origin_share_percentage
+            ? charge.origin_share_percentage
+            : null,
+          external_amount: charge.destination_share_percentage
+            ? (nonTaxChargesTotal * charge.destination_share_percentage) / 100
+            : null,
+          external_percentage: charge.destination_share_percentage
+            ? charge.destination_share_percentage
+            : null,
+        });
+
         totalCharges += amount;
       }
+      totalCharges += nonTaxChargesTotal;
 
       return {
         totalCharges,
@@ -1871,6 +2022,54 @@ export class TransactionService {
           },
         });
 
+        // Update till balance for inbound transaction
+        const till = await tx.till.findUnique({
+          where: { id: userTill.till_id },
+        });
+
+        if (till) {
+          const currentBalance = parseFloat(till.balance?.toString() || "0");
+          const transactionAmount = parseFloat(
+            transaction.dest_amount.toString()
+          );
+          const newBalance = currentBalance + transactionAmount;
+
+          // Update till balance
+          await tx.till.update({
+            where: { id: userTill.till_id },
+            data: {
+              balance: newBalance,
+              updated_at: new Date(),
+            },
+          });
+
+          // Update user_tills for active sessions
+          await tx.userTill.updateMany({
+            where: {
+              till_id: userTill.till_id,
+              status: "OPEN",
+              organisation_id: till.organisation_id,
+            },
+            data: {
+              net_transactions_total: { increment: transactionAmount },
+            },
+          });
+
+          // Create balance history record
+          await tx.balanceHistory.create({
+            data: {
+              entity_type: "TILL",
+              entity_id: userTill.till_id,
+              currency_id: transaction.dest_currency_id,
+              old_balance: currentBalance,
+              new_balance: newBalance,
+              change_amount: transactionAmount,
+              description: `Inbound transaction approved: ${transaction.id}`,
+              created_by: userId,
+            },
+          });
+        }
+
         // Create GL Transaction for the approved inbound transaction
         await this.createGLTransactionForApprovedInboundTransaction(
           transaction,
@@ -1976,6 +2175,56 @@ export class TransactionService {
             updated_at: new Date(),
           },
         });
+
+        // Reverse till balance for inbound transaction
+        if (transaction.till_id) {
+          const till = await tx.till.findUnique({
+            where: { id: transaction.till_id },
+          });
+
+          if (till) {
+            const currentBalance = parseFloat(till.balance?.toString() || "0");
+            const transactionAmount = parseFloat(
+              transaction.dest_amount.toString()
+            );
+            const newBalance = currentBalance - transactionAmount;
+
+            // Update till balance
+            await tx.till.update({
+              where: { id: transaction.till_id },
+              data: {
+                balance: newBalance,
+                updated_at: new Date(),
+              },
+            });
+
+            // Update user_tills for active sessions
+            await tx.userTill.updateMany({
+              where: {
+                till_id: transaction.till_id,
+                status: "OPEN",
+                organisation_id: till.organisation_id,
+              },
+              data: {
+                net_transactions_total: { increment: -transactionAmount },
+              },
+            });
+
+            // Create balance history record
+            await tx.balanceHistory.create({
+              data: {
+                entity_type: "TILL",
+                entity_id: transaction.till_id,
+                currency_id: transaction.dest_currency_id,
+                old_balance: currentBalance,
+                new_balance: newBalance,
+                change_amount: -transactionAmount,
+                description: `Inbound transaction reversed: ${transaction.id} - ${data.reason}`,
+                created_by: userId,
+              },
+            });
+          }
+        }
 
         // Create reverse GL Transaction
         await this.createReverseGLTransactionForInboundTransaction(

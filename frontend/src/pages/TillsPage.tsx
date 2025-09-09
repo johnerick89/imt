@@ -7,6 +7,7 @@ import { Modal } from "../components/ui/Modal";
 import { ConfirmModal } from "../components/ConfirmModal";
 import TillsTable from "../components/TillsTable";
 import TillForm from "../components/TillForm";
+import TillTopupForm from "../components/TillTopupForm";
 import {
   useTills,
   useTillStats,
@@ -30,9 +31,6 @@ import type {
   TillFilters,
 } from "../types/TillsTypes";
 import type { TillTopupRequest } from "../types/BalanceOperationsTypes";
-import { Button } from "../components/ui/Button";
-import { FormItem } from "../components/ui/FormItem";
-import { Textarea } from "../components/ui/Textarea";
 
 const TillsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -61,7 +59,7 @@ const TillsPage: React.FC = () => {
   const { data: tillsData, isLoading } = useTills(filters);
   const { data: statsData } = useTillStats(filters);
   const { data: vaultsData } = useVaults({
-    limit: 1000,
+    limit: 100,
     organisation_id: currentUser?.organisation_id || "",
   });
   const { data: currenciesData } = useCurrencies({ limit: 1000 });
@@ -210,22 +208,34 @@ const TillsPage: React.FC = () => {
   const handleTopupTill = async (data: TillTopupRequest) => {
     if (!selectedTill) return;
     try {
-      await topupTillMutation.mutateAsync({ tillId: selectedTill.id, data });
+      await topupTillMutation.mutateAsync({
+        tillId: selectedTill.id,
+        data,
+      });
+      // If we reach here, the mutation was successful
       setShowTopupModal(false);
       setSelectedTill(null);
     } catch (error) {
-      console.error("Error topping up till:", error);
+      // Error handling is done in the hook with toast notifications
+      // Don't close modal on error so user can retry
+      console.error("Failed to topup till:", error);
     }
   };
 
   const handleWithdrawTill = async (data: TillTopupRequest) => {
     if (!selectedTill) return;
     try {
-      await withdrawTillMutation.mutateAsync({ tillId: selectedTill.id, data });
+      await withdrawTillMutation.mutateAsync({
+        tillId: selectedTill.id,
+        data,
+      });
+      // If we reach here, the mutation was successful
       setShowWithdrawModal(false);
       setSelectedTill(null);
     } catch (error) {
-      console.error("Error withdrawing from till:", error);
+      // Error handling is done in the hook with toast notifications
+      // Don't close modal on error so user can retry
+      console.error("Failed to withdraw from till:", error);
     }
   };
 
@@ -439,63 +449,12 @@ const TillsPage: React.FC = () => {
         title="Topup Till"
         size="md"
       >
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            const formData = new FormData(e.currentTarget);
-            const data: TillTopupRequest = {
-              amount: parseFloat(formData.get("amount") as string),
-              source_type: "VAULT",
-              source_id: formData.get("source_id") as string,
-              description: formData.get("description") as string,
-            };
-            handleTopupTill(data);
-          }}
-          className="space-y-4"
-        >
-          <FormItem label="Amount" required>
-            <Input
-              name="amount"
-              type="number"
-              step="0.01"
-              placeholder="Enter topup amount"
-              required
-            />
-          </FormItem>
-
-          <FormItem label="Source Vault" required>
-            <SearchableSelect
-              name="source_id"
-              placeholder="Select vault"
-              options={vaults.map((vault) => ({
-                value: vault.id,
-                label: vault.name,
-              }))}
-              required
-            />
-          </FormItem>
-
-          <FormItem label="Description">
-            <Textarea
-              name="description"
-              placeholder="Enter description (optional)"
-              rows={3}
-            />
-          </FormItem>
-
-          <div className="flex justify-end space-x-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowTopupModal(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={topupTillMutation.isPending}>
-              Topup Till
-            </Button>
-          </div>
-        </form>
+        <TillTopupForm
+          onSubmit={handleTopupTill}
+          isLoading={topupTillMutation.isPending}
+          operation="topup"
+          tillCurrencyId={selectedTill?.currency_id || undefined}
+        />
       </Modal>
 
       {/* Withdraw Modal */}
@@ -505,63 +464,12 @@ const TillsPage: React.FC = () => {
         title="Withdraw from Till"
         size="md"
       >
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            const formData = new FormData(e.currentTarget);
-            const data: TillTopupRequest = {
-              amount: parseFloat(formData.get("amount") as string),
-              source_type: "VAULT",
-              source_id: formData.get("source_id") as string,
-              description: formData.get("description") as string,
-            };
-            handleWithdrawTill(data);
-          }}
-          className="space-y-4"
-        >
-          <FormItem label="Amount" required>
-            <Input
-              name="amount"
-              type="number"
-              step="0.01"
-              placeholder="Enter withdrawal amount"
-              required
-            />
-          </FormItem>
-
-          <FormItem label="Destination Vault" required>
-            <SearchableSelect
-              name="source_id"
-              placeholder="Select vault"
-              options={vaults.map((vault) => ({
-                value: vault.id,
-                label: vault.name,
-              }))}
-              required
-            />
-          </FormItem>
-
-          <FormItem label="Description">
-            <Textarea
-              name="description"
-              placeholder="Enter description (optional)"
-              rows={3}
-            />
-          </FormItem>
-
-          <div className="flex justify-end space-x-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowWithdrawModal(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={withdrawTillMutation.isPending}>
-              Withdraw from Till
-            </Button>
-          </div>
-        </form>
+        <TillTopupForm
+          onSubmit={handleWithdrawTill}
+          isLoading={withdrawTillMutation.isPending}
+          operation="withdraw"
+          tillCurrencyId={selectedTill?.currency_id || undefined}
+        />
       </Modal>
     </div>
   );

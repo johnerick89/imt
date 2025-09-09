@@ -35,7 +35,6 @@ const GlAccountsPage: React.FC = () => {
     limit: 10,
     search: "",
     type: undefined,
-    currency_id: "",
     organisation_id: user?.organisation_id || "",
     is_closed: undefined,
     is_frozen: undefined,
@@ -180,69 +179,127 @@ const GlAccountsPage: React.FC = () => {
 
       {/* Stats */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="flex items-center">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <FiRefreshCw className="h-6 w-6 text-blue-600" />
+        <div className="space-y-4">
+          {/* Summary Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white p-4 rounded-lg shadow">
+              <div className="flex items-center">
+                <div className="p-1.5 bg-blue-100 rounded-lg">
+                  <FiRefreshCw className="h-4 w-4 text-blue-600" />
+                </div>
+                <div className="ml-3">
+                  <p className="text-xs font-medium text-gray-600">
+                    Total Accounts
+                  </p>
+                  <p className="text-lg font-bold text-gray-900">
+                    {stats.totalGlAccounts}
+                  </p>
+                </div>
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">
-                  Total Accounts
-                </p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {stats.totalGlAccounts}
-                </p>
+            </div>
+
+            <div className="bg-white p-4 rounded-lg shadow">
+              <div className="flex items-center">
+                <div className="p-1.5 bg-green-100 rounded-lg">
+                  <FiRefreshCw className="h-4 w-4 text-green-600" />
+                </div>
+                <div className="ml-3">
+                  <p className="text-xs font-medium text-gray-600">
+                    Currencies
+                  </p>
+                  <p className="text-lg font-bold text-gray-900">
+                    {stats.byCurrency.length}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-4 rounded-lg shadow">
+              <div className="flex items-center">
+                <div className="p-1.5 bg-purple-100 rounded-lg">
+                  <FiRefreshCw className="h-4 w-4 text-purple-600" />
+                </div>
+                <div className="ml-3">
+                  <p className="text-xs font-medium text-gray-600">
+                    Account Types
+                  </p>
+                  <p className="text-lg font-bold text-gray-900">
+                    {stats.byType.length}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-4 rounded-lg shadow">
+              <div className="flex items-center">
+                <div className="p-1.5 bg-orange-100 rounded-lg">
+                  <FiRefreshCw className="h-4 w-4 text-orange-600" />
+                </div>
+                <div className="ml-3">
+                  <p className="text-xs font-medium text-gray-600">
+                    Total Assets
+                  </p>
+                  <p className="text-lg font-bold text-gray-900">
+                    {stats.byType.find((t) => t.type === "ASSET")?.count || 0}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <FiRefreshCw className="h-6 w-6 text-green-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">
-                  Total Balance
-                </p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {formatToCurrency(stats.totalBalance)}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="flex items-center">
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <FiRefreshCw className="h-6 w-6 text-yellow-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">
-                  Locked Balance
-                </p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {formatToCurrency(stats.totalLockedBalance)}
-                </p>
+          {/* Currency & Type Breakdown - Side by Side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Currency Breakdown */}
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">
+                Balances by Currency
+              </h3>
+              <div className="space-y-2">
+                {stats.byCurrency.map((currency) => (
+                  <div
+                    key={currency.currency_id}
+                    className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-medium text-gray-700">
+                        {currency.currency_code}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        ({currency.count})
+                      </span>
+                    </div>
+                    <span className="text-sm font-bold text-gray-900">
+                      {formatToCurrency(currency.total_balance)}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
 
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="flex items-center">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <FiRefreshCw className="h-6 w-6 text-purple-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">
-                  Available Balance
-                </p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {formatToCurrency(
-                    stats.totalBalance - stats.totalLockedBalance
-                  )}
-                </p>
+            {/* Account Type Breakdown */}
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">
+                Balances by Type
+              </h3>
+              <div className="space-y-2">
+                {stats.byType.map((type) => (
+                  <div
+                    key={type.type}
+                    className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-medium text-gray-700 capitalize">
+                        {type.type.toLowerCase()}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        ({type.count})
+                      </span>
+                    </div>
+                    <span className="text-sm font-bold text-gray-900">
+                      {formatToCurrency(type.total_balance)}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

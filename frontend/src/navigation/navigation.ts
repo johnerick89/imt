@@ -62,6 +62,12 @@ export const navigationSections: NavigationSection[] = [
         path: "/charges-payments",
         icon: "💰",
       },
+      {
+        id: "reports",
+        label: "Reports",
+        path: "/reports",
+        icon: "📋",
+      },
     ],
   },
   {
@@ -81,22 +87,22 @@ export const navigationSections: NavigationSection[] = [
         icon: "🌍",
       },
       {
-        id: "organisations.charges",
-        label: "Charges",
-        path: "/charges",
-        icon: "💰",
-      },
-      {
         id: "organisations.integrations",
         label: "Integrations",
         path: "/integrations",
         icon: "🔌",
       },
       {
-        id: "organisations.accounts",
-        label: "GL Accounts",
-        path: "/gl-accounts",
-        icon: "📋",
+        id: "organisations.charges",
+        label: "Charges",
+        path: "/charges",
+        icon: "💰",
+      },
+      {
+        id: "exchange-rates",
+        label: "Exchange Rates",
+        path: "/exchange-rates",
+        icon: "💱",
       },
 
       {
@@ -111,12 +117,7 @@ export const navigationSections: NavigationSection[] = [
         path: "/vaults",
         icon: "🔒",
       },
-      {
-        id: "exchange-rates",
-        label: "Exchange Rates",
-        path: "/exchange-rates",
-        icon: "💱",
-      },
+
       {
         id: "tills",
         label: "Tills",
@@ -128,6 +129,12 @@ export const navigationSections: NavigationSection[] = [
         label: "Bank Accounts",
         path: "/bank-accounts",
         icon: "🏦",
+      },
+      {
+        id: "organisations.accounts",
+        label: "GL Accounts",
+        path: "/gl-accounts",
+        icon: "📋",
       },
 
       {

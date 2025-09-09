@@ -4,6 +4,7 @@ import { DataTable } from "./ui/DataTable";
 import { StatusBadge } from "./ui/StatusBadge";
 import TillActionCell from "./TillActionCell";
 import type { Till } from "../types/TillsTypes";
+import { formatToCurrency } from "../utils/textUtils";
 
 interface TillsTableProps {
   data: Till[];
@@ -99,10 +100,17 @@ const TillsTable: React.FC<TillsTableProps> = ({
         },
       },
       {
-        accessorKey: "created_at",
-        header: "Created",
-        cell: ({ row }) =>
-          new Date(row.original.created_at).toLocaleDateString(),
+        accessorKey: "Balance",
+        header: "Balance",
+        cell: ({ row }) => (
+          <div className="text-sm text-gray-600">
+            {row.original.balance && row.original.balance > 0
+              ? formatToCurrency(row.original.balance) +
+                " " +
+                row.original.currency?.currency_code
+              : "-"}
+          </div>
+        ),
       },
       {
         id: "actions",

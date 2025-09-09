@@ -543,10 +543,13 @@ export class GlAccountService {
                 data: {
                   name: `Till - ${till.name}`,
                   type: "ASSET",
-                  balance: 0,
+                  balance: till.balance
+                    ? parseFloat(till.balance.toString())
+                    : 0,
                   currency_id: till.currency_id,
                   organisation_id,
                   opened_by: userId,
+                  till_id: till.id,
                 },
                 include: {
                   currency: true,
@@ -595,10 +598,13 @@ export class GlAccountService {
                 data: {
                   name: `Vault - ${vault.name}`,
                   type: "ASSET",
-                  balance: 0,
+                  balance: vault.balance
+                    ? parseFloat(vault.balance.toString())
+                    : 0,
                   currency_id: vault.currency_id,
                   organisation_id,
                   opened_by: userId,
+                  vault_id: vault.id,
                 },
                 include: {
                   currency: true,
@@ -656,6 +662,7 @@ export class GlAccountService {
                   currency_id: charge.currency_id,
                   organisation_id,
                   opened_by: userId,
+                  charge_id: charge.id,
                 },
                 include: {
                   currency: true,
@@ -701,7 +708,9 @@ export class GlAccountService {
                 data: {
                   name: `Org Balance - ${orgBalance.base_org.name} to ${orgBalance.dest_org.name} for ${orgBalance.currency.currency_code}`,
                   type: "ASSET",
-                  balance: 0,
+                  balance: orgBalance.balance
+                    ? parseFloat(orgBalance.balance.toString())
+                    : 0,
                   currency_id: orgBalance.currency_id,
                   org_balance_id: orgBalance.id,
                   organisation_id,

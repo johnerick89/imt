@@ -20,45 +20,58 @@ export class TillService {
     userId?: string;
   }): Promise<TillResponse> {
     try {
-      const till = await prisma.till.create({
-        data: {
-          ...data,
-          status: data.status || TillStatus.ACTIVE,
-          opened_at: data.opened_at ? new Date(data.opened_at) : new Date(),
-          closed_at: data.closed_at ? new Date(data.closed_at) : null,
-          created_by: userId,
-        },
-        include: {
-          current_teller_user: {
-            select: {
-              id: true,
-              first_name: true,
-              last_name: true,
-              email: true,
+      const openingBalance = data.opening_balance || 0;
+
+      const till = await prisma.$transaction(async (tx) => {
+        // Create the till
+        const newTill = await tx.till.create({
+          data: {
+            ...data,
+            status: data.status || TillStatus.ACTIVE,
+            opened_at: data.opened_at ? new Date(data.opened_at) : new Date(),
+            created_by: userId,
+            locked_balance: 0,
+            balance: openingBalance,
+          },
+        });
+
+        // Create initial till balance if opening balance is provided and currency is specified
+
+        // Return the till with all relations
+        return await tx.till.findUnique({
+          where: { id: newTill.id },
+          include: {
+            current_teller_user: {
+              select: {
+                id: true,
+                first_name: true,
+                last_name: true,
+                email: true,
+              },
+            },
+            vault: {
+              select: {
+                id: true,
+                name: true,
+                organisation_id: true,
+              },
+            },
+            currency: {
+              select: {
+                id: true,
+                currency_name: true,
+                currency_code: true,
+                currency_symbol: true,
+              },
+            },
+            organisation: {
+              select: {
+                id: true,
+                name: true,
+              },
             },
           },
-          vault: {
-            select: {
-              id: true,
-              name: true,
-              organisation_id: true,
-            },
-          },
-          currency: {
-            select: {
-              id: true,
-              currency_name: true,
-              currency_code: true,
-              currency_symbol: true,
-            },
-          },
-          organisation: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
+        });
       });
 
       return {
@@ -102,6 +115,7 @@ export class TillService {
           take: limit,
           orderBy: { created_at: "desc" },
           include: {
+            organisation: true,
             current_teller_user: {
               select: {
                 id: true,
@@ -156,6 +170,7 @@ export class TillService {
       const till = await prisma.till.findUnique({
         where: { id },
         include: {
+          organisation: true,
           current_teller_user: {
             select: {
               id: true,
@@ -177,12 +192,6 @@ export class TillService {
               currency_name: true,
               currency_code: true,
               currency_symbol: true,
-            },
-          },
-          organisation: {
-            select: {
-              id: true,
-              name: true,
             },
           },
         },
@@ -406,7 +415,7 @@ export class TillService {
           data: {
             user_id: userId,
             till_id: tillId,
-            opening_balance: 0,
+            opening_balance: till.balance || 0, // Default opening balance for user till
             date: new Date(),
             status: "OPEN" as any,
           },

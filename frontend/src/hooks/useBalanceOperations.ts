@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { BalanceOperationsService } from "../services/BalanceOperationsService";
+import { useToast } from "../contexts/ToastContext";
 import type {
   OrgBalanceFilters,
   BalanceHistoryFilters,
@@ -39,6 +40,7 @@ export const usePrefundOrganisation = () => {
 
 export const useTopupTill = () => {
   const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
 
   return useMutation({
     mutationFn: ({
@@ -48,15 +50,27 @@ export const useTopupTill = () => {
       tillId: string;
       data: TillTopupRequest;
     }) => BalanceOperationsService.topupTill(tillId, data),
-    onSuccess: () => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ["tills"] });
       queryClient.invalidateQueries({ queryKey: ["vaults"] });
+      showSuccess(
+        "Till Topped Up Successfully",
+        response.message || "The till has been topped up successfully."
+      );
+    },
+    onError: (error: any) => {
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to top up till";
+      showError("Topup Failed", errorMessage);
     },
   });
 };
 
 export const useTopupVault = () => {
   const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
 
   return useMutation({
     mutationFn: ({
@@ -66,15 +80,27 @@ export const useTopupVault = () => {
       vaultId: string;
       data: VaultTopupRequest;
     }) => BalanceOperationsService.topupVault(vaultId, data),
-    onSuccess: () => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ["vaults"] });
       queryClient.invalidateQueries({ queryKey: ["bankAccounts"] });
+      showSuccess(
+        "Vault Topped Up Successfully",
+        response.message || "The vault has been topped up successfully."
+      );
+    },
+    onError: (error: any) => {
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to top up vault";
+      showError("Topup Failed", errorMessage);
     },
   });
 };
 
 export const useWithdrawTill = () => {
   const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
 
   return useMutation({
     mutationFn: ({
@@ -84,15 +110,28 @@ export const useWithdrawTill = () => {
       tillId: string;
       data: TillTopupRequest;
     }) => BalanceOperationsService.withdrawTill(tillId, data),
-    onSuccess: () => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ["tills"] });
       queryClient.invalidateQueries({ queryKey: ["vaults"] });
+      showSuccess(
+        "Withdrawal Successful",
+        response.message ||
+          "Amount has been withdrawn from the till successfully."
+      );
+    },
+    onError: (error: any) => {
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to withdraw from till";
+      showError("Withdrawal Failed", errorMessage);
     },
   });
 };
 
 export const useWithdrawVault = () => {
   const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
 
   return useMutation({
     mutationFn: ({
@@ -102,9 +141,21 @@ export const useWithdrawVault = () => {
       vaultId: string;
       data: VaultTopupRequest;
     }) => BalanceOperationsService.withdrawVault(vaultId, data),
-    onSuccess: () => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ["vaults"] });
       queryClient.invalidateQueries({ queryKey: ["bankAccounts"] });
+      showSuccess(
+        "Withdrawal Successful",
+        response.message ||
+          "Amount has been withdrawn from the vault successfully."
+      );
+    },
+    onError: (error: any) => {
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to withdraw from vault";
+      showError("Withdrawal Failed", errorMessage);
     },
   });
 };

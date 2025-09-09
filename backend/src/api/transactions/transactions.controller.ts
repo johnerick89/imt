@@ -59,6 +59,7 @@ export class TransactionController {
         data: result,
       });
     } catch (error: any) {
+      console.error("Error creating outbound transaction:", error);
       res.status(500).json({
         success: false,
         message: error.message || "Failed to create outbound transaction",

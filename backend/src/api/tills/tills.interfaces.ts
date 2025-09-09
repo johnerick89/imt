@@ -24,6 +24,9 @@ export interface ITill {
   closed_at?: Date | null;
   created_at: Date;
   updated_at: Date;
+  opening_balance?: number | null;
+  locked_balance?: number | null;
+  balance?: number | null;
 }
 
 export interface CreateTillRequest {
@@ -37,6 +40,7 @@ export interface CreateTillRequest {
   organisation_id?: string;
   opened_at?: string;
   closed_at?: string;
+  opening_balance?: number;
 }
 
 export interface UpdateTillRequest {
@@ -50,6 +54,7 @@ export interface UpdateTillRequest {
   organisation_id?: string;
   opened_at?: string;
   closed_at?: string;
+  opening_balance?: number;
 }
 
 export interface TillFilters {

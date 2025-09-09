@@ -26,6 +26,7 @@ import transactionRoutes from "./api/transactions";
 import transactionChannelRoutes from "./api/transactionchannels";
 import chargesPaymentRoutes from "./api/chargespayments";
 import dashboardRoutes from "./api/dashboard";
+import reportsRoutes from "./api/reports/reports.routes";
 import { authMiddleware } from "./middlewares/auth.middleware";
 import { auditMiddleware } from "./middlewares/audit.middleware";
 
@@ -62,6 +63,7 @@ router.use("/api/v1/transactions", transactionRoutes);
 router.use("/api/v1/transactionchannels", transactionChannelRoutes);
 router.use("/api/v1/chargespayments", chargesPaymentRoutes);
 router.use("/api/v1/dashboard", dashboardRoutes);
+router.use("/api/v1/reports", reportsRoutes);
 
 // Default API route
 router.get("/api", (req, res) => {
@@ -95,6 +97,7 @@ router.get("/api", (req, res) => {
       transactions: "/api/v1/transactions",
       transactionchannels: "/api/v1/transactionchannels",
       chargespayments: "/api/v1/chargespayments",
+      reports: "/api/v1/reports",
     },
   });
 });

@@ -222,26 +222,28 @@ const TillForm: React.FC<TillFormProps> = ({
             />
           </FormItem>
 
-          <FormItem
-            label="Opening Balance"
-            invalid={!!errors.opening_balance}
-            errorMessage={errors.opening_balance?.message}
-          >
-            <Controller
-              name="opening_balance"
-              control={control}
-              render={({ field }) => (
-                <Input
-                  {...field}
-                  type="number"
-                  step="0.01"
-                  placeholder="Enter opening balance"
-                  disabled={isLoading}
-                  invalid={!!errors.opening_balance}
-                />
-              )}
-            />
-          </FormItem>
+          {!isEdit && (
+            <FormItem
+              label="Opening Balance"
+              invalid={!!errors.opening_balance}
+              errorMessage={errors.opening_balance?.message}
+            >
+              <Controller
+                name="opening_balance"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    type="number"
+                    step="0.01"
+                    placeholder="Enter opening balance"
+                    disabled={isLoading}
+                    invalid={!!errors.opening_balance}
+                  />
+                )}
+              />
+            </FormItem>
+          )}
 
           <FormItem
             label="Organisation"
