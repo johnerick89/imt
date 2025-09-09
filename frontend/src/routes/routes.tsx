@@ -5,7 +5,7 @@ import { useSession } from "../hooks";
 
 // Page Components
 import LoginPage from "../components/LoginPage";
-import DashboardPage from "../components/Dashboard";
+import DashboardPage from "../pages/DashboardPage";
 import CustomersPage from "../pages/CustomersPage";
 import CustomerProfilePage from "../pages/CustomerProfilePage";
 import OrganisationsPage from "../pages/OrganisationsPage";

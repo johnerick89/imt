@@ -25,6 +25,7 @@ import glTransactionRoutes from "./api/gltransactions";
 import transactionRoutes from "./api/transactions";
 import transactionChannelRoutes from "./api/transactionchannels";
 import chargesPaymentRoutes from "./api/chargespayments";
+import dashboardRoutes from "./api/dashboard";
 import { authMiddleware } from "./middlewares/auth.middleware";
 import { auditMiddleware } from "./middlewares/audit.middleware";
 
@@ -60,6 +61,7 @@ router.use("/api/v1/organisations", glTransactionRoutes);
 router.use("/api/v1/transactions", transactionRoutes);
 router.use("/api/v1/transactionchannels", transactionChannelRoutes);
 router.use("/api/v1/chargespayments", chargesPaymentRoutes);
+router.use("/api/v1/dashboard", dashboardRoutes);
 
 // Default API route
 router.get("/api", (req, res) => {

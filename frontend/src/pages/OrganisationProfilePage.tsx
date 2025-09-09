@@ -144,8 +144,10 @@ const OrganisationProfilePage: React.FC = () => {
   const deleteChargeMutation = useDeleteCharge();
 
   // Balance hooks
-  const { data: currenciesData } = useCurrencies();
-  const { data: bankAccountsData } = useBankAccounts();
+  const { data: currenciesData } = useCurrencies({ limit: 1000 });
+  const { data: bankAccountsData } = useBankAccounts({
+    organisation_id: id || "",
+  });
   const { data: balanceHistoryData, isLoading: balanceHistoryLoading } =
     useOrgBalanceHistory(id || "", balanceHistoryFilters);
   const setOpeningBalanceMutation = useSetOpeningBalance();
@@ -156,7 +158,7 @@ const OrganisationProfilePage: React.FC = () => {
   const corridors = corridorsData?.data?.corridors || [];
   const charges = chargesData?.data?.charges || [];
   const currencies = currenciesData?.data?.currencies || [];
-  const bankAccounts = bankAccountsData?.data?.bank_accounts || [];
+  const bankAccounts = bankAccountsData?.data?.bankAccounts || [];
   const balanceHistory = balanceHistoryData?.data?.histories || [];
 
   // Integration handlers
@@ -357,7 +359,13 @@ const OrganisationProfilePage: React.FC = () => {
       .slice(0, 2);
   };
 
-  if (isLoading) {
+  if (
+    isLoading ||
+    integrationsLoading ||
+    corridorsLoading ||
+    chargesLoading ||
+    balanceHistoryLoading
+  ) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
