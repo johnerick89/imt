@@ -100,6 +100,7 @@ export class BalanceOperationService {
           change_amount: data.amount,
           description: data.description,
           created_by: userId,
+          org_balance_id: orgBalance.id,
         },
       });
 
@@ -113,6 +114,7 @@ export class BalanceOperationService {
           change_amount: -data.amount,
           description: data.description,
           created_by: userId,
+          bank_account_id: data.source_id,
         },
       });
 
@@ -255,6 +257,7 @@ export class BalanceOperationService {
           change_amount: data.amount,
           description: data.description,
           created_by: userId,
+          till_id: tillId,
         },
       });
 
@@ -268,6 +271,7 @@ export class BalanceOperationService {
           change_amount: -data.amount,
           description: data.description,
           created_by: userId,
+          vault_id: data.source_id,
         },
       });
 
@@ -399,6 +403,7 @@ export class BalanceOperationService {
           change_amount: data.amount,
           description: data.description,
           created_by: userId,
+          vault_id: vaultId,
         },
       });
 
@@ -412,6 +417,7 @@ export class BalanceOperationService {
           change_amount: -data.amount,
           description: data.description,
           created_by: userId,
+          bank_account_id: data.source_id,
         },
       });
 
@@ -561,6 +567,7 @@ export class BalanceOperationService {
           change_amount: -data.amount,
           description: data.description,
           created_by: userId,
+          till_id: tillId,
         },
       });
 
@@ -574,6 +581,7 @@ export class BalanceOperationService {
           change_amount: data.amount,
           description: data.description,
           created_by: userId,
+          vault_id: data.source_id,
         },
       });
 
@@ -701,6 +709,7 @@ export class BalanceOperationService {
           change_amount: -data.amount,
           description: data.description,
           created_by: userId,
+          vault_id: vaultId,
         },
       });
 
@@ -714,6 +723,7 @@ export class BalanceOperationService {
           change_amount: data.amount,
           description: data.description,
           created_by: userId,
+          bank_account_id: data.source_id,
         },
       });
 

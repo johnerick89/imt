@@ -66,7 +66,7 @@ export const navigationSections: NavigationSection[] = [
         id: "reports",
         label: "Reports",
         path: "/reports",
-        icon: "📋",
+        icon: "📊",
       },
     ],
   },
@@ -135,13 +135,6 @@ export const navigationSections: NavigationSection[] = [
         label: "GL Accounts",
         path: "/gl-accounts",
         icon: "📋",
-      },
-
-      {
-        id: "reports",
-        label: "Reports",
-        path: "/reports",
-        icon: "📊",
       },
     ],
   },

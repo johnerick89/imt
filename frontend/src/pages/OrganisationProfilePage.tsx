@@ -70,6 +70,11 @@ const OrganisationProfilePage: React.FC = () => {
   // Balance-related state
   const [showOpeningBalanceModal, setShowOpeningBalanceModal] = useState(false);
   const [showPrefundModal, setShowPrefundModal] = useState(false);
+  const [openingBalanceForm, setOpeningBalanceForm] = useState({
+    amount: "",
+    currency_id: "",
+    description: "",
+  });
   const [balanceHistoryFilters, setBalanceHistoryFilters] =
     useState<BalanceHistoryFilters>({
       page: 1,
@@ -316,6 +321,12 @@ const OrganisationProfilePage: React.FC = () => {
     try {
       await setOpeningBalanceMutation.mutateAsync({ orgId: id || "", data });
       setShowOpeningBalanceModal(false);
+      // Reset form
+      setOpeningBalanceForm({
+        amount: "",
+        currency_id: "",
+        description: "",
+      });
     } catch (error) {
       console.error("Error setting opening balance:", error);
     }
@@ -934,18 +945,25 @@ const OrganisationProfilePage: React.FC = () => {
       {/* Opening Balance Modal */}
       <Modal
         isOpen={showOpeningBalanceModal}
-        onClose={() => setShowOpeningBalanceModal(false)}
+        onClose={() => {
+          setShowOpeningBalanceModal(false);
+          // Reset form
+          setOpeningBalanceForm({
+            amount: "",
+            currency_id: "",
+            description: "",
+          });
+        }}
         title="Set Opening Balance"
         size="md"
       >
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            const formData = new FormData(e.currentTarget);
             const data: OpeningBalanceRequest = {
-              amount: parseFloat(formData.get("amount") as string),
-              currency_id: formData.get("currency_id") as string,
-              description: formData.get("description") as string,
+              amount: parseFloat(openingBalanceForm.amount),
+              currency_id: openingBalanceForm.currency_id,
+              description: openingBalanceForm.description,
             };
             handleSetOpeningBalance(data);
           }}
@@ -953,31 +971,48 @@ const OrganisationProfilePage: React.FC = () => {
         >
           <FormItem label="Amount" required>
             <Input
-              name="amount"
               type="number"
               step="0.01"
               placeholder="Enter opening balance amount"
+              value={openingBalanceForm.amount}
+              onChange={(e) =>
+                setOpeningBalanceForm((prev) => ({
+                  ...prev,
+                  amount: e.target.value,
+                }))
+              }
               required
             />
           </FormItem>
 
           <FormItem label="Currency" required>
             <SearchableSelect
-              name="currency_id"
+              value={openingBalanceForm.currency_id}
+              onChange={(value) =>
+                setOpeningBalanceForm((prev) => ({
+                  ...prev,
+                  currency_id: value,
+                }))
+              }
               placeholder="Select currency"
               options={currencies.map((currency) => ({
                 value: currency.id,
                 label: `${currency.currency_code} - ${currency.currency_name}`,
               }))}
-              required
             />
           </FormItem>
 
           <FormItem label="Description">
             <Textarea
-              name="description"
               placeholder="Enter description (optional)"
               rows={3}
+              value={openingBalanceForm.description}
+              onChange={(e) =>
+                setOpeningBalanceForm((prev) => ({
+                  ...prev,
+                  description: e.target.value,
+                }))
+              }
             />
           </FormItem>
 
@@ -985,7 +1020,15 @@ const OrganisationProfilePage: React.FC = () => {
             <Button
               type="button"
               variant="outline"
-              onClick={() => setShowOpeningBalanceModal(false)}
+              onClick={() => {
+                setShowOpeningBalanceModal(false);
+                // Reset form
+                setOpeningBalanceForm({
+                  amount: "",
+                  currency_id: "",
+                  description: "",
+                });
+              }}
             >
               Cancel
             </Button>

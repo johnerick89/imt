@@ -2,144 +2,231 @@ import { Request, Response } from "express";
 import ReportsService from "./reports.services";
 import { asyncHandler } from "../../middlewares/error.middleware";
 import { AppError } from "../../utils/AppError";
+import type CustomRequest from "../../types/CustomReq.type";
+import {
+  outboundTransactionsReportSchema,
+  inboundTransactionsReportSchema,
+  commissionsReportSchema,
+  taxesReportSchema,
+  userTillsReportSchema,
+  balancesHistoryReportSchema,
+  glAccountsReportSchema,
+  profitLossReportSchema,
+  balanceSheetReportSchema,
+  partnerBalancesReportSchema,
+  complianceReportSchema,
+  exchangeRatesReportSchema,
+  auditTrailReportSchema,
+  corridorPerformanceReportSchema,
+  userPerformanceReportSchema,
+  integrationStatusReportSchema,
+  cashPositionReportSchema,
+} from "./reports.validation";
 
 export class ReportsController {
   // Outbound Transactions Report
   static getOutboundTransactionsReport = asyncHandler(
-    async (req: Request, res: Response) => {
-      const result = await ReportsService.getOutboundTransactionsReport(
+    async (req: CustomRequest, res: Response) => {
+      const validatedFilters = outboundTransactionsReportSchema.parse(
         req.query
       );
+      const result = await ReportsService.getOutboundTransactionsReport({
+        filters: validatedFilters,
+        user_organisation_id: req.user?.organisation_id || "",
+      });
       res.json(result);
     }
   );
 
   // Inbound Transactions Report
   static getInboundTransactionsReport = asyncHandler(
-    async (req: Request, res: Response) => {
-      const result = await ReportsService.getInboundTransactionsReport(
-        req.query
-      );
+    async (req: CustomRequest, res: Response) => {
+      const validatedFilters = inboundTransactionsReportSchema.parse(req.query);
+      const result = await ReportsService.getInboundTransactionsReport({
+        filters: validatedFilters,
+        user_organisation_id: req.user?.organisation_id || "",
+      });
       res.json(result);
     }
   );
 
   // Commissions & Other Revenues Report
   static getCommissionsReport = asyncHandler(
-    async (req: Request, res: Response) => {
-      const result = await ReportsService.getCommissionsReport(req.query);
+    async (req: CustomRequest, res: Response) => {
+      const validatedFilters = commissionsReportSchema.parse(req.query);
+      const result = await ReportsService.getCommissionsReport({
+        filters: validatedFilters,
+        user_organisation_id: req.user?.organisation_id || "",
+      });
       res.json(result);
     }
   );
 
   // Taxes Report
-  static getTaxesReport = asyncHandler(async (req: Request, res: Response) => {
-    const result = await ReportsService.getTaxesReport(req.query);
-    res.json(result);
-  });
+  static getTaxesReport = asyncHandler(
+    async (req: CustomRequest, res: Response) => {
+      const validatedFilters = taxesReportSchema.parse(req.query);
+      const result = await ReportsService.getTaxesReport({
+        filters: validatedFilters,
+        user_organisation_id: req.user?.organisation_id || "",
+      });
+      res.json(result);
+    }
+  );
 
   // User Tills Report
   static getUserTillsReport = asyncHandler(
-    async (req: Request, res: Response) => {
-      const result = await ReportsService.getUserTillsReport(req.query);
+    async (req: CustomRequest, res: Response) => {
+      const validatedFilters = userTillsReportSchema.parse(req.query);
+      const result = await ReportsService.getUserTillsReport({
+        filters: validatedFilters,
+        user_organisation_id: req.user?.organisation_id || "",
+      });
       res.json(result);
     }
   );
 
   // Balances History Report
   static getBalancesHistoryReport = asyncHandler(
-    async (req: Request, res: Response) => {
-      const result = await ReportsService.getBalancesHistoryReport(req.query);
+    async (req: CustomRequest, res: Response) => {
+      console.log(req.query);
+      const validatedFilters = balancesHistoryReportSchema.parse(req.query);
+      const result = await ReportsService.getBalancesHistoryReport({
+        filters: validatedFilters,
+        user_organisation_id: req.user?.organisation_id || "",
+      });
       res.json(result);
     }
   );
 
   // GL Accounts Report
   static getGlAccountsReport = asyncHandler(
-    async (req: Request, res: Response) => {
-      const result = await ReportsService.getGlAccountsReport(req.query);
+    async (req: CustomRequest, res: Response) => {
+      const validatedFilters = glAccountsReportSchema.parse(req.query);
+      const result = await ReportsService.getGlAccountsReport({
+        filters: validatedFilters,
+        user_organisation_id: req.user?.organisation_id || "",
+      });
       res.json(result);
     }
   );
 
   // Profit and Loss Report
   static getProfitLossReport = asyncHandler(
-    async (req: Request, res: Response) => {
-      const result = await ReportsService.getProfitLossReport(req.query);
+    async (req: CustomRequest, res: Response) => {
+      const validatedFilters = profitLossReportSchema.parse(req.query);
+      const result = await ReportsService.getProfitLossReport({
+        filters: validatedFilters,
+        user_organisation_id: req.user?.organisation_id || "",
+      });
       res.json(result);
     }
   );
 
   // Balance Sheet Report
   static getBalanceSheetReport = asyncHandler(
-    async (req: Request, res: Response) => {
-      const result = await ReportsService.getBalanceSheetReport(req.query);
+    async (req: CustomRequest, res: Response) => {
+      const validatedFilters = balanceSheetReportSchema.parse(req.query);
+      const result = await ReportsService.getBalanceSheetReport({
+        filters: validatedFilters,
+        user_organisation_id: req.user?.organisation_id || "",
+      });
       res.json(result);
     }
   );
 
   // Partner Balances Report
   static getPartnerBalancesReport = asyncHandler(
-    async (req: Request, res: Response) => {
-      const result = await ReportsService.getPartnerBalancesReport(req.query);
+    async (req: CustomRequest, res: Response) => {
+      const validatedFilters = partnerBalancesReportSchema.parse(req.query);
+      const result = await ReportsService.getPartnerBalancesReport({
+        filters: validatedFilters,
+        user_organisation_id: req.user?.organisation_id || "",
+      });
       res.json(result);
     }
   );
 
   // Customer and Beneficiary Compliance Report
   static getComplianceReport = asyncHandler(
-    async (req: Request, res: Response) => {
-      const result = await ReportsService.getComplianceReport(req.query);
+    async (req: CustomRequest, res: Response) => {
+      const validatedFilters = complianceReportSchema.parse(req.query);
+      const result = await ReportsService.getComplianceReport({
+        filters: validatedFilters,
+        user_organisation_id: req.user?.organisation_id || "",
+      });
       res.json(result);
     }
   );
 
   // Exchange Rates Report
   static getExchangeRatesReport = asyncHandler(
-    async (req: Request, res: Response) => {
-      const result = await ReportsService.getExchangeRatesReport(req.query);
+    async (req: CustomRequest, res: Response) => {
+      const validatedFilters = exchangeRatesReportSchema.parse(req.query);
+      const result = await ReportsService.getExchangeRatesReport({
+        filters: validatedFilters,
+        user_organisation_id: req.user?.organisation_id || "",
+      });
       res.json(result);
     }
   );
 
   // Audit Trail Report
   static getAuditTrailReport = asyncHandler(
-    async (req: Request, res: Response) => {
-      const result = await ReportsService.getAuditTrailReport(req.query);
+    async (req: CustomRequest, res: Response) => {
+      const validatedFilters = auditTrailReportSchema.parse(req.query);
+      const result = await ReportsService.getAuditTrailReport({
+        filters: validatedFilters,
+        user_organisation_id: req.user?.organisation_id || "",
+      });
       res.json(result);
     }
   );
 
   // Corridor Performance Report
   static getCorridorPerformanceReport = asyncHandler(
-    async (req: Request, res: Response) => {
-      const result = await ReportsService.getCorridorPerformanceReport(
-        req.query
-      );
+    async (req: CustomRequest, res: Response) => {
+      const validatedFilters = corridorPerformanceReportSchema.parse(req.query);
+      const result = await ReportsService.getCorridorPerformanceReport({
+        filters: validatedFilters,
+        user_organisation_id: req.user?.organisation_id || "",
+      });
       res.json(result);
     }
   );
 
   // User Performance Report
   static getUserPerformanceReport = asyncHandler(
-    async (req: Request, res: Response) => {
-      const result = await ReportsService.getUserPerformanceReport(req.query);
+    async (req: CustomRequest, res: Response) => {
+      const validatedFilters = userPerformanceReportSchema.parse(req.query);
+      const result = await ReportsService.getUserPerformanceReport({
+        filters: validatedFilters,
+        user_organisation_id: req.user?.organisation_id || "",
+      });
       res.json(result);
     }
   );
 
   // Integration Status Report
   static getIntegrationStatusReport = asyncHandler(
-    async (req: Request, res: Response) => {
-      const result = await ReportsService.getIntegrationStatusReport(req.query);
+    async (req: CustomRequest, res: Response) => {
+      const validatedFilters = integrationStatusReportSchema.parse(req.query);
+      const result = await ReportsService.getIntegrationStatusReport({
+        filters: validatedFilters,
+        user_organisation_id: req.user?.organisation_id || "",
+      });
       res.json(result);
     }
   );
 
   // Cash Position Report
   static getCashPositionReport = asyncHandler(
-    async (req: Request, res: Response) => {
-      const result = await ReportsService.getCashPositionReport(req.query);
+    async (req: CustomRequest, res: Response) => {
+      const validatedFilters = cashPositionReportSchema.parse(req.query);
+      const result = await ReportsService.getCashPositionReport({
+        filters: validatedFilters,
+        user_organisation_id: req.user?.organisation_id || "",
+      });
       res.json(result);
     }
   );

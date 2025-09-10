@@ -11,8 +11,8 @@ const apiClient = axios.create({
     Accept: "application/json",
     "X-Requested-With": "XMLHttpRequest",
   },
-  withCredentials: true,
-  timeout: 30000, // 30 seconds timeout
+  // withCredentials: true,
+  // timeout: 30000, // 30 seconds timeout
   // Ensure proper handling of CORS
   validateStatus: (status) => status < 500, // Don't throw for 4xx errors
 });
@@ -35,6 +35,7 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    console.log("error", error);
     // Handle CORS errors specifically
     if (error.code === "ERR_NETWORK" || error.message?.includes("CORS")) {
       console.error("CORS Error:", error.message);

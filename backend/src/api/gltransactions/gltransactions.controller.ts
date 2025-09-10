@@ -4,12 +4,13 @@ import {
   glTransactionFiltersSchema,
   reverseGlTransactionSchema,
 } from "./gltransactions.validation";
+import type CustomRequest from "../../types/CustomReq.type";
 
 const glTransactionService = new GlTransactionService();
 
 export class GlTransactionController {
   // Get GL Transactions
-  async getGlTransactions(req: Request, res: Response): Promise<void> {
+  async getGlTransactions(req: CustomRequest, res: Response): Promise<void> {
     try {
       const { id: organisationId } = req.params;
       const validatedFilters = glTransactionFiltersSchema.parse(req.query);
@@ -44,7 +45,7 @@ export class GlTransactionController {
   }
 
   // Get GL Transaction by ID
-  async getGlTransactionById(req: Request, res: Response): Promise<void> {
+  async getGlTransactionById(req: CustomRequest, res: Response): Promise<void> {
     try {
       const { id: organisationId, transactionId } = req.params;
       const result = await glTransactionService.getGlTransactionById(
@@ -69,7 +70,10 @@ export class GlTransactionController {
   }
 
   // Get GL Transaction Stats
-  async getGlTransactionStats(req: Request, res: Response): Promise<void> {
+  async getGlTransactionStats(
+    req: CustomRequest,
+    res: Response
+  ): Promise<void> {
     try {
       const { id: organisationId } = req.params;
       const result = await glTransactionService.getGlTransactionStats(
@@ -99,7 +103,7 @@ export class GlTransactionController {
   }
 
   // Reverse GL Transaction
-  async reverseGlTransaction(req: Request, res: Response): Promise<void> {
+  async reverseGlTransaction(req: CustomRequest, res: Response): Promise<void> {
     try {
       const { id: organisationId, transactionId } = req.params;
       const validatedData = reverseGlTransactionSchema.parse(req.body);

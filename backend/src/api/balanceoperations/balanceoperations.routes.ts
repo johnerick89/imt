@@ -6,6 +6,13 @@ const balanceOperationController = new BalanceOperationController();
 
 // Organisation Balance Operations
 router.post(
+  "/organisations/:orgId/opening-balance",
+  balanceOperationController.prefundOrganisation.bind(
+    balanceOperationController
+  )
+);
+
+router.post(
   "/organisations/:orgId/prefund",
   balanceOperationController.prefundOrganisation.bind(
     balanceOperationController

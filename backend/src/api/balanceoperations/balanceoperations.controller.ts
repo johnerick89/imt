@@ -22,7 +22,9 @@ export class BalanceOperationController {
       }
 
       const validation = orgBalanceOperationSchema.safeParse(req.body);
+
       if (!validation.success) {
+        console.log(validation.error);
         throw new AppError("Validation error", 400);
       }
 

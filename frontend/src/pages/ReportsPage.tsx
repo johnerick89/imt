@@ -1,16 +1,10 @@
 import React, { useState, useMemo } from "react";
-import { FiDownload, FiEye, FiFilter, FiRefreshCw } from "react-icons/fi";
+import { FiDownload, FiEye, FiRefreshCw } from "react-icons/fi";
 import { Modal } from "../components/ui/Modal";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { SearchableSelect } from "../components/ui/SearchableSelect";
-import {
-  useSession,
-  useCurrencies,
-  useOrganisations,
-  useCorridors,
-  useCustomers,
-} from "../hooks";
+import { useSession, useCurrencies, useOrganisations } from "../hooks";
 import {
   useOutboundTransactionsReport,
   useInboundTransactionsReport,
@@ -37,6 +31,7 @@ import { formatToCurrency } from "../utils/textUtils";
 
 const ReportsPage: React.FC = () => {
   const { user } = useSession();
+  const userOrganisationid = user?.organisation_id;
   const [selectedReport, setSelectedReport] = useState<ReportType>(
     ReportType.OUTBOUND_TRANSACTIONS
   );
@@ -49,33 +44,94 @@ const ReportsPage: React.FC = () => {
 
   // Data fetching
   const { data: currenciesData } = useCurrencies({ limit: 1000 });
-  const { data: organisationsData } = useOrganisations({ limit: 1000 });
-  const { data: corridorsData } = useCorridors({ limit: 1000 });
-  const { data: customersData } = useCustomers({ limit: 1000 });
+  const { data: organisationsData } = useOrganisations({ limit: 100 });
 
   const currencies = currenciesData?.data?.currencies || [];
-  const organisations = organisationsData?.data?.organisations || [];
-  const corridors = corridorsData?.data?.corridors || [];
-  const customers = customersData?.data?.customers || [];
+  const organisations =
+    organisationsData?.data?.organisations.filter(
+      (org) => org.id !== userOrganisationid
+    ) || [];
 
-  // Report queries
-  const outboundTransactionsQuery = useOutboundTransactionsReport(filters);
-  const inboundTransactionsQuery = useInboundTransactionsReport(filters);
-  const commissionsQuery = useCommissionsReport(filters);
-  const taxesQuery = useTaxesReport(filters);
-  const userTillsQuery = useUserTillsReport(filters);
-  const balancesHistoryQuery = useBalancesHistoryReport(filters);
-  const glAccountsQuery = useGlAccountsReport(filters);
-  const profitLossQuery = useProfitLossReport(filters);
-  const balanceSheetQuery = useBalanceSheetReport(filters);
-  const partnerBalancesQuery = usePartnerBalancesReport(filters);
-  const complianceQuery = useComplianceReport(filters);
-  const exchangeRatesQuery = useExchangeRatesReport(filters);
-  const auditTrailQuery = useAuditTrailReport(filters);
-  const corridorPerformanceQuery = useCorridorPerformanceReport(filters);
-  const userPerformanceQuery = useUserPerformanceReport(filters);
-  const integrationStatusQuery = useIntegrationStatusReport(filters);
-  const cashPositionQuery = useCashPositionReport(filters);
+  // Report queries - only execute the query for the selected report type
+  const outboundTransactionsQuery = useOutboundTransactionsReport(
+    selectedReport === ReportType.OUTBOUND_TRANSACTIONS
+      ? filters
+      : { organisation_id: "" }
+  );
+  const inboundTransactionsQuery = useInboundTransactionsReport(
+    selectedReport === ReportType.INBOUND_TRANSACTIONS
+      ? filters
+      : { organisation_id: "" }
+  );
+  const commissionsQuery = useCommissionsReport(
+    selectedReport === ReportType.COMMISSIONS
+      ? filters
+      : { organisation_id: "" }
+  );
+  const taxesQuery = useTaxesReport(
+    selectedReport === ReportType.TAXES ? filters : { organisation_id: "" }
+  );
+  const userTillsQuery = useUserTillsReport(
+    selectedReport === ReportType.USER_TILLS ? filters : { organisation_id: "" }
+  );
+  const balancesHistoryQuery = useBalancesHistoryReport(
+    selectedReport === ReportType.BALANCES_HISTORY
+      ? filters
+      : { organisation_id: "" }
+  );
+  const glAccountsQuery = useGlAccountsReport(
+    selectedReport === ReportType.GL_ACCOUNTS
+      ? filters
+      : { organisation_id: "" }
+  );
+  const profitLossQuery = useProfitLossReport(
+    selectedReport === ReportType.PROFIT_LOSS
+      ? filters
+      : { organisation_id: "" }
+  );
+  const balanceSheetQuery = useBalanceSheetReport(
+    selectedReport === ReportType.BALANCE_SHEET
+      ? filters
+      : { organisation_id: "" }
+  );
+  const partnerBalancesQuery = usePartnerBalancesReport(
+    selectedReport === ReportType.PARTNER_BALANCES
+      ? filters
+      : { organisation_id: "" }
+  );
+  const complianceQuery = useComplianceReport(
+    selectedReport === ReportType.COMPLIANCE ? filters : { organisation_id: "" }
+  );
+  const exchangeRatesQuery = useExchangeRatesReport(
+    selectedReport === ReportType.EXCHANGE_RATES
+      ? filters
+      : { organisation_id: "" }
+  );
+  const auditTrailQuery = useAuditTrailReport(
+    selectedReport === ReportType.AUDIT_TRAIL
+      ? filters
+      : { organisation_id: "" }
+  );
+  const corridorPerformanceQuery = useCorridorPerformanceReport(
+    selectedReport === ReportType.CORRIDOR_PERFORMANCE
+      ? filters
+      : { organisation_id: "" }
+  );
+  const userPerformanceQuery = useUserPerformanceReport(
+    selectedReport === ReportType.USER_PERFORMANCE
+      ? filters
+      : { organisation_id: "" }
+  );
+  const integrationStatusQuery = useIntegrationStatusReport(
+    selectedReport === ReportType.INTEGRATION_STATUS
+      ? filters
+      : { organisation_id: "" }
+  );
+  const cashPositionQuery = useCashPositionReport(
+    selectedReport === ReportType.CASH_POSITION
+      ? filters
+      : { organisation_id: "" }
+  );
 
   // Export mutations
   const exportCSVMutation = useExportReportToCSV();
@@ -121,15 +177,54 @@ const ReportsPage: React.FC = () => {
       default:
         return outboundTransactionsQuery;
     }
-  }, [selectedReport, filters]);
+  }, [
+    selectedReport,
+    outboundTransactionsQuery,
+    inboundTransactionsQuery,
+    commissionsQuery,
+    taxesQuery,
+    userTillsQuery,
+    balancesHistoryQuery,
+    glAccountsQuery,
+    profitLossQuery,
+    balanceSheetQuery,
+    partnerBalancesQuery,
+    complianceQuery,
+    exchangeRatesQuery,
+    auditTrailQuery,
+    corridorPerformanceQuery,
+    userPerformanceQuery,
+    integrationStatusQuery,
+    cashPositionQuery,
+  ]);
 
   const currentReportMetadata = REPORT_METADATA[selectedReport];
 
   // Handle filter changes
-  const handleFilterChange = (key: string, value: any) => {
-    setFilters((prev: any) => ({
+  const handleFilterChange = (key: string, value: unknown) => {
+    let processedValue = value;
+
+    // Convert date values to ISO datetime format
+    if (key === "date_from" || key === "date_to") {
+      if (value && typeof value === "string") {
+        // Convert YYYY-MM-DD to ISO datetime (start of day for date_from, end of day for date_to)
+        const date = new Date(value);
+        if (key === "date_from") {
+          // Set to start of day (00:00:00.000Z)
+          date.setUTCHours(0, 0, 0, 0);
+        } else {
+          // Set to end of day (23:59:59.999Z)
+          date.setUTCHours(23, 59, 59, 999);
+        }
+        processedValue = date.toISOString();
+      } else if (!value) {
+        processedValue = undefined;
+      }
+    }
+
+    setFilters((prev: Record<string, unknown>) => ({
       ...prev,
-      [key]: value,
+      [key]: processedValue,
       page: 1, // Reset to first page when filters change
     }));
   };
@@ -231,7 +326,7 @@ const ReportsPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {items.map((item: any, index: number) => (
+                {items.map((item: Record<string, unknown>, index: number) => (
                   <tr key={index}>
                     {getTableRowCells(item).map((cell, cellIndex) => (
                       <td
@@ -280,7 +375,7 @@ const ReportsPage: React.FC = () => {
   };
 
   // Render summary reports (P&L, Balance Sheet)
-  const renderSummaryReport = (data: any) => {
+  const renderSummaryReport = (data: Record<string, unknown>) => {
     if (selectedReport === ReportType.PROFIT_LOSS) {
       return (
         <div className="space-y-6">
@@ -588,25 +683,22 @@ const ReportsPage: React.FC = () => {
         <h2 className="text-lg font-semibold text-gray-900 mb-4">
           Select Report
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Object.values(ReportType).map((reportType) => (
-            <button
-              key={reportType}
-              onClick={() => handleReportTypeChange(reportType)}
-              className={`p-4 rounded-lg border-2 text-left transition-colors ${
-                selectedReport === reportType
-                  ? "border-blue-500 bg-blue-50"
-                  : "border-gray-200 hover:border-gray-300"
-              }`}
-            >
-              <h3 className="font-semibold text-gray-900">
-                {REPORT_METADATA[reportType].name}
-              </h3>
-              <p className="text-sm text-gray-600 mt-1">
-                {REPORT_METADATA[reportType].description}
-              </p>
-            </button>
-          ))}
+        <div className="max-w-md">
+          <SearchableSelect
+            value={selectedReport}
+            onChange={(value) => handleReportTypeChange(value as ReportType)}
+            options={Object.values(ReportType).map((reportType) => ({
+              value: reportType,
+              label: REPORT_METADATA[reportType].name,
+            }))}
+            placeholder="Select a report type"
+            searchPlaceholder="Search reports..."
+          />
+          {selectedReport && (
+            <p className="text-sm text-gray-600 mt-2">
+              {REPORT_METADATA[selectedReport].description}
+            </p>
+          )}
         </div>
       </div>
 
@@ -620,7 +712,11 @@ const ReportsPage: React.FC = () => {
             </label>
             <Input
               type="date"
-              value={filters.date_from || ""}
+              value={
+                filters.date_from && typeof filters.date_from === "string"
+                  ? new Date(filters.date_from).toISOString().split("T")[0]
+                  : ""
+              }
               onChange={(e) => handleFilterChange("date_from", e.target.value)}
             />
           </div>
@@ -630,7 +726,11 @@ const ReportsPage: React.FC = () => {
             </label>
             <Input
               type="date"
-              value={filters.date_to || ""}
+              value={
+                filters.date_to && typeof filters.date_to === "string"
+                  ? new Date(filters.date_to).toISOString().split("T")[0]
+                  : ""
+              }
               onChange={(e) => handleFilterChange("date_to", e.target.value)}
             />
           </div>
@@ -657,7 +757,7 @@ const ReportsPage: React.FC = () => {
               onChange={(value) => handleFilterChange("currency_id", value)}
               options={currencies.map((currency) => ({
                 value: currency.id,
-                label: currency.currency_code,
+                label: `${currency.currency_code} - ${currency.currency_name}`,
               }))}
               placeholder="Select currency"
             />

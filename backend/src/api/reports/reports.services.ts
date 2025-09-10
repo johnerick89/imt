@@ -5,7 +5,13 @@ const prisma = new PrismaClient();
 
 class ReportsService {
   // Outbound Transactions Report
-  static async getOutboundTransactionsReport(filters: any) {
+  static async getOutboundTransactionsReport({
+    filters,
+    user_organisation_id,
+  }: {
+    filters: any;
+    user_organisation_id: string;
+  }) {
     const {
       date_from,
       date_to,
@@ -18,18 +24,18 @@ class ReportsService {
       limit = 100,
     } = filters;
 
-    const where: any = {};
+    const where: any = { origin_organisation_id: user_organisation_id };
 
     if (date_from || date_to) {
       where.created_at = {};
-      if (date_from) where.created_at.gte = new Date(date_from);
-      if (date_to) where.created_at.lte = new Date(date_to);
+      if (date_from) where.created_at.gte = date_from;
+      if (date_to) where.created_at.lte = date_to;
     }
 
     if (status) where.status = status;
     if (corridor_id) where.corridor_id = corridor_id;
     if (customer_id) where.customer_id = customer_id;
-    if (organisation_id) where.organisation_id = organisation_id;
+    if (organisation_id) where.destination_organisation_id = organisation_id;
     if (currency_id) where.origin_currency_id = currency_id;
 
     const transactions = await prisma.transaction.findMany({
@@ -72,7 +78,13 @@ class ReportsService {
   }
 
   // Inbound Transactions Report
-  static async getInboundTransactionsReport(filters: any) {
+  static async getInboundTransactionsReport({
+    filters,
+    user_organisation_id,
+  }: {
+    filters: any;
+    user_organisation_id: string;
+  }) {
     const {
       date_from,
       date_to,
@@ -85,18 +97,18 @@ class ReportsService {
       limit = 100,
     } = filters;
 
-    const where: any = {};
+    const where: any = { destination_organisation_id: user_organisation_id };
 
     if (date_from || date_to) {
       where.created_at = {};
-      if (date_from) where.created_at.gte = new Date(date_from);
-      if (date_to) where.created_at.lte = new Date(date_to);
+      if (date_from) where.created_at.gte = date_from;
+      if (date_to) where.created_at.lte = date_to;
     }
 
     if (status) where.status = status;
     if (corridor_id) where.corridor_id = corridor_id;
     if (customer_id) where.customer_id = customer_id;
-    if (organisation_id) where.organisation_id = organisation_id;
+    if (organisation_id) where.origin_organisation_id = organisation_id;
     if (currency_id) where.destination_currency_id = currency_id;
 
     const transactions = await prisma.transaction.findMany({
@@ -139,7 +151,13 @@ class ReportsService {
   }
 
   // Commissions & Other Revenues Report
-  static async getCommissionsReport(filters: any) {
+  static async getCommissionsReport({
+    filters,
+    user_organisation_id,
+  }: {
+    filters: any;
+    user_organisation_id: string;
+  }) {
     const {
       date_from,
       date_to,
@@ -151,17 +169,22 @@ class ReportsService {
       limit = 100,
     } = filters;
 
-    const where: any = {};
+    const where: any = {
+      transaction: {
+        origin_organisation_id: user_organisation_id,
+      },
+    };
 
     if (date_from || date_to) {
       where.created_at = {};
-      if (date_from) where.created_at.gte = new Date(date_from);
-      if (date_to) where.created_at.lte = new Date(date_to);
+      if (date_from) where.created_at.gte = date_from;
+      if (date_to) where.created_at.lte = date_to;
     }
 
     if (charge_type) where.charge_type = charge_type;
-    if (organisation_id) where.organisation_id = organisation_id;
-    if (corridor_id) where.corridor_id = corridor_id;
+    if (organisation_id)
+      where.transaction.destination_organisation_id = organisation_id;
+    if (corridor_id) where.transaction.corridor_id = corridor_id;
     if (currency_id) where.currency_id = currency_id;
 
     const charges = await prisma.transactionCharge.findMany({
@@ -196,7 +219,13 @@ class ReportsService {
   }
 
   // Taxes Report
-  static async getTaxesReport(filters: any) {
+  static async getTaxesReport({
+    filters,
+    user_organisation_id,
+  }: {
+    filters: any;
+    user_organisation_id: string;
+  }) {
     const {
       date_from,
       date_to,
@@ -209,16 +238,20 @@ class ReportsService {
 
     const where: any = {
       charge_type: "TAX",
+      transaction: {
+        origin_organisation_id: user_organisation_id,
+      },
     };
 
     if (date_from || date_to) {
       where.created_at = {};
-      if (date_from) where.created_at.gte = new Date(date_from);
-      if (date_to) where.created_at.lte = new Date(date_to);
+      if (date_from) where.created_at.gte = date_from;
+      if (date_to) where.created_at.lte = date_to;
     }
 
     if (tax_type) where.charge_type = tax_type;
-    if (organisation_id) where.organisation_id = organisation_id;
+    if (organisation_id)
+      where.transaction.destination_organisation_id = organisation_id;
     if (currency_id) where.currency_id = currency_id;
 
     const taxes = await prisma.transactionCharge.findMany({
@@ -253,7 +286,13 @@ class ReportsService {
   }
 
   // User Tills Report
-  static async getUserTillsReport(filters: any) {
+  static async getUserTillsReport({
+    filters,
+    user_organisation_id,
+  }: {
+    filters: any;
+    user_organisation_id: string;
+  }) {
     const {
       date_from,
       date_to,
@@ -265,18 +304,22 @@ class ReportsService {
       limit = 100,
     } = filters;
 
-    const where: any = {};
+    const where: any = {
+      till: {
+        organisation_id: user_organisation_id,
+      },
+    };
 
     if (date_from || date_to) {
       where.created_at = {};
-      if (date_from) where.created_at.gte = new Date(date_from);
-      if (date_to) where.created_at.lte = new Date(date_to);
+      if (date_from) where.created_at.gte = date_from;
+      if (date_to) where.created_at.lte = date_to;
     }
 
     if (user_id) where.user_id = user_id;
     if (till_id) where.till_id = till_id;
     if (status) where.status = status;
-    if (organisation_id) where.organisation_id = organisation_id;
+    if (organisation_id) where.till.organisation_id = organisation_id;
 
     const userTills = await prisma.userTill.findMany({
       where,
@@ -310,29 +353,50 @@ class ReportsService {
   }
 
   // Balances History Report
-  static async getBalancesHistoryReport(filters: any) {
+  static async getBalancesHistoryReport({
+    filters,
+    user_organisation_id,
+  }: {
+    filters: any;
+    user_organisation_id: string;
+  }) {
     const {
       date_from,
       date_to,
       entity_type,
       entity_id,
-      organisation_id,
       currency_id,
       page = 1,
       limit = 100,
     } = filters;
 
-    const where: any = {};
+    const where: any = {
+      OR: [
+        { entity_type: "ORG_BALANCE", entity_id: user_organisation_id },
+        {
+          entity_type: "TILL",
+          till: { organisation_id: user_organisation_id },
+        },
+        {
+          entity_type: "VAULT",
+          vault: { organisation_id: user_organisation_id },
+        },
+        {
+          entity_type: "BANK_ACCOUNT",
+          bank_account: { organisation_id: user_organisation_id },
+        },
+      ],
+    };
 
     if (date_from || date_to) {
       where.created_at = {};
-      if (date_from) where.created_at.gte = new Date(date_from);
-      if (date_to) where.created_at.lte = new Date(date_to);
+      if (date_from) where.created_at.gte = date_from;
+      if (date_to) where.created_at.lte = date_to;
     }
 
     if (entity_type) where.entity_type = entity_type;
     if (entity_id) where.entity_id = entity_id;
-    if (organisation_id) where.organisation_id = organisation_id;
+
     if (currency_id) where.currency_id = currency_id;
 
     const balanceHistory = await prisma.balanceHistory.findMany({
@@ -362,7 +426,13 @@ class ReportsService {
   }
 
   // GL Accounts Report
-  static async getGlAccountsReport(filters: any) {
+  static async getGlAccountsReport({
+    filters,
+    user_organisation_id,
+  }: {
+    filters: any;
+    user_organisation_id: string;
+  }) {
     const {
       account_id,
       type,
@@ -374,7 +444,9 @@ class ReportsService {
       limit = 100,
     } = filters;
 
-    const where: any = {};
+    const where: any = {
+      organisation_id: user_organisation_id,
+    };
 
     if (account_id) where.id = account_id;
     if (type) where.type = type;
@@ -409,15 +481,23 @@ class ReportsService {
   }
 
   // Profit and Loss Report
-  static async getProfitLossReport(filters: any) {
+  static async getProfitLossReport({
+    filters,
+    user_organisation_id,
+  }: {
+    filters: any;
+    user_organisation_id: string;
+  }) {
     const { date_from, date_to, organisation_id, currency_id } = filters;
 
-    const where: any = {};
+    const where: any = {
+      organisation_id: user_organisation_id,
+    };
 
     if (date_from || date_to) {
       where.created_at = {};
-      if (date_from) where.created_at.gte = new Date(date_from);
-      if (date_to) where.created_at.lte = new Date(date_to);
+      if (date_from) where.created_at.gte = date_from;
+      if (date_to) where.created_at.lte = date_to;
     }
 
     if (organisation_id) where.organisation_id = organisation_id;
@@ -484,15 +564,23 @@ class ReportsService {
   }
 
   // Balance Sheet Report
-  static async getBalanceSheetReport(filters: any) {
+  static async getBalanceSheetReport({
+    filters,
+    user_organisation_id,
+  }: {
+    filters: any;
+    user_organisation_id: string;
+  }) {
     const { date_from, date_to, organisation_id } = filters;
 
-    const where: any = {};
+    const where: any = {
+      organisation_id: user_organisation_id,
+    };
 
     if (date_from || date_to) {
       where.created_at = {};
-      if (date_from) where.created_at.gte = new Date(date_from);
-      if (date_to) where.created_at.lte = new Date(date_to);
+      if (date_from) where.created_at.gte = date_from;
+      if (date_to) where.created_at.lte = date_to;
     }
 
     if (organisation_id) where.organisation_id = organisation_id;
@@ -579,7 +667,13 @@ class ReportsService {
   }
 
   // Partner Balances Report
-  static async getPartnerBalancesReport(filters: any) {
+  static async getPartnerBalancesReport({
+    filters,
+    user_organisation_id,
+  }: {
+    filters: any;
+    user_organisation_id: string;
+  }) {
     const {
       date_from,
       date_to,
@@ -589,15 +683,17 @@ class ReportsService {
       limit = 100,
     } = filters;
 
-    const where: any = {};
+    const where: any = {
+      base_org_id: user_organisation_id,
+    };
 
     if (date_from || date_to) {
       where.created_at = {};
-      if (date_from) where.created_at.gte = new Date(date_from);
-      if (date_to) where.created_at.lte = new Date(date_to);
+      if (date_from) where.created_at.gte = date_from;
+      if (date_to) where.created_at.lte = date_to;
     }
 
-    if (partner_org_id) where.base_org_id = partner_org_id;
+    if (partner_org_id) where.dest_org_id = partner_org_id;
     if (currency_id) where.currency_id = currency_id;
 
     const partnerBalances = await prisma.orgBalance.findMany({
@@ -629,7 +725,13 @@ class ReportsService {
   }
 
   // Customer and Beneficiary Compliance Report
-  static async getComplianceReport(filters: any) {
+  static async getComplianceReport({
+    filters,
+    user_organisation_id,
+  }: {
+    filters: any;
+    user_organisation_id: string;
+  }) {
     const {
       date_from,
       date_to,
@@ -640,12 +742,14 @@ class ReportsService {
       limit = 100,
     } = filters;
 
-    const where: any = {};
+    const where: any = {
+      organisation_id: user_organisation_id,
+    };
 
     if (date_from || date_to) {
       where.created_at = {};
-      if (date_from) where.created_at.gte = new Date(date_from);
-      if (date_to) where.created_at.lte = new Date(date_to);
+      if (date_from) where.created_at.gte = date_from;
+      if (date_to) where.created_at.lte = date_to;
     }
 
     if (risk_rating) where.risk_rating = risk_rating;
@@ -685,7 +789,13 @@ class ReportsService {
   }
 
   // Exchange Rates Report
-  static async getExchangeRatesReport(filters: any) {
+  static async getExchangeRatesReport({
+    filters,
+    user_organisation_id,
+  }: {
+    filters: any;
+    user_organisation_id: string;
+  }) {
     const {
       date_from,
       date_to,
@@ -695,12 +805,16 @@ class ReportsService {
       limit = 100,
     } = filters;
 
-    const where: any = {};
+    const where: any = {
+      corridor: {
+        origin_organisation_id: user_organisation_id,
+      },
+    };
 
     if (date_from || date_to) {
       where.created_at = {};
-      if (date_from) where.created_at.gte = new Date(date_from);
-      if (date_to) where.created_at.lte = new Date(date_to);
+      if (date_from) where.created_at.gte = date_from;
+      if (date_to) where.created_at.lte = date_to;
     }
 
     if (corridor_id) where.corridor_id = corridor_id;
@@ -735,7 +849,13 @@ class ReportsService {
   }
 
   // Audit Trail Report
-  static async getAuditTrailReport(filters: any) {
+  static async getAuditTrailReport({
+    filters,
+    user_organisation_id,
+  }: {
+    filters: any;
+    user_organisation_id: string;
+  }) {
     const {
       date_from,
       date_to,
@@ -746,17 +866,21 @@ class ReportsService {
       limit = 100,
     } = filters;
 
-    const where: any = {};
+    const where: any = {
+      user: {
+        organisation_id: user_organisation_id,
+      },
+    };
 
     if (date_from || date_to) {
       where.created_at = {};
-      if (date_from) where.created_at.gte = new Date(date_from);
-      if (date_to) where.created_at.lte = new Date(date_to);
+      if (date_from) where.created_at.gte = date_from;
+      if (date_to) where.created_at.lte = date_to;
     }
 
     if (user_id) where.user_id = user_id;
     if (entity_type) where.entity_type = entity_type;
-    if (organisation_id) where.organisation_id = organisation_id;
+    if (organisation_id) where.user.organisation_id = organisation_id;
 
     const auditTrail = await prisma.userActivity.findMany({
       where,
@@ -785,7 +909,13 @@ class ReportsService {
   }
 
   // Corridor Performance Report
-  static async getCorridorPerformanceReport(filters: any) {
+  static async getCorridorPerformanceReport({
+    filters,
+    user_organisation_id,
+  }: {
+    filters: any;
+    user_organisation_id: string;
+  }) {
     const {
       date_from,
       date_to,
@@ -795,19 +925,23 @@ class ReportsService {
       limit = 100,
     } = filters;
 
-    const where: any = {};
+    const where: any = {
+      origin_organisation_id: user_organisation_id,
+    };
 
     if (date_from || date_to) {
       where.created_at = {};
-      if (date_from) where.created_at.gte = new Date(date_from);
-      if (date_to) where.created_at.lte = new Date(date_to);
+      if (date_from) where.created_at.gte = date_from;
+      if (date_to) where.created_at.lte = date_to;
     }
 
     if (corridor_id) where.corridor_id = corridor_id;
     if (currency_id) where.origin_currency_id = currency_id;
 
     const corridors = await prisma.corridor.findMany({
-      where: corridor_id ? { id: corridor_id } : {},
+      where: corridor_id
+        ? { id: corridor_id, origin_organisation_id: user_organisation_id }
+        : { origin_organisation_id: user_organisation_id },
       include: {
         base_currency: true,
         origin_organisation: {
@@ -846,7 +980,13 @@ class ReportsService {
   }
 
   // User Performance Report
-  static async getUserPerformanceReport(filters: any) {
+  static async getUserPerformanceReport({
+    filters,
+    user_organisation_id,
+  }: {
+    filters: any;
+    user_organisation_id: string;
+  }) {
     const {
       date_from,
       date_to,
@@ -856,12 +996,16 @@ class ReportsService {
       limit = 100,
     } = filters;
 
-    const where: any = {};
+    const where: any = {
+      till: {
+        organisation_id: user_organisation_id,
+      },
+    };
 
     if (date_from || date_to) {
       where.created_at = {};
-      if (date_from) where.created_at.gte = new Date(date_from);
-      if (date_to) where.created_at.lte = new Date(date_to);
+      if (date_from) where.created_at.gte = date_from;
+      if (date_to) where.created_at.lte = date_to;
     }
 
     if (user_id) where.user_id = user_id;
@@ -899,7 +1043,13 @@ class ReportsService {
   }
 
   // Integration Status Report
-  static async getIntegrationStatusReport(filters: any) {
+  static async getIntegrationStatusReport({
+    filters,
+    user_organisation_id,
+  }: {
+    filters: any;
+    user_organisation_id: string;
+  }) {
     const {
       date_from,
       date_to,
@@ -909,12 +1059,14 @@ class ReportsService {
       limit = 100,
     } = filters;
 
-    const where: any = {};
+    const where: any = {
+      organisation_id: user_organisation_id,
+    };
 
     if (date_from || date_to) {
       where.created_at = {};
-      if (date_from) where.created_at.gte = new Date(date_from);
-      if (date_to) where.created_at.lte = new Date(date_to);
+      if (date_from) where.created_at.gte = date_from;
+      if (date_to) where.created_at.lte = date_to;
     }
 
     if (integration_type) where.type = integration_type;
@@ -947,7 +1099,13 @@ class ReportsService {
   }
 
   // Cash Position Report
-  static async getCashPositionReport(filters: any) {
+  static async getCashPositionReport({
+    filters,
+    user_organisation_id,
+  }: {
+    filters: any;
+    user_organisation_id: string;
+  }) {
     const {
       date_from,
       date_to,
@@ -957,16 +1115,34 @@ class ReportsService {
       limit = 100,
     } = filters;
 
-    const where: any = {};
+    const where: any = {
+      OR: [
+        { entity_type: "ORGANISATION", entity_id: user_organisation_id },
+        {
+          entity_type: "TILL",
+          till: { organisation_id: user_organisation_id },
+        },
+        {
+          entity_type: "VAULT",
+          vault: { organisation_id: user_organisation_id },
+        },
+      ],
+    };
 
     if (date_from || date_to) {
       where.created_at = {};
-      if (date_from) where.created_at.gte = new Date(date_from);
-      if (date_to) where.created_at.lte = new Date(date_to);
+      if (date_from) where.created_at.gte = date_from;
+      if (date_to) where.created_at.lte = date_to;
     }
 
     if (entity_type) where.entity_type = entity_type;
-    if (organisation_id) where.organisation_id = organisation_id;
+    if (organisation_id) {
+      where.OR = [
+        { entity_type: "ORGANISATION", entity_id: organisation_id },
+        { entity_type: "TILL", till: { organisation_id: organisation_id } },
+        { entity_type: "VAULT", vault: { organisation_id: organisation_id } },
+      ];
+    }
 
     const cashPositions = await prisma.balanceHistory.findMany({
       where,

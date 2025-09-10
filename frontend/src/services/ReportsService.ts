@@ -24,9 +24,12 @@ export class ReportsService {
   static async getOutboundTransactionsReport(
     filters: OutboundTransactionsReportFilters
   ) {
-    const response = await AxiosBase.get("/reports/outbound-transactions", {
-      params: filters,
-    });
+    const response = await AxiosBase.get(
+      "/api/v1/reports/outbound-transactions",
+      {
+        params: filters,
+      }
+    );
     return response.data;
   }
 
@@ -34,15 +37,18 @@ export class ReportsService {
   static async getInboundTransactionsReport(
     filters: InboundTransactionsReportFilters
   ) {
-    const response = await AxiosBase.get("/reports/inbound-transactions", {
-      params: filters,
-    });
+    const response = await AxiosBase.get(
+      "/api/v1/reports/inbound-transactions",
+      {
+        params: filters,
+      }
+    );
     return response.data;
   }
 
   // Commissions & Other Revenues Report
   static async getCommissionsReport(filters: CommissionsReportFilters) {
-    const response = await AxiosBase.get("/reports/commissions", {
+    const response = await AxiosBase.get("/api/v1/reports/commissions", {
       params: filters,
     });
     return response.data;
@@ -50,7 +56,7 @@ export class ReportsService {
 
   // Taxes Report
   static async getTaxesReport(filters: TaxesReportFilters) {
-    const response = await AxiosBase.get("/reports/taxes", {
+    const response = await AxiosBase.get("/api/v1/reports/taxes", {
       params: filters,
     });
     return response.data;
@@ -58,7 +64,7 @@ export class ReportsService {
 
   // User Tills Report
   static async getUserTillsReport(filters: UserTillsReportFilters) {
-    const response = await AxiosBase.get("/reports/user-tills", {
+    const response = await AxiosBase.get("/api/v1/reports/user-tills", {
       params: filters,
     });
     return response.data;
@@ -66,7 +72,7 @@ export class ReportsService {
 
   // Balances History Report
   static async getBalancesHistoryReport(filters: BalancesHistoryReportFilters) {
-    const response = await AxiosBase.get("/reports/balances-history", {
+    const response = await AxiosBase.get("/api/v1/reports/balances-history", {
       params: filters,
     });
     return response.data;
@@ -74,7 +80,7 @@ export class ReportsService {
 
   // GL Accounts Report
   static async getGlAccountsReport(filters: GlAccountsReportFilters) {
-    const response = await AxiosBase.get("/reports/gl-accounts", {
+    const response = await AxiosBase.get("/api/v1/reports/gl-accounts", {
       params: filters,
     });
     return response.data;
@@ -82,7 +88,7 @@ export class ReportsService {
 
   // Profit and Loss Report
   static async getProfitLossReport(filters: ProfitLossReportFilters) {
-    const response = await AxiosBase.get("/reports/profit-loss", {
+    const response = await AxiosBase.get("/api/v1/reports/profit-loss", {
       params: filters,
     });
     return response.data;
@@ -90,7 +96,7 @@ export class ReportsService {
 
   // Balance Sheet Report
   static async getBalanceSheetReport(filters: BalanceSheetReportFilters) {
-    const response = await AxiosBase.get("/reports/balance-sheet", {
+    const response = await AxiosBase.get("/api/v1/reports/balance-sheet", {
       params: filters,
     });
     return response.data;
@@ -98,7 +104,7 @@ export class ReportsService {
 
   // Partner Balances Report
   static async getPartnerBalancesReport(filters: PartnerBalancesReportFilters) {
-    const response = await AxiosBase.get("/reports/partner-balances", {
+    const response = await AxiosBase.get("/api/v1/reports/partner-balances", {
       params: filters,
     });
     return response.data;
@@ -106,7 +112,7 @@ export class ReportsService {
 
   // Customer and Beneficiary Compliance Report
   static async getComplianceReport(filters: ComplianceReportFilters) {
-    const response = await AxiosBase.get("/reports/compliance", {
+    const response = await AxiosBase.get("/api/v1/reports/compliance", {
       params: filters,
     });
     return response.data;
@@ -114,7 +120,7 @@ export class ReportsService {
 
   // Exchange Rates Report
   static async getExchangeRatesReport(filters: ExchangeRatesReportFilters) {
-    const response = await AxiosBase.get("/reports/exchange-rates", {
+    const response = await AxiosBase.get("/api/v1/reports/exchange-rates", {
       params: filters,
     });
     return response.data;
@@ -122,7 +128,7 @@ export class ReportsService {
 
   // Audit Trail Report
   static async getAuditTrailReport(filters: AuditTrailReportFilters) {
-    const response = await AxiosBase.get("/reports/audit-trail", {
+    const response = await AxiosBase.get("/api/v1/reports/audit-trail", {
       params: filters,
     });
     return response.data;
@@ -132,15 +138,18 @@ export class ReportsService {
   static async getCorridorPerformanceReport(
     filters: CorridorPerformanceReportFilters
   ) {
-    const response = await AxiosBase.get("/reports/corridor-performance", {
-      params: filters,
-    });
+    const response = await AxiosBase.get(
+      "/api/v1/reports/corridor-performance",
+      {
+        params: filters,
+      }
+    );
     return response.data;
   }
 
   // User Performance Report
   static async getUserPerformanceReport(filters: UserPerformanceReportFilters) {
-    const response = await AxiosBase.get("/reports/user-performance", {
+    const response = await AxiosBase.get("/api/v1/reports/user-performance", {
       params: filters,
     });
     return response.data;
@@ -150,7 +159,7 @@ export class ReportsService {
   static async getIntegrationStatusReport(
     filters: IntegrationStatusReportFilters
   ) {
-    const response = await AxiosBase.get("/reports/integration-status", {
+    const response = await AxiosBase.get("/api/v1/reports/integration-status", {
       params: filters,
     });
     return response.data;
@@ -158,7 +167,7 @@ export class ReportsService {
 
   // Cash Position Report
   static async getCashPositionReport(filters: CashPositionReportFilters) {
-    const response = await AxiosBase.get("/reports/cash-position", {
+    const response = await AxiosBase.get("/api/v1/reports/cash-position", {
       params: filters,
     });
     return response.data;
@@ -170,10 +179,13 @@ export class ReportsService {
     filters: Record<string, unknown>,
     filename?: string
   ) {
-    const response = await AxiosBase.get(`/reports/${reportType}/export/csv`, {
-      params: { ...filters, filename },
-      responseType: "blob",
-    });
+    const response = await AxiosBase.get(
+      `/api/v1/reports/${reportType}/export/csv`,
+      {
+        params: { ...filters, filename },
+        responseType: "blob",
+      }
+    );
     return response.data;
   }
 
@@ -183,10 +195,13 @@ export class ReportsService {
     filters: Record<string, unknown>,
     filename?: string
   ) {
-    const response = await AxiosBase.get(`/reports/${reportType}/export/pdf`, {
-      params: { ...filters, filename },
-      responseType: "blob",
-    });
+    const response = await AxiosBase.get(
+      `/api/v1/reports/${reportType}/export/pdf`,
+      {
+        params: { ...filters, filename },
+        responseType: "blob",
+      }
+    );
     return response.data;
   }
 }
