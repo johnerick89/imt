@@ -40,17 +40,17 @@ const BeneficiaryActionCell: React.FC<BeneficiaryActionCellProps> = ({
       <button
         onClick={() => onToggleStatus(beneficiary)}
         className={`p-1 rounded ${
-          beneficiary.is_active
+          beneficiary.status === "ACTIVE"
             ? "text-gray-600 hover:text-orange-600 hover:bg-orange-50"
             : "text-gray-600 hover:text-green-600 hover:bg-green-50"
         }`}
         title={
-          beneficiary.is_active
+          beneficiary.status === "ACTIVE"
             ? "Deactivate beneficiary"
             : "Activate beneficiary"
         }
       >
-        {beneficiary.is_active ? (
+        {beneficiary.status === "ACTIVE" ? (
           <FiUserX className="w-4 h-4" />
         ) : (
           <FiUserCheck className="w-4 h-4" />

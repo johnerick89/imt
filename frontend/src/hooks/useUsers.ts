@@ -128,7 +128,7 @@ export const useDeleteUser = () => {
 
   return useMutation({
     mutationFn: (userId: string) => UsersService.deleteUser(userId),
-    onSuccess: (data, userId) => {
+    onSuccess: (_, userId) => {
       // Remove the user from the cache
       queryClient.removeQueries({ queryKey: userKeys.detail(userId) });
       // Invalidate and refetch users list

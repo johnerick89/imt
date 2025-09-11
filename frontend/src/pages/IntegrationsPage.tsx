@@ -30,7 +30,7 @@ const IntegrationsPage: React.FC = () => {
     page: 1,
     limit: 10,
     search: "",
-    type: "",
+    type: undefined,
     status: undefined,
     origin_organisation_id: currentUser?.organisation_id || "", // Show integrations where current org is the origin
   });
@@ -95,13 +95,25 @@ const IntegrationsPage: React.FC = () => {
     }
   };
 
+  const handleFormSubmit = async (
+    data: CreateIntegrationRequest | UpdateIntegrationRequest
+  ) => {
+    if ("id" in data) {
+      // This is an update request
+      await handleEditIntegration(data as UpdateIntegrationRequest);
+    } else {
+      // This is a create request
+      await handleCreateIntegration(data as CreateIntegrationRequest);
+    }
+  };
+
   const handleEditIntegration = async (data: UpdateIntegrationRequest) => {
     if (!selectedIntegration) return;
 
     try {
       const result = await updateIntegrationMutation.mutateAsync({
         id: selectedIntegration.id,
-        data,
+        integrationData: data,
       });
       if (result.success) {
         setShowEditModal(false);
@@ -136,7 +148,7 @@ const IntegrationsPage: React.FC = () => {
     try {
       await updateIntegrationMutation.mutateAsync({
         id,
-        data: { status: newStatus as IntegrationStatus },
+        integrationData: { status: newStatus as IntegrationStatus },
       });
     } catch (error) {
       console.error("Failed to toggle integration status:", error);
@@ -151,6 +163,13 @@ const IntegrationsPage: React.FC = () => {
   const openDeleteModal = (integration: Integration) => {
     setSelectedIntegration(integration);
     setShowDeleteModal(true);
+  };
+
+  const handleDelete = (id: string) => {
+    const integration = integrations.find((i) => i.id === id);
+    if (integration) {
+      openDeleteModal(integration);
+    }
   };
 
   // Loading state
@@ -240,7 +259,7 @@ const IntegrationsPage: React.FC = () => {
           data={integrations}
           isLoading={isLoading}
           onEdit={openEditModal}
-          onDelete={openDeleteModal}
+          onDelete={handleDelete}
           onToggleStatus={handleToggleStatus}
         />
 
@@ -283,7 +302,7 @@ const IntegrationsPage: React.FC = () => {
         size="lg"
       >
         <IntegrationForm
-          onSubmit={handleCreateIntegration}
+          onSubmit={handleFormSubmit}
           isLoading={isAnyMutationLoading}
         />
       </Modal>

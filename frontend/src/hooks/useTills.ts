@@ -69,7 +69,7 @@ export const useUpdateTill = () => {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateTillRequest }) =>
       TillsService.updateTill(id, data),
-    onSuccess: (data, variables) => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: tillsKeys.lists() });
       queryClient.invalidateQueries({
         queryKey: tillsKeys.detail(variables.id),
@@ -97,7 +97,7 @@ export const useOpenTill = () => {
 
   return useMutation({
     mutationFn: (id: string) => TillsService.openTill(id),
-    onSuccess: (data, variables) => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: tillsKeys.lists() });
       queryClient.invalidateQueries({ queryKey: tillsKeys.detail(variables) });
       queryClient.invalidateQueries({ queryKey: tillsKeys.stats() });
@@ -111,7 +111,7 @@ export const useCloseTill = () => {
 
   return useMutation({
     mutationFn: (id: string) => TillsService.closeTill(id),
-    onSuccess: (data, variables) => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: tillsKeys.lists() });
       queryClient.invalidateQueries({ queryKey: tillsKeys.detail(variables) });
       queryClient.invalidateQueries({ queryKey: tillsKeys.stats() });
@@ -125,7 +125,7 @@ export const useBlockTill = () => {
 
   return useMutation({
     mutationFn: (id: string) => TillsService.blockTill(id),
-    onSuccess: (data, variables) => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: tillsKeys.lists() });
       queryClient.invalidateQueries({ queryKey: tillsKeys.detail(variables) });
       queryClient.invalidateQueries({ queryKey: tillsKeys.stats() });
@@ -138,7 +138,7 @@ export const useDeactivateTill = () => {
 
   return useMutation({
     mutationFn: (id: string) => TillsService.deactivateTill(id),
-    onSuccess: (data, variables) => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: tillsKeys.lists() });
       queryClient.invalidateQueries({ queryKey: tillsKeys.detail(variables) });
       queryClient.invalidateQueries({ queryKey: tillsKeys.stats() });
@@ -180,7 +180,7 @@ export const useUpdateUserTill = () => {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateUserTillRequest }) =>
       UserTillsService.updateUserTill(id, data),
-    onSuccess: (data, variables) => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: userTillsKeys.lists() });
       queryClient.invalidateQueries({
         queryKey: userTillsKeys.detail(variables.id),
@@ -205,7 +205,7 @@ export const useCloseUserTill = () => {
 
   return useMutation({
     mutationFn: (id: string) => UserTillsService.closeUserTill(id),
-    onSuccess: (data, variables) => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: userTillsKeys.lists() });
       queryClient.invalidateQueries({
         queryKey: userTillsKeys.detail(variables),
@@ -219,7 +219,7 @@ export const useBlockUserTill = () => {
 
   return useMutation({
     mutationFn: (id: string) => UserTillsService.blockUserTill(id),
-    onSuccess: (data, variables) => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: userTillsKeys.lists() });
       queryClient.invalidateQueries({
         queryKey: userTillsKeys.detail(variables),

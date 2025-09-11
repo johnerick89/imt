@@ -1,3 +1,13 @@
+import type { Corridor } from "./CorridorsTypes";
+import type { Integration } from "./IntegrationsTypes";
+import type { OrgBalance } from "./BalanceOperationsTypes";
+import type { GlAccount } from "./GlAccountsTypes";
+import type { Organisation } from "./OrganisationsTypes";
+import type { Customer } from "./CustomersTypes";
+import type { ExchangeRate } from "./ExchangeRatesTypes";
+import type { UserTill } from "./TillsTypes";
+import type { Transaction, TransactionCharge } from "./TransactionsTypes";
+
 // Base report interfaces
 export interface BaseReportFilters {
   date_from?: string;
@@ -11,7 +21,14 @@ export interface BaseReportFilters {
 export interface BaseReportResponse<T> {
   success: boolean;
   data: {
-    [key: string]: T[];
+    [key: string]:
+      | T[]
+      | {
+          page: number;
+          limit: number;
+          total: number;
+          totalPages: number;
+        };
     pagination: {
       page: number;
       limit: number;
@@ -230,9 +247,6 @@ export interface GlAccountReportItem {
   created_at: string;
 }
 
-// Profit and Loss Report
-export interface ProfitLossReportFilters extends BaseReportFilters {}
-
 export interface ProfitLossReportData {
   totalRevenue: number;
   totalExpenses: number;
@@ -244,9 +258,6 @@ export interface ProfitLossReportData {
     to?: string;
   };
 }
-
-// Balance Sheet Report
-export interface BalanceSheetReportFilters extends BaseReportFilters {}
 
 export interface BalanceSheetReportData {
   assets: GlAccountReportItem[];
@@ -337,8 +348,8 @@ export interface AuditTrailReportItem {
   action: string;
   entity_type: string;
   entity_id: string;
-  old_values: any;
-  new_values: any;
+  old_values: unknown;
+  new_values: unknown;
   user: {
     id: string;
     first_name: string;
@@ -435,26 +446,28 @@ export interface CashPositionReportItem {
   created_at: string;
 }
 
-// Report types enum
-export enum ReportType {
-  OUTBOUND_TRANSACTIONS = "outbound-transactions",
-  INBOUND_TRANSACTIONS = "inbound-transactions",
-  COMMISSIONS = "commissions",
-  TAXES = "taxes",
-  USER_TILLS = "user-tills",
-  BALANCES_HISTORY = "balances-history",
-  GL_ACCOUNTS = "gl-accounts",
-  PROFIT_LOSS = "profit-loss",
-  BALANCE_SHEET = "balance-sheet",
-  PARTNER_BALANCES = "partner-balances",
-  COMPLIANCE = "compliance",
-  EXCHANGE_RATES = "exchange-rates",
-  AUDIT_TRAIL = "audit-trail",
-  CORRIDOR_PERFORMANCE = "corridor-performance",
-  USER_PERFORMANCE = "user-performance",
-  INTEGRATION_STATUS = "integration-status",
-  CASH_POSITION = "cash-position",
-}
+// Report types
+export const ReportType = {
+  OUTBOUND_TRANSACTIONS: "outbound-transactions",
+  INBOUND_TRANSACTIONS: "inbound-transactions",
+  COMMISSIONS: "commissions",
+  TAXES: "taxes",
+  USER_TILLS: "user-tills",
+  BALANCES_HISTORY: "balances-history",
+  GL_ACCOUNTS: "gl-accounts",
+  PROFIT_LOSS: "profit-loss",
+  BALANCE_SHEET: "balance-sheet",
+  PARTNER_BALANCES: "partner-balances",
+  COMPLIANCE: "compliance",
+  EXCHANGE_RATES: "exchange-rates",
+  AUDIT_TRAIL: "audit-trail",
+  CORRIDOR_PERFORMANCE: "corridor-performance",
+  USER_PERFORMANCE: "user-performance",
+  INTEGRATION_STATUS: "integration-status",
+  CASH_POSITION: "cash-position",
+} as const;
+
+export type ReportType = (typeof ReportType)[keyof typeof ReportType];
 
 // Report metadata
 export interface ReportMetadata {
@@ -648,3 +661,15 @@ export const REPORT_METADATA: Record<ReportType, ReportMetadata> = {
     exportFormats: ["csv", "pdf"],
   },
 };
+
+export type ReportItem =
+  | Transaction
+  | TransactionCharge
+  | UserTill
+  | OrgBalance
+  | GlAccount
+  | Organisation
+  | Customer
+  | ExchangeRate
+  | Corridor
+  | Integration;

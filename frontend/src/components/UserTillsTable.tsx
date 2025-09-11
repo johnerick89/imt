@@ -9,9 +9,6 @@ import { formatToCurrency } from "../utils/textUtils";
 interface UserTillsTableProps {
   data: UserTill[];
   isLoading?: boolean;
-  onView: (userTill: UserTill) => void;
-  onEdit: (userTill: UserTill) => void;
-  onDelete: (userTill: UserTill) => void;
   onClose: (userTill: UserTill) => void;
   onBlock: (userTill: UserTill) => void;
 }
@@ -19,9 +16,6 @@ interface UserTillsTableProps {
 const UserTillsTable: React.FC<UserTillsTableProps> = ({
   data,
   isLoading = false,
-  onView,
-  onEdit,
-  onDelete,
   onClose,
   onBlock,
 }) => {
@@ -82,16 +76,13 @@ const UserTillsTable: React.FC<UserTillsTableProps> = ({
         cell: ({ row }) => (
           <UserTillActionCell
             userTill={row.original}
-            onView={onView}
-            onEdit={onEdit}
-            onDelete={onDelete}
             onClose={onClose}
             onBlock={onBlock}
           />
         ),
       },
     ],
-    [onView, onEdit, onDelete, onClose, onBlock]
+    [onClose, onBlock]
   );
 
   return (

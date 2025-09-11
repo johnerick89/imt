@@ -88,7 +88,7 @@ export const useDeleteIntegration = () => {
 
   return useMutation({
     mutationFn: (id: string) => IntegrationsService.deleteIntegration(id),
-    onSuccess: (data, id) => {
+    onSuccess: (_, id) => {
       // Remove the integration from the cache
       queryClient.removeQueries({ queryKey: integrationKeys.detail(id) });
       // Invalidate and refetch integrations list

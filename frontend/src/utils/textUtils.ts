@@ -24,4 +24,14 @@ function formatToCurrency(number: string | number): string {
   });
 }
 
-export { toHumanFriendly, formatToCurrency };
+function formatToCurrencyWithSymbol(
+  amount: string | bigint | string,
+  currency: string
+): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: currency,
+  }).format(Number(amount));
+}
+
+export { toHumanFriendly, formatToCurrency, formatToCurrencyWithSymbol };

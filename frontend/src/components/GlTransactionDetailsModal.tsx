@@ -49,18 +49,7 @@ const GlTransactionDetailsModal: React.FC<GlTransactionDetailsModalProps> = ({
                 Status
               </label>
               <div className="mt-1">
-                <StatusBadge
-                  status={transaction.status}
-                  variant={
-                    transaction.status === "POSTED"
-                      ? "success"
-                      : transaction.status === "PENDING"
-                      ? "warning"
-                      : transaction.status === "APPROVED"
-                      ? "info"
-                      : "error"
-                  }
-                />
+                <StatusBadge status={transaction.status} />
               </div>
             </div>
             <div>

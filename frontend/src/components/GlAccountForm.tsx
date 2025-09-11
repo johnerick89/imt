@@ -108,13 +108,14 @@ const GlAccountForm: React.FC<GlAccountFormProps> = ({
             control={control}
             rules={{ required: "Account type is required" }}
             render={({ field }) => (
-              <Select
-                {...field}
-                options={accountTypes}
-                placeholder="Select account type"
-                disabled={isLoading}
-                invalid={!!errors.type}
-              />
+              <Select {...field} disabled={isLoading} invalid={!!errors.type}>
+                <option value="">Select account type</option>
+                {accountTypes.map((type) => (
+                  <option key={type.value} value={type.value}>
+                    {type.label}
+                  </option>
+                ))}
+              </Select>
             )}
           />
         </FormItem>

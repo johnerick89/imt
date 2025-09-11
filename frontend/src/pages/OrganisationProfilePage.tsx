@@ -75,11 +75,15 @@ const OrganisationProfilePage: React.FC = () => {
     currency_id: "",
     description: "",
   });
-  const [balanceHistoryFilters, setBalanceHistoryFilters] =
-    useState<BalanceHistoryFilters>({
-      page: 1,
-      limit: 10,
-    });
+  const [prefundForm, setPrefundForm] = useState({
+    amount: "",
+    source_id: "",
+    description: "",
+  });
+  const [balanceHistoryFilters] = useState<BalanceHistoryFilters>({
+    page: 1,
+    limit: 10,
+  });
   // Integration state
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -336,6 +340,12 @@ const OrganisationProfilePage: React.FC = () => {
     try {
       await prefundMutation.mutateAsync({ orgId: id || "", data });
       setShowPrefundModal(false);
+      // Reset form
+      setPrefundForm({
+        amount: "",
+        source_id: "",
+        description: "",
+      });
     } catch (error) {
       console.error("Error prefunding organisation:", error);
     }
@@ -442,7 +452,7 @@ const OrganisationProfilePage: React.FC = () => {
             <IntegrationsTable
               data={integrations}
               onEdit={openEditModal}
-              onToggleStatus={(id, currentStatus) => {
+              onToggleStatus={(_id, currentStatus) => {
                 const newStatus =
                   currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE";
                 handleEditIntegration({
@@ -470,7 +480,7 @@ const OrganisationProfilePage: React.FC = () => {
             <CorridorsTable
               data={corridors}
               onEdit={openEditCorridorModal}
-              onToggleStatus={(corridor, currentStatus) => {
+              onToggleStatus={(_corridor, currentStatus) => {
                 const newStatus =
                   currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE";
                 handleEditCorridor({
@@ -1045,19 +1055,26 @@ const OrganisationProfilePage: React.FC = () => {
       {/* Prefund Modal */}
       <Modal
         isOpen={showPrefundModal}
-        onClose={() => setShowPrefundModal(false)}
+        onClose={() => {
+          setShowPrefundModal(false);
+          // Reset form
+          setPrefundForm({
+            amount: "",
+            source_id: "",
+            description: "",
+          });
+        }}
         title="Prefund Organisation"
         size="md"
       >
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            const formData = new FormData(e.currentTarget);
             const data: PrefundRequest = {
-              amount: parseFloat(formData.get("amount") as string),
+              amount: parseFloat(prefundForm.amount),
               source_type: "BANK_ACCOUNT",
-              source_id: formData.get("source_id") as string,
-              description: formData.get("description") as string,
+              source_id: prefundForm.source_id,
+              description: prefundForm.description,
             };
             handlePrefund(data);
           }}
@@ -1065,31 +1082,48 @@ const OrganisationProfilePage: React.FC = () => {
         >
           <FormItem label="Amount" required>
             <Input
-              name="amount"
               type="number"
               step="0.01"
               placeholder="Enter prefund amount"
+              value={prefundForm.amount}
+              onChange={(e) =>
+                setPrefundForm((prev) => ({
+                  ...prev,
+                  amount: e.target.value,
+                }))
+              }
               required
             />
           </FormItem>
 
           <FormItem label="Source Bank Account" required>
             <SearchableSelect
-              field="source_id"
+              value={prefundForm.source_id}
+              onChange={(value) =>
+                setPrefundForm((prev) => ({
+                  ...prev,
+                  source_id: value,
+                }))
+              }
               placeholder="Select bank account"
               options={bankAccounts.map((account) => ({
                 value: account.id,
                 label: `${account.name} - ${account.account_number}`,
               }))}
-              required
             />
           </FormItem>
 
           <FormItem label="Description">
             <Textarea
-              name="description"
               placeholder="Enter description (optional)"
               rows={3}
+              value={prefundForm.description}
+              onChange={(e) =>
+                setPrefundForm((prev) => ({
+                  ...prev,
+                  description: e.target.value,
+                }))
+              }
             />
           </FormItem>
 
@@ -1097,7 +1131,15 @@ const OrganisationProfilePage: React.FC = () => {
             <Button
               type="button"
               variant="outline"
-              onClick={() => setShowPrefundModal(false)}
+              onClick={() => {
+                setShowPrefundModal(false);
+                // Reset form
+                setPrefundForm({
+                  amount: "",
+                  source_id: "",
+                  description: "",
+                });
+              }}
             >
               Cancel
             </Button>

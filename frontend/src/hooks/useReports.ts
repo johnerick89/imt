@@ -1,6 +1,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { ReportsService } from "../services/ReportsService";
 import type {
+  BaseReportFilters,
   OutboundTransactionsReportFilters,
   InboundTransactionsReportFilters,
   CommissionsReportFilters,
@@ -8,8 +9,6 @@ import type {
   UserTillsReportFilters,
   BalancesHistoryReportFilters,
   GlAccountsReportFilters,
-  ProfitLossReportFilters,
-  BalanceSheetReportFilters,
   PartnerBalancesReportFilters,
   ComplianceReportFilters,
   ExchangeRatesReportFilters,
@@ -90,7 +89,7 @@ export const useGlAccountsReport = (filters: GlAccountsReportFilters) => {
 };
 
 // Profit and Loss Report
-export const useProfitLossReport = (filters: ProfitLossReportFilters) => {
+export const useProfitLossReport = (filters: BaseReportFilters) => {
   return useQuery({
     queryKey: ["profitLossReport", filters],
     queryFn: () => ReportsService.getProfitLossReport(filters),
@@ -99,7 +98,7 @@ export const useProfitLossReport = (filters: ProfitLossReportFilters) => {
 };
 
 // Balance Sheet Report
-export const useBalanceSheetReport = (filters: BalanceSheetReportFilters) => {
+export const useBalanceSheetReport = (filters: BaseReportFilters) => {
   return useQuery({
     queryKey: ["balanceSheetReport", filters],
     queryFn: () => ReportsService.getBalanceSheetReport(filters),

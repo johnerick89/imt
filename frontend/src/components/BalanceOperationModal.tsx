@@ -145,8 +145,8 @@ const BalanceOperationModal: React.FC<BalanceOperationModalProps> = ({
             <FormItem
               label="Source"
               required
-              invalid={!!errors.source_id}
-              errorMessage={errors.source_id?.message}
+              invalid={!!(errors as any).source_id}
+              errorMessage={(errors as any).source_id?.message}
             >
               <Controller
                 name="source_id"
@@ -158,7 +158,7 @@ const BalanceOperationModal: React.FC<BalanceOperationModalProps> = ({
                     options={sourceOptions}
                     placeholder="Select source"
                     disabled={isLoading}
-                    invalid={!!errors.source_id}
+                    invalid={!!(errors as any).source_id}
                   />
                 )}
               />
@@ -187,8 +187,8 @@ const BalanceOperationModal: React.FC<BalanceOperationModalProps> = ({
             <FormItem
               label="Destination"
               required
-              invalid={!!errors.destination_id}
-              errorMessage={errors.destination_id?.message}
+              invalid={!!(errors as any).destination_id}
+              errorMessage={(errors as any).destination_id?.message}
             >
               <Controller
                 name="destination_id"
@@ -200,7 +200,7 @@ const BalanceOperationModal: React.FC<BalanceOperationModalProps> = ({
                     options={destinationOptions}
                     placeholder="Select destination"
                     disabled={isLoading}
-                    invalid={!!errors.destination_id}
+                    invalid={!!(errors as any).destination_id}
                   />
                 )}
               />

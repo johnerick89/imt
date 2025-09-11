@@ -242,21 +242,6 @@ const TillProfilePage: React.FC = () => {
     }
   };
 
-  const openEditUserTillModal = (userTill: UserTill) => {
-    setSelectedUserTill(userTill);
-    setShowEditUserTillModal(true);
-  };
-
-  const openDeleteUserTillModal = (userTill: UserTill) => {
-    setSelectedUserTill(userTill);
-    setShowDeleteUserTillModal(true);
-  };
-
-  const handleViewUserTill = (userTill: UserTill) => {
-    // Could navigate to user till details if needed
-    console.log("View user till:", userTill);
-  };
-
   // Balance operation handlers
   const handleTopupTill = async (data: TillTopupRequest) => {
     try {
@@ -587,9 +572,6 @@ const TillProfilePage: React.FC = () => {
             <UserTillsTable
               data={userTills}
               isLoading={userTillsLoading}
-              onView={handleViewUserTill}
-              onEdit={openEditUserTillModal}
-              onDelete={openDeleteUserTillModal}
               onClose={handleCloseUserTill}
               onBlock={handleBlockUserTill}
             />

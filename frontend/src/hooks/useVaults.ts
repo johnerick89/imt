@@ -55,7 +55,7 @@ export const useUpdateVault = () => {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateVaultRequest }) =>
       VaultsService.updateVault(id, data),
-    onSuccess: (data, variables) => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: vaultsKeys.lists() });
       queryClient.invalidateQueries({
         queryKey: vaultsKeys.detail(variables.id),

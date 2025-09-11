@@ -71,7 +71,7 @@ export const useUpdateRole = () => {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateRoleRequest }) =>
       RolesService.updateRole(id, data),
-    onSuccess: (data, variables) => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: rolesKeys.lists() });
       queryClient.invalidateQueries({
         queryKey: rolesKeys.detail(variables.id),
@@ -99,7 +99,7 @@ export const useCreateRolePermission = () => {
   return useMutation({
     mutationFn: (data: CreateRolePermissionRequest) =>
       RolesService.createRolePermission(data),
-    onSuccess: (data, variables) => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: rolesKeys.lists() });
       queryClient.invalidateQueries({
         queryKey: rolesKeys.detail(variables.role_id),

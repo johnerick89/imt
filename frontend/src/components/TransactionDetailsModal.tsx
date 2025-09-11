@@ -3,12 +3,7 @@ import { Modal } from "./ui/Modal";
 import { Button } from "./ui/Button";
 import { StatusBadge } from "./ui/StatusBadge";
 import { formatToCurrency } from "../utils/textUtils";
-import type {
-  Transaction,
-  TransactionCharge,
-  Status,
-  RemittanceStatus,
-} from "../types/TransactionsTypes";
+import type { Transaction } from "../types/TransactionsTypes";
 
 interface TransactionDetailsModalProps {
   isOpen: boolean;
@@ -18,59 +13,6 @@ interface TransactionDetailsModalProps {
   onReverse?: (transaction: Transaction) => void;
   isLoading?: boolean;
 }
-
-const getStatusColor = (status: Status): string => {
-  switch (status) {
-    case "PENDING_APPROVAL":
-      return "yellow";
-    case "APPROVED":
-      return "green";
-    case "PENDING":
-      return "blue";
-    case "FAILED":
-      return "red";
-    case "CANCELLED":
-      return "gray";
-    case "REJECTED":
-      return "red";
-    case "COMPLETED":
-      return "green";
-    case "REVERSED":
-      return "orange";
-    default:
-      return "gray";
-  }
-};
-
-const getRemittanceStatusColor = (status: RemittanceStatus): string => {
-  switch (status) {
-    case "PENDING":
-      return "yellow";
-    case "FAILED":
-      return "red";
-    case "REJECTED":
-      return "red";
-    case "COMPLETED":
-      return "green";
-    default:
-      return "gray";
-  }
-};
-
-const getChargeTypeColor = (type: string): string => {
-  switch (type) {
-    case "TAX":
-      return "red";
-    case "INTERNAL_FEE":
-      return "blue";
-    case "COMMISSION":
-      return "green";
-    case "OTHER":
-      return "gray";
-    default:
-      return "gray";
-  }
-};
 
 export const TransactionDetailsModal: React.FC<
   TransactionDetailsModalProps
@@ -130,15 +72,8 @@ export const TransactionDetailsModal: React.FC<
               Status
             </label>
             <div className="mt-1 flex space-x-2">
-              <StatusBadge
-                status={transaction.status}
-                color={getStatusColor(transaction.status)}
-              />
-              <StatusBadge
-                status={transaction.remittance_status}
-                color={getRemittanceStatusColor(transaction.remittance_status)}
-                size="sm"
-              />
+              <StatusBadge status={transaction.status} />
+              <StatusBadge status={transaction.remittance_status} />
             </div>
           </div>
           <div>
@@ -481,10 +416,7 @@ export const TransactionDetailsModal: React.FC<
               {transaction.transaction_charges?.map((charge) => (
                 <tr key={charge.id}>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <StatusBadge
-                      status={charge.type}
-                      color={getChargeTypeColor(charge.type)}
-                    />
+                    <StatusBadge status={charge.type} />
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-sm text-gray-900">
@@ -503,10 +435,7 @@ export const TransactionDetailsModal: React.FC<
                     {formatToCurrency(charge.amount)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <StatusBadge
-                      status={charge.status}
-                      color={charge.status === "APPROVED" ? "green" : "yellow"}
-                    />
+                    <StatusBadge status={charge.status} />
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
@@ -631,10 +560,7 @@ export const TransactionDetailsModal: React.FC<
               </p>
               <p className="text-sm text-gray-500">Transaction Status</p>
             </div>
-            <StatusBadge
-              status={transaction.status}
-              color={getStatusColor(transaction.status)}
-            />
+            <StatusBadge status={transaction.status} />
           </div>
           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
             <div>
@@ -643,10 +569,7 @@ export const TransactionDetailsModal: React.FC<
               </p>
               <p className="text-sm text-gray-500">Payment Status</p>
             </div>
-            <StatusBadge
-              status={transaction.remittance_status}
-              color={getRemittanceStatusColor(transaction.remittance_status)}
-            />
+            <StatusBadge status={transaction.remittance_status} />
           </div>
           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
             <div>
@@ -682,7 +605,9 @@ export const TransactionDetailsModal: React.FC<
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() =>
+                  setActiveTab(tab.id as "details" | "charges" | "audit")
+                }
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === tab.id
                     ? "border-blue-500 text-blue-600"

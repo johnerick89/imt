@@ -28,6 +28,7 @@ import {
 } from "../hooks/useReports";
 import { ReportType, REPORT_METADATA } from "../types/ReportsTypes";
 import { formatToCurrency } from "../utils/textUtils";
+import type { ReportItem } from "../types/ReportsTypes";
 
 const ReportsPage: React.FC = () => {
   const { user } = useSession();
@@ -36,7 +37,7 @@ const ReportsPage: React.FC = () => {
     ReportType.OUTBOUND_TRANSACTIONS
   );
   const [showPreviewModal, setShowPreviewModal] = useState(false);
-  const [filters, setFilters] = useState<any>({
+  const [filters, setFilters] = useState<Record<string, unknown>>({
     organisation_id: user?.organisation_id || "",
     page: 1,
     limit: 10,
@@ -326,7 +327,7 @@ const ReportsPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {items.map((item: Record<string, unknown>, index: number) => (
+                {items.map((item: ReportItem, index: number) => (
                   <tr key={index}>
                     {getTableRowCells(item).map((cell, cellIndex) => (
                       <td
@@ -385,7 +386,7 @@ const ReportsPage: React.FC = () => {
                 Total Revenue
               </h3>
               <p className="text-2xl font-bold text-green-600">
-                {formatToCurrency(data.totalRevenue)}
+                {formatToCurrency(data.totalRevenue as number)}
               </p>
             </div>
             <div className="bg-white p-6 rounded-lg shadow">
@@ -393,7 +394,7 @@ const ReportsPage: React.FC = () => {
                 Total Expenses
               </h3>
               <p className="text-2xl font-bold text-red-600">
-                {formatToCurrency(data.totalExpenses)}
+                {formatToCurrency(data.totalExpenses as number)}
               </p>
             </div>
             <div className="bg-white p-6 rounded-lg shadow">
@@ -402,10 +403,12 @@ const ReportsPage: React.FC = () => {
               </h3>
               <p
                 className={`text-2xl font-bold ${
-                  data.netProfit >= 0 ? "text-green-600" : "text-red-600"
+                  (data.netProfit as number) >= 0
+                    ? "text-green-600"
+                    : "text-red-600"
                 }`}
               >
-                {formatToCurrency(data.netProfit)}
+                {formatToCurrency(data.netProfit as number)}
               </p>
             </div>
           </div>
@@ -422,7 +425,7 @@ const ReportsPage: React.FC = () => {
                 Total Assets
               </h3>
               <p className="text-2xl font-bold text-blue-600">
-                {formatToCurrency(data.totalAssets)}
+                {formatToCurrency(data.totalAssets as number)}
               </p>
             </div>
             <div className="bg-white p-6 rounded-lg shadow">
@@ -430,7 +433,7 @@ const ReportsPage: React.FC = () => {
                 Total Liabilities
               </h3>
               <p className="text-2xl font-bold text-orange-600">
-                {formatToCurrency(data.totalLiabilities)}
+                {formatToCurrency(data.totalLiabilities as number)}
               </p>
             </div>
             <div className="bg-white p-6 rounded-lg shadow">
@@ -438,7 +441,7 @@ const ReportsPage: React.FC = () => {
                 Total Equity
               </h3>
               <p className="text-2xl font-bold text-purple-600">
-                {formatToCurrency(data.totalEquity)}
+                {formatToCurrency(data.totalEquity as number)}
               </p>
             </div>
           </div>
@@ -739,7 +742,11 @@ const ReportsPage: React.FC = () => {
               Organisation
             </label>
             <SearchableSelect
-              value={filters.organisation_id || ""}
+              value={
+                typeof filters.organisation_id === "string"
+                  ? filters.organisation_id
+                  : ""
+              }
               onChange={(value) => handleFilterChange("organisation_id", value)}
               options={organisations.map((org) => ({
                 value: org.id,
@@ -753,10 +760,16 @@ const ReportsPage: React.FC = () => {
               Currency
             </label>
             <SearchableSelect
-              value={filters.currency_id || ""}
-              onChange={(value) => handleFilterChange("currency_id", value)}
+              value={
+                typeof filters.currency_id === "string"
+                  ? filters.currency_id
+                  : ""
+              }
+              onChange={(value: string) =>
+                handleFilterChange("currency_id", value)
+              }
               options={currencies.map((currency) => ({
-                value: currency.id,
+                value: String(currency.id),
                 label: `${currency.currency_code} - ${currency.currency_name}`,
               }))}
               placeholder="Select currency"

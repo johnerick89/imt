@@ -88,7 +88,7 @@ export const useDeleteOrganisation = () => {
 
   return useMutation({
     mutationFn: (id: string) => OrganisationsService.deleteOrganisation(id),
-    onSuccess: (data, variables) => {
+    onSuccess: (_, variables) => {
       // Remove from cache
       queryClient.removeQueries({
         queryKey: organisationKeys.detail(variables),

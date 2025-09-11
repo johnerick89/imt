@@ -26,8 +26,8 @@ class BeneficiariesService {
       if (filters.nationality_id)
         params.append("nationality_id", filters.nationality_id);
       if (filters.id_type) params.append("id_type", filters.id_type);
-      if (filters.is_active !== undefined)
-        params.append("is_active", filters.is_active.toString());
+      if (filters.status !== undefined)
+        params.append("status", filters.status.toString());
       if (filters.created_by) params.append("created_by", filters.created_by);
 
       const queryString = params.toString();

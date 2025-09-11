@@ -1,3 +1,9 @@
+import type { Charge } from "./ChargesTypes";
+import type { Currency } from "./CurrenciesTypes";
+import type { Organisation } from "./OrganisationsTypes";
+import type { Transaction } from "./TransactionsTypes";
+import type { User } from "./UsersTypes";
+
 export const ChargeType = {
   TAX: "TAX",
   INTERNAL_FEE: "INTERNAL_FEE",
@@ -30,29 +36,11 @@ export interface ChargesPayment {
   updated_at: string;
   created_by: string | null;
   organisation_id: string;
-
   // Relations
-  currency?: {
-    id: string;
-    currency_code: string;
-    currency_name: string;
-  };
-  destination_org?: {
-    id: string;
-    name: string;
-    type: string;
-  };
-  created_by_user?: {
-    id: string;
-    first_name: string;
-    last_name: string;
-    email: string;
-  };
-  organisation?: {
-    id: string;
-    name: string;
-    type: string;
-  };
+  currency?: Currency;
+  destination_org?: Organisation;
+  created_by_user?: User;
+  organisation?: Organisation;
   payment_items?: ChargesPaymentItem[];
 }
 
@@ -64,73 +52,13 @@ export interface ChargesPaymentItem {
   internal_amount_settled: number;
   external_amount_settled: number;
   created_at: string;
-
   // Relations
   charges_payment?: ChargesPayment;
-  transaction_charges?: {
-    id: string;
-    transaction_id: string;
-    charge_id: string;
-    type: ChargeType;
-    amount: number;
-    internal_amount: number | null;
-    external_amount: number | null;
-    rate: number | null;
-    is_reversible: boolean;
-    description: string | null;
-    status: string;
-    organisation_id: string | null;
-    created_at: string;
-    updated_at: string;
-
-    // Relations
-    transaction?: {
-      id: string;
-      transaction_no: string | null;
-      direction: string;
-      origin_amount: number;
-      dest_amount: number;
-      status: string;
-      created_at: string | null;
-      customer?: {
-        id: string;
-        first_name: string;
-        last_name: string;
-      };
-      beneficiary?: {
-        id: string;
-        name: string;
-      };
-      origin_currency?: {
-        id: string;
-        currency_code: string;
-      };
-      dest_currency?: {
-        id: string;
-        currency_code: string;
-      };
-      origin_organisation?: {
-        id: string;
-        name: string;
-      };
-      destination_organisation?: {
-        id: string;
-        name: string;
-      };
-    };
-    charge?: {
-      id: string;
-      name: string;
-      description: string;
-      type: ChargeType;
-      rate: number;
-      application_method: string;
-    };
-    organisation?: {
-      id: string;
-      name: string;
-    };
-  };
+  transaction_charges?: TransactionCharge;
+  transaction?: Transaction;
+  // Relations
+  transaction_charge?: TransactionCharge;
+  organisation?: Organisation;
 }
 
 // Transaction Charge Interface (for pending charges)
@@ -149,54 +77,10 @@ export interface TransactionCharge {
   organisation_id: string | null;
   created_at: string;
   updated_at: string;
-
   // Relations
-  transaction?: {
-    id: string;
-    transaction_no: string | null;
-    direction: string;
-    origin_amount: number;
-    dest_amount: number;
-    status: string;
-    created_at: string | null;
-    customer?: {
-      id: string;
-      first_name: string;
-      last_name: string;
-    };
-    beneficiary?: {
-      id: string;
-      name: string;
-    };
-    origin_currency?: {
-      id: string;
-      currency_code: string;
-    };
-    dest_currency?: {
-      id: string;
-      currency_code: string;
-    };
-    origin_organisation?: {
-      id: string;
-      name: string;
-    };
-    destination_organisation?: {
-      id: string;
-      name: string;
-    };
-  };
-  charge?: {
-    id: string;
-    name: string;
-    description: string;
-    type: ChargeType;
-    rate: number;
-    application_method: string;
-  };
-  organisation?: {
-    id: string;
-    name: string;
-  };
+  transaction?: Transaction;
+  charge?: Charge;
+  organisation?: Organisation;
 }
 
 // Create Charges Payment Request

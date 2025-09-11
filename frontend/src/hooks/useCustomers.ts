@@ -57,6 +57,7 @@ export const useUpdateCustomer = () => {
     mutationFn: ({ id, data }: { id: string; data: UpdateCustomerRequest }) =>
       CustomersService.updateCustomer(id, data),
     onSuccess: (data, variables) => {
+      queryClient.setQueryData(customerKeys.detail(variables.id), data);
       queryClient.invalidateQueries({ queryKey: customerKeys.all });
       queryClient.invalidateQueries({
         queryKey: customerKeys.detail(variables.id),

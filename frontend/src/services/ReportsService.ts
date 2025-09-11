@@ -1,5 +1,6 @@
 import AxiosBase from "./AxiosBase";
 import type {
+  BaseReportFilters,
   OutboundTransactionsReportFilters,
   InboundTransactionsReportFilters,
   CommissionsReportFilters,
@@ -7,8 +8,6 @@ import type {
   UserTillsReportFilters,
   BalancesHistoryReportFilters,
   GlAccountsReportFilters,
-  ProfitLossReportFilters,
-  BalanceSheetReportFilters,
   PartnerBalancesReportFilters,
   ComplianceReportFilters,
   ExchangeRatesReportFilters,
@@ -87,7 +86,7 @@ export class ReportsService {
   }
 
   // Profit and Loss Report
-  static async getProfitLossReport(filters: ProfitLossReportFilters) {
+  static async getProfitLossReport(filters: BaseReportFilters) {
     const response = await AxiosBase.get("/api/v1/reports/profit-loss", {
       params: filters,
     });
@@ -95,7 +94,7 @@ export class ReportsService {
   }
 
   // Balance Sheet Report
-  static async getBalanceSheetReport(filters: BalanceSheetReportFilters) {
+  static async getBalanceSheetReport(filters: BaseReportFilters) {
     const response = await AxiosBase.get("/api/v1/reports/balance-sheet", {
       params: filters,
     });
