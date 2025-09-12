@@ -45,7 +45,7 @@ const VaultsPage: React.FC = () => {
   // API hooks
   const { data: vaultsData, isLoading } = useVaults({
     page,
-    limit,
+    limit: 100,
     search: searchTerm,
     organisation_id: organisationId,
   });
