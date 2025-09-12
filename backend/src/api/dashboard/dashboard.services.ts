@@ -11,35 +11,30 @@ import type {
 
 export class DashboardService {
   async getDashboardData(organisationId: string): Promise<DashboardData> {
-    try {
-      const [
-        transactionSummary,
-        financialBalances,
-        chargesAndPayments,
-        customerBeneficiaryInsights,
-        organisationCorridorActivity,
-        systemHealth,
-      ] = await Promise.all([
-        this.getTransactionSummary(organisationId),
-        this.getFinancialBalances(organisationId),
-        this.getChargesAndPayments(organisationId),
-        this.getCustomerBeneficiaryInsights(organisationId),
-        this.getOrganisationCorridorActivity(organisationId),
-        this.getSystemHealth(organisationId),
-      ]);
+    const [
+      transactionSummary,
+      financialBalances,
+      chargesAndPayments,
+      customerBeneficiaryInsights,
+      organisationCorridorActivity,
+      systemHealth,
+    ] = await Promise.all([
+      this.getTransactionSummary(organisationId),
+      this.getFinancialBalances(organisationId),
+      this.getChargesAndPayments(organisationId),
+      this.getCustomerBeneficiaryInsights(organisationId),
+      this.getOrganisationCorridorActivity(organisationId),
+      this.getSystemHealth(organisationId),
+    ]);
 
-      return {
-        transactionSummary,
-        financialBalances,
-        chargesAndPayments,
-        customerBeneficiaryInsights,
-        organisationCorridorActivity,
-        systemHealth,
-      };
-    } catch (error) {
-      console.error("Error fetching dashboard data:", error);
-      throw new Error("Failed to fetch dashboard data");
-    }
+    return {
+      transactionSummary,
+      financialBalances,
+      chargesAndPayments,
+      customerBeneficiaryInsights,
+      organisationCorridorActivity,
+      systemHealth,
+    };
   }
 
   private async getTransactionSummary(

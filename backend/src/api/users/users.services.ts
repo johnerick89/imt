@@ -90,6 +90,8 @@ export class UsersService {
         where.organisation_id = filters.organisation_id;
       }
 
+      console.log("where", where);
+
       // Get users with pagination
       const [users, total] = await Promise.all([
         prisma.user.findMany({
