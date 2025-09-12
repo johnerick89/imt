@@ -13,7 +13,13 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+const appUrl = process.env.APP_URL?.trim(); // Safe access, trim any spaces
+
 const allowedOrigins = [
+  // Dynamic from env (production or custom local)
+  ...(appUrl ? [appUrl] : []),
+
+  // Local dev fallbacks (keep these for flexibility)
   "http://localhost:3000",
   "http://localhost:5173",
   "http://localhost:5174",
@@ -24,6 +30,8 @@ const allowedOrigins = [
   "http://127.0.0.1:5174",
   "http://127.0.0.1:5175",
   "http://127.0.0.1:5176",
+
+  // Regex for any local port (covers Vite variations)
   /^http:\/\/localhost:[0-9]{4}$/,
   /^http:\/\/127\.0\.0\.1:[0-9]{4}$/,
 ];
