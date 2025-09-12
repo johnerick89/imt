@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLogin, useSession } from "../hooks";
+import siteConfig from "../config/site.config";
 
 interface LoginForm {
   email: string;
@@ -48,27 +49,32 @@ const LoginPage: React.FC = () => {
       <div className="bg-gray-800 rounded-xl p-8 w-full max-w-md shadow-2xl border border-gray-700">
         {/* Logo and Branding */}
         <div className="text-center mb-8">
-          <div className="mb-4">
+          {/* <div className="mb-4">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-500 text-white text-2xl font-bold rounded-full relative">
               M
               <span className="absolute -right-2 top-1/2 transform -translate-y-1/2 text-primary-500 text-lg">
                 →
               </span>
             </div>
+          </div> */}
+          <div className="p-4 border-b border-gray-700 flex justify-center">
+            <div className="flex items-center">
+              <img
+                src={siteConfig?.logo || "/logo-green.svg"}
+                alt={siteConfig?.display_name || "Money Flow"}
+                className="h-24 w-200" // adjust size to fit
+              />
+            </div>
           </div>
           <h1 className="text-3xl font-bold mb-1">
-            <span className="text-white">MoneyFlow</span>
+            <span className="text-white">
+              {siteConfig?.display_name || "Money Flow"}
+            </span>
           </h1>
-          <p className="text-gray-400 text-xs tracking-wider">
-            MONEY REMITTANCE
-          </p>
         </div>
 
         {/* Welcome Section */}
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-white mb-2">
-            Welcome to MoneyFlow
-          </h2>
           <p className="text-gray-400 text-sm">
             Enter Username and Password to login
           </p>

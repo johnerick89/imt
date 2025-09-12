@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../lib/prisma.lib";
 import type {
   IVault,
   CreateVaultRequest,
@@ -8,8 +8,6 @@ import type {
   VaultResponse,
   VaultStats,
 } from "./vaults.interfaces";
-
-const prisma = new PrismaClient();
 
 export class VaultService {
   async createVault({

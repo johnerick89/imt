@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../lib/prisma.lib";
 import type {
   IBranch,
   CreateBranchRequest,
@@ -6,8 +6,6 @@ import type {
   BranchFilters,
   BranchStats,
 } from "./branches.interfaces";
-
-const prisma = new PrismaClient();
 
 export class BranchService {
   async createBranch(

@@ -35,6 +35,15 @@ export const createBeneficiarySchema = z.object({
     .optional(),
   industry_id: z.string().uuid("Industry ID must be a valid UUID").optional(),
   organisation_id: z.string().uuid("Organisation ID must be a valid UUID"),
+  email: z.string().email("Invalid email format").optional(),
+  phone: z.string().optional(),
+  bank_name: z.string().optional(),
+  bank_address: z.string().optional(),
+  bank_city: z.string().optional(),
+  bank_state: z.string().optional(),
+  bank_zip: z.string().optional(),
+  bank_account_number: z.string().optional(),
+  bank_account_name: z.string().optional(),
 });
 
 export const updateBeneficiarySchema = z.object({
@@ -74,6 +83,15 @@ export const updateBeneficiarySchema = z.object({
     .string()
     .uuid("Organisation ID must be a valid UUID")
     .optional(),
+  email: z.string().email("Invalid email format").optional(),
+  phone: z.string().optional(),
+  bank_name: z.string().optional(),
+  bank_address: z.string().optional(),
+  bank_city: z.string().optional(),
+  bank_state: z.string().optional(),
+  bank_zip: z.string().optional(),
+  bank_account_number: z.string().optional(),
+  bank_account_name: z.string().optional(),
 });
 
 export const beneficiaryFiltersSchema = z.object({

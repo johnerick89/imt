@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../lib/prisma.lib";
 import {
   IGlAccount,
   GlAccountFilters,
@@ -11,8 +11,6 @@ import {
   GenerateAccountsRequest,
   GenerateAccountsResponse,
 } from "./glaccounts.interfaces";
-
-const prisma = new PrismaClient();
 
 export class GlAccountService {
   // Create GL Account

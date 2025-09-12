@@ -1,4 +1,5 @@
-import { PrismaClient, UserStatus } from "@prisma/client";
+import { UserStatus } from "@prisma/client";
+import { prisma } from "../../lib/prisma.lib";
 import {
   IUser,
   ICreateUserRequest,
@@ -9,8 +10,6 @@ import {
   IUsersListResponse,
 } from "./users.interfaces";
 import { hashPassword } from "../auth/auth.utils";
-
-const prisma = new PrismaClient();
 
 export class UsersService {
   async createUser(userData: ICreateUserRequest): Promise<IUserResponse> {

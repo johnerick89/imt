@@ -1,7 +1,5 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../lib/prisma.lib";
 import { AppError } from "../../utils/AppError";
-
-const prisma = new PrismaClient();
 
 class ReportsService {
   // Outbound Transactions Report

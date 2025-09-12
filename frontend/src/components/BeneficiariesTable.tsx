@@ -51,6 +51,27 @@ const BeneficiariesTable: React.FC<BeneficiariesTableProps> = ({
       cell: ({ row }) => row.original.phone || "N/A",
     },
     {
+      accessorKey: "bank_details",
+      header: "Bank Details",
+      cell: ({ row }) => (
+        <div>
+          {row.original.bank_name && (
+            <div className="text-sm text-gray-900">
+              {row.original.bank_name}
+            </div>
+          )}
+          {row.original.bank_account_number && (
+            <div className="text-xs text-gray-500">
+              {row.original.bank_account_number}
+            </div>
+          )}
+          {!row.original.bank_name && !row.original.bank_account_number && (
+            <div className="text-sm text-gray-400">N/A</div>
+          )}
+        </div>
+      ),
+    },
+    {
       accessorKey: "nationality",
       header: "Nationality",
       cell: ({ row }) => row.original.nationality?.name || "N/A",

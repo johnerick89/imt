@@ -1,4 +1,5 @@
-import { IntegrationStatus, PrismaClient } from "@prisma/client";
+import { IntegrationStatus } from "@prisma/client";
+import { prisma } from "../../lib/prisma.lib";
 import type {
   IIntegration,
   CreateIntegrationRequest,
@@ -8,8 +9,6 @@ import type {
   IntegrationResponse,
   IntegrationStats,
 } from "./integrations.interfaces";
-
-const prisma = new PrismaClient();
 
 export class IntegrationService {
   async createIntegration(

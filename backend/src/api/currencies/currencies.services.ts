@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../lib/prisma.lib";
 import type {
   ICurrency,
   CreateCurrencyRequest,
@@ -6,8 +6,6 @@ import type {
   CurrencyFilters,
   CurrencyStats,
 } from "./currencies.interfaces";
-
-const prisma = new PrismaClient();
 
 export class CurrencyService {
   async createCurrency(data: CreateCurrencyRequest): Promise<ICurrency> {

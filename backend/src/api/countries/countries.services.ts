@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../lib/prisma.lib";
 import type {
   ICountry,
   CreateCountryRequest,
@@ -6,8 +6,6 @@ import type {
   CountryFilters,
   CountryStats,
 } from "./countries.interfaces";
-
-const prisma = new PrismaClient();
 
 export class CountryService {
   async createCountry(data: CreateCountryRequest): Promise<ICountry> {

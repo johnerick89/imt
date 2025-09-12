@@ -9,9 +9,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DATABASE_URL_DIRECT")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum UserStatus {
@@ -1339,4 +1338,16 @@ model ChargesPaymentItem {
   @@index([charges_payment_id])
   @@index([transaction_charges_id])
   @@map("charges_payment_items")
+}
+
+model Parameter {
+  id         String   @id @default(uuid()) @db.Uuid
+  name       String
+  value      String
+  value_2    String?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([name])
+  @@map("parameters")
 }

@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../lib/prisma.lib";
 import type {
   ICustomer,
   CreateCustomerRequest,
@@ -8,8 +8,6 @@ import type {
   CustomerResponse,
   CustomerStats,
 } from "./customers.interfaces";
-
-const prisma = new PrismaClient();
 
 export class CustomerService {
   async createCustomer(

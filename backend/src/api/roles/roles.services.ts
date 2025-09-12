@@ -1,4 +1,5 @@
-import { Permission, PrismaClient, Role, RolePermission } from "@prisma/client";
+import { Permission, Role, RolePermission } from "@prisma/client";
+import { prisma } from "../../lib/prisma.lib";
 import type {
   IRole,
   IPermission,
@@ -12,8 +13,6 @@ import type {
   CreateRolePermissionRequest,
   RolePermissionResponse,
 } from "./roles.interfaces";
-
-const prisma = new PrismaClient();
 
 export class RoleService {
   async createRole(

@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../lib/prisma.lib";
 import type {
   IBankAccount,
   CreateBankAccountRequest,
@@ -12,8 +12,6 @@ import type {
   WithdrawalRequest,
   BalanceOperationResponse,
 } from "./bankaccounts.interfaces";
-
-const prisma = new PrismaClient();
 
 export class BankAccountService {
   async createBankAccount(

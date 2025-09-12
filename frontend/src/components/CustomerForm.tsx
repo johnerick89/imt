@@ -16,6 +16,7 @@ import { useOccupations } from "../hooks/useOccupations";
 import { useIndustries } from "../hooks/useIndustries";
 import { useOrganisations } from "../hooks/useOrganisations";
 import { useBranches } from "../hooks/useBranches";
+import { useSession } from "../hooks/useSession";
 
 interface CustomerFormProps {
   initialData?: Customer;
@@ -30,12 +31,22 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
   isLoading = false,
   isEdit = false,
 }) => {
+  const { user } = useSession();
+  const organisationId = user?.organisation_id;
   const { data: countriesData } = useAllCountries();
   const { data: currenciesData } = useAllCurrencies();
   const { data: occupationsData } = useOccupations({ page: 1, limit: 100 });
   const { data: industriesData } = useIndustries({ page: 1, limit: 100 });
   const { data: organisationsData } = useOrganisations({ page: 1, limit: 100 });
-  const { data: branchesData } = useBranches({ page: 1, limit: 100 });
+  const { data: branchesData } = useBranches({
+    page: 1,
+    limit: 100,
+    organisation_id: organisationId,
+  });
+
+  const userOrganisation = organisationsData?.data?.organisations?.find(
+    (org) => org.id === organisationId
+  );
 
   const {
     control,
@@ -58,7 +69,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
       occupation_id: initialData?.occupation_id || "",
       risk_rating: initialData?.risk_rating || 0,
       risk_reasons: initialData?.risk_reasons || "",
-      organisation_id: initialData?.organisation_id || "",
+      organisation_id: initialData?.organisation_id || organisationId || "",
       branch_id: initialData?.branch_id || "",
       tax_number_type: initialData?.tax_number_type || undefined,
       tax_number: initialData?.tax_number || "",
@@ -105,7 +116,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
       {/* Basic Information */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormItem
           label="Full Name"
           invalid={!!errors.full_name}
@@ -430,22 +441,30 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
             name="organisation_id"
             control={control}
             rules={{ required: "Organisation is required" }}
-            render={({ field }) => (
-              <SearchableSelect
-                value={field.value}
-                onChange={field.onChange}
-                options={
-                  organisationsData?.data?.organisations?.map((org) => ({
-                    value: org.id,
-                    label: org.name,
-                  })) || []
-                }
-                placeholder="Select organisation"
-                searchPlaceholder="Search organisations..."
-                disabled={isLoading}
-                invalid={!!errors.organisation_id}
-              />
-            )}
+            render={({ field }) =>
+              userOrganisation ? (
+                <Input
+                  value={userOrganisation.name}
+                  disabled={isLoading}
+                  invalid={!!errors.organisation_id}
+                />
+              ) : (
+                <SearchableSelect
+                  value={field.value}
+                  onChange={field.onChange}
+                  options={
+                    organisationsData?.data?.organisations?.map((org) => ({
+                      value: org.id,
+                      label: org.name,
+                    })) || []
+                  }
+                  placeholder={"Select Organisation "}
+                  searchPlaceholder="Search organisations..."
+                  disabled={isLoading}
+                  invalid={!!errors.organisation_id}
+                />
+              )
+            }
           />
         </FormItem>
 
@@ -561,7 +580,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
       </div>
 
       {/* Additional Information */}
-      <div className="p-6">
+      <div className="py-0">
         <FormItem
           label="Address"
           invalid={!!errors.address}

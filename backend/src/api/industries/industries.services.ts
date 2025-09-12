@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../lib/prisma.lib";
 import type {
   IIndustry,
   CreateIndustryRequest,
@@ -8,8 +8,6 @@ import type {
   IndustryResponse,
   IndustryStats,
 } from "./industries.interfaces";
-
-const prisma = new PrismaClient();
 
 export class IndustryService {
   async createIndustry(

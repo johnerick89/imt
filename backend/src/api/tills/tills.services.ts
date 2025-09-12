@@ -1,4 +1,5 @@
-import { TillStatus, PrismaClient } from "@prisma/client";
+import { TillStatus } from "@prisma/client";
+import { prisma } from "../../lib/prisma.lib";
 import type {
   ITill,
   CreateTillRequest,
@@ -8,8 +9,6 @@ import type {
   TillResponse,
   TillStats,
 } from "./tills.interfaces";
-
-const prisma = new PrismaClient();
 
 export class TillService {
   async createTill({

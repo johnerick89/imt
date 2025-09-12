@@ -10,42 +10,28 @@ import {
   reverseTransactionSchema,
 } from "./transactions.validation";
 import type CustomRequest from "../../types/CustomReq.type";
+import { AppError } from "../../utils/AppError";
+import { asyncHandler } from "../../middlewares/error.middleware";
 
 const transactionService = new TransactionService();
 
 export class TransactionController {
   // Create Outbound Transaction
-  async createOutboundTransaction(
-    req: CustomRequest,
-    res: Response
-  ): Promise<void> {
-    try {
+  createOutboundTransaction = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { orgId } = req.params;
       if (!orgId) {
-        res.status(400).json({
-          success: false,
-          message: "Organisation ID is required",
-        });
-        return;
+        throw new AppError("Organisation ID is required", 400);
       }
 
       const validation = createOutboundTransactionSchema.safeParse(req.body);
       if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: "Validation error",
-          error: validation.error.issues,
-        });
-        return;
+        throw new AppError("Validation error", 400);
       }
 
       const userId = req.user?.id;
       if (!userId) {
-        res.status(401).json({
-          success: false,
-          message: "User not authenticated",
-        });
-        return;
+        throw new AppError("User not authenticated", 401);
       }
 
       const result = await transactionService.createOutboundTransaction(
@@ -58,88 +44,25 @@ export class TransactionController {
         message: "Outbound transaction created successfully",
         data: result,
       });
-    } catch (error: any) {
-      console.error("Error creating outbound transaction:", error);
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to create outbound transaction",
-      });
     }
-  }
-
-  // Update Transaction
-  async updateTransaction(req: CustomRequest, res: Response): Promise<void> {
-    try {
-      const { transactionId } = req.params;
-      if (!transactionId) {
-        res.status(400).json({
-          success: false,
-          message: "Transaction ID is required",
-        });
-        return;
-      }
-
-      const validation = updateTransactionSchema.safeParse(req.body);
-      if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: "Validation error",
-          error: validation.error.issues,
-        });
-        return;
-      }
-
-      const userId = req.user?.id;
-      if (!userId) {
-        res.status(401).json({
-          success: false,
-          message: "User not authenticated",
-        });
-        return;
-      }
-
-      // TODO: Implement update transaction logic
-      res.status(501).json({
-        success: false,
-        message: "Update transaction not implemented yet",
-      });
-    } catch (error: any) {
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to update transaction",
-      });
-    }
-  }
+  );
 
   // Cancel Transaction
-  async cancelTransaction(req: CustomRequest, res: Response): Promise<void> {
-    try {
+  cancelTransaction = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { transactionId } = req.params;
       if (!transactionId) {
-        res.status(400).json({
-          success: false,
-          message: "Transaction ID is required",
-        });
-        return;
+        throw new AppError("Transaction ID is required", 400);
       }
 
       const validation = cancelTransactionSchema.safeParse(req.body);
       if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: "Validation error",
-          error: validation.error.issues,
-        });
-        return;
+        throw new AppError("Validation error", 400);
       }
 
       const userId = req.user?.id;
       if (!userId) {
-        res.status(401).json({
-          success: false,
-          message: "User not authenticated",
-        });
-        return;
+        throw new AppError("User not authenticated", 401);
       }
 
       const result = await transactionService.cancelTransaction(
@@ -148,43 +71,25 @@ export class TransactionController {
         userId
       );
       res.json(result);
-    } catch (error: any) {
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to cancel transaction",
-      });
     }
-  }
+  );
 
   // Approve Transaction
-  async approveTransaction(req: CustomRequest, res: Response): Promise<void> {
-    try {
+  approveTransaction = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { transactionId } = req.params;
       if (!transactionId) {
-        res.status(400).json({
-          success: false,
-          message: "Transaction ID is required",
-        });
-        return;
+        throw new AppError("Transaction ID is required", 400);
       }
 
       const validation = approveTransactionSchema.safeParse(req.body);
       if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: "Validation error",
-          error: validation.error.issues,
-        });
-        return;
+        throw new AppError("Validation error", 400);
       }
 
       const userId = req.user?.id;
       if (!userId) {
-        res.status(401).json({
-          success: false,
-          message: "User not authenticated",
-        });
-        return;
+        throw new AppError("User not authenticated", 401);
       }
 
       const result = await transactionService.approveTransaction(
@@ -193,43 +98,25 @@ export class TransactionController {
         userId
       );
       res.json(result);
-    } catch (error: any) {
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to approve transaction",
-      });
     }
-  }
+  );
 
   // Reverse Transaction
-  async reverseTransaction(req: CustomRequest, res: Response): Promise<void> {
-    try {
+  reverseTransaction = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { transactionId } = req.params;
       if (!transactionId) {
-        res.status(400).json({
-          success: false,
-          message: "Transaction ID is required",
-        });
-        return;
+        throw new AppError("Transaction ID is required", 400);
       }
 
       const validation = reverseTransactionSchema.safeParse(req.body);
       if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: "Validation error",
-          error: validation.error.issues,
-        });
-        return;
+        throw new AppError("Validation error", 400);
       }
 
       const userId = req.user?.id;
       if (!userId) {
-        res.status(401).json({
-          success: false,
-          message: "User not authenticated",
-        });
-        return;
+        throw new AppError("User not authenticated", 401);
       }
 
       const result = await transactionService.reverseTransaction(
@@ -238,34 +125,20 @@ export class TransactionController {
         userId
       );
       res.json(result);
-    } catch (error: any) {
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to reverse transaction",
-      });
     }
-  }
+  );
 
   // Get Transactions
-  async getTransactions(req: CustomRequest, res: Response): Promise<void> {
-    try {
+  getTransactions = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { orgId } = req.params;
       if (!orgId) {
-        res.status(400).json({
-          success: false,
-          message: "Organisation ID is required",
-        });
-        return;
+        throw new AppError("Organisation ID is required", 400);
       }
 
       const validation = transactionFiltersSchema.safeParse(req.query);
       if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: "Validation error",
-          error: validation.error.issues,
-        });
-        return;
+        throw new AppError("Validation error", 400);
       }
 
       const result = await transactionService.getTransactions(
@@ -273,81 +146,46 @@ export class TransactionController {
         validation.data
       );
       res.json(result);
-    } catch (error: any) {
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to fetch transactions",
-      });
     }
-  }
+  );
 
   // Get Transaction by ID
-  async getTransactionById(req: CustomRequest, res: Response): Promise<void> {
-    try {
+  getTransactionById = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { transactionId } = req.params;
       if (!transactionId) {
-        res.status(400).json({
-          success: false,
-          message: "Transaction ID is required",
-        });
-        return;
+        throw new AppError("Transaction ID is required", 400);
       }
 
       const result = await transactionService.getTransactionById(transactionId);
       res.json(result);
-    } catch (error: any) {
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to fetch transaction",
-      });
     }
-  }
+  );
 
   // Get Transaction Stats
-  async getTransactionStats(req: CustomRequest, res: Response): Promise<void> {
-    try {
+  getTransactionStats = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { orgId } = req.params;
       if (!orgId) {
-        res.status(400).json({
-          success: false,
-          message: "Organisation ID is required",
-        });
-        return;
+        throw new AppError("Organisation ID is required", 400);
       }
 
       const result = await transactionService.getTransactionStats(orgId);
       res.json(result);
-    } catch (error: any) {
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to fetch transaction stats",
-      });
     }
-  }
+  );
 
   // Get Inbound Transactions
-  async getInboundTransactions(
-    req: CustomRequest,
-    res: Response
-  ): Promise<void> {
-    try {
+  getInboundTransactions = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { orgId } = req.params;
       if (!orgId) {
-        res.status(400).json({
-          success: false,
-          message: "Organisation ID is required",
-        });
-        return;
+        throw new AppError("Organisation ID is required", 400);
       }
 
       const validation = transactionFiltersSchema.safeParse(req.query);
       if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: "Validation error",
-          error: validation.error.issues,
-        });
-        return;
+        throw new AppError("Validation error", 400);
       }
 
       const result = await transactionService.getInboundTransactions(
@@ -356,28 +194,15 @@ export class TransactionController {
       );
 
       res.status(200).json(result);
-    } catch (error: any) {
-      console.error("Error fetching inbound transactions:", error);
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to fetch inbound transactions",
-      });
     }
-  }
+  );
 
   // Get Inbound Transaction by ID
-  async getInboundTransactionById(
-    req: CustomRequest,
-    res: Response
-  ): Promise<void> {
-    try {
+  getInboundTransactionById = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { transactionId } = req.params;
       if (!transactionId) {
-        res.status(400).json({
-          success: false,
-          message: "Transaction ID is required",
-        });
-        return;
+        throw new AppError("Transaction ID is required", 400);
       }
 
       const result = await transactionService.getInboundTransactionById(
@@ -385,47 +210,25 @@ export class TransactionController {
       );
 
       res.status(200).json(result);
-    } catch (error: any) {
-      console.error("Error fetching inbound transaction:", error);
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to fetch inbound transaction",
-      });
     }
-  }
+  );
 
   // Approve Inbound Transaction
-  async approveInboundTransaction(
-    req: CustomRequest,
-    res: Response
-  ): Promise<void> {
-    try {
+  approveInboundTransaction = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { transactionId } = req.params;
       if (!transactionId) {
-        res.status(400).json({
-          success: false,
-          message: "Transaction ID is required",
-        });
-        return;
+        throw new AppError("Transaction ID is required", 400);
       }
 
       const validation = approveTransactionSchema.safeParse(req.body);
       if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: "Validation error",
-          error: validation.error.issues,
-        });
-        return;
+        throw new AppError("Validation error", 400);
       }
 
       const userId = req.user?.id;
       if (!userId) {
-        res.status(401).json({
-          success: false,
-          message: "User not authenticated",
-        });
-        return;
+        throw new AppError("User not authenticated", 401);
       }
 
       const result = await transactionService.approveInboundTransaction(
@@ -435,47 +238,25 @@ export class TransactionController {
       );
 
       res.status(200).json(result);
-    } catch (error: any) {
-      console.error("Error approving inbound transaction:", error);
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to approve inbound transaction",
-      });
     }
-  }
+  );
 
   // Reverse Inbound Transaction
-  async reverseInboundTransaction(
-    req: CustomRequest,
-    res: Response
-  ): Promise<void> {
-    try {
+  reverseInboundTransaction = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { transactionId } = req.params;
       if (!transactionId) {
-        res.status(400).json({
-          success: false,
-          message: "Transaction ID is required",
-        });
-        return;
+        throw new AppError("Transaction ID is required", 400);
       }
 
       const validation = reverseTransactionSchema.safeParse(req.body);
       if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: "Validation error",
-          error: validation.error.issues,
-        });
-        return;
+        throw new AppError("Validation error", 400);
       }
 
       const userId = req.user?.id;
       if (!userId) {
-        res.status(401).json({
-          success: false,
-          message: "User not authenticated",
-        });
-        return;
+        throw new AppError("User not authenticated", 401);
       }
 
       const result = await transactionService.reverseInboundTransaction(
@@ -485,38 +266,19 @@ export class TransactionController {
       );
 
       res.status(200).json(result);
-    } catch (error: any) {
-      console.error("Error reversing inbound transaction:", error);
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to reverse inbound transaction",
-      });
     }
-  }
+  );
 
   // Get Inbound Transaction Stats
-  async getInboundTransactionStats(
-    req: CustomRequest,
-    res: Response
-  ): Promise<void> {
-    try {
+  getInboundTransactionStats = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { orgId } = req.params;
       if (!orgId) {
-        res.status(400).json({
-          success: false,
-          message: "Organisation ID is required",
-        });
-        return;
+        throw new AppError("Organisation ID is required", 400);
       }
 
       const result = await transactionService.getInboundTransactionStats(orgId);
       res.status(200).json(result);
-    } catch (error: any) {
-      console.error("Error fetching inbound transaction stats:", error);
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to fetch inbound transaction stats",
-      });
     }
-  }
+  );
 }

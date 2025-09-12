@@ -58,6 +58,15 @@ export interface IBeneficiary {
     name: string;
     description?: string | null;
   } | null;
+  email?: string | null;
+  phone?: string | null;
+  bank_name?: string | null;
+  bank_address?: string | null;
+  bank_city?: string | null;
+  bank_state?: string | null;
+  bank_zip?: string | null;
+  bank_account_number?: string | null;
+  bank_account_name?: string | null;
   created_at: Date;
   updated_at: Date;
   deleted_at?: Date | null;
@@ -83,6 +92,15 @@ export interface CreateBeneficiaryRequest {
   occupation_id?: string;
   industry_id?: string;
   organisation_id: string;
+  email?: string;
+  phone?: string;
+  bank_name?: string;
+  bank_address?: string;
+  bank_city?: string;
+  bank_state?: string;
+  bank_zip?: string;
+  bank_account_number?: string;
+  bank_account_name?: string;
   status?: CustomerStatus | null;
 }
 
@@ -103,6 +121,15 @@ export interface UpdateBeneficiaryRequest {
   reg_number?: string;
   occupation_id?: string;
   industry_id?: string;
+  email?: string;
+  phone?: string;
+  bank_name?: string;
+  bank_address?: string;
+  bank_city?: string;
+  bank_state?: string;
+  bank_zip?: string;
+  bank_account_number?: string;
+  bank_account_name?: string;
   status?: CustomerStatus | null;
 }
 

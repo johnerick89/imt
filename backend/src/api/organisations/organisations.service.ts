@@ -1,4 +1,5 @@
-import { PrismaClient, OrganisationStatus } from "@prisma/client";
+import { OrganisationStatus } from "@prisma/client";
+import { prisma } from "../../lib/prisma.lib";
 import {
   ICreateOrganisationRequest,
   IUpdateOrganisationRequest,
@@ -8,8 +9,6 @@ import {
   IOrganisationStatsResponse,
   IOrganisation,
 } from "./organisations.interfaces";
-
-const prisma = new PrismaClient();
 
 export class OrganisationsService {
   async createOrganisation(

@@ -1,4 +1,5 @@
-import { PrismaClient, ChargeType, ChargesPaymentStatus } from "@prisma/client";
+import { ChargeType, ChargesPaymentStatus } from "@prisma/client";
+import { prisma } from "../../lib/prisma.lib";
 import type {
   IChargesPayment,
   IChargesPaymentItem,
@@ -13,8 +14,6 @@ import type {
   PendingTransactionChargesResponse,
   ChargesPaymentStatsResponse,
 } from "./chargespayments.interfaces";
-
-const prisma = new PrismaClient();
 
 export class ChargesPaymentService {
   // Generate reference number for charges payment

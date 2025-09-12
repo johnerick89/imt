@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import { Input } from "./ui/Input";
 import { useSession } from "../hooks";
+import siteConfig from "../config/site.config";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -46,17 +47,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-xl font-semibold text-gray-900">
-                MoneyFlow Money Remittance
+                {siteConfig?.display_name || "Money Flow"}
               </h1>
               <p className="text-sm text-gray-500">
-                Real-Time Monitoring Dashboard • Last updated:{" "}
-                {new Date().toLocaleTimeString()}
+                {siteConfig?.description || "Money Remittance Dashboard"} • Last
+                updated: {new Date().toLocaleTimeString()}
               </p>
             </div>
 
             <div className="flex items-center space-x-4">
               {/* Search Bar */}
-              <div className="relative">
+              <div className="relative hidden">
                 <Input
                   type="text"
                   placeholder="Search..."
@@ -78,7 +79,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </div>
 
               {/* Notifications */}
-              <button className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors duration-200">
+              <button className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors duration-200 hidden">
                 <svg
                   className="h-5 w-5"
                   fill="none"

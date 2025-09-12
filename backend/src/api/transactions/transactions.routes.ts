@@ -40,12 +40,6 @@ router.get(
   transactionController.getInboundTransactionStats.bind(transactionController)
 );
 
-// Transaction Management
-router.put(
-  "/transactions/:transactionId",
-  transactionController.updateTransaction.bind(transactionController)
-);
-
 router.post(
   "/transactions/:transactionId/cancel",
   transactionController.cancelTransaction.bind(transactionController)

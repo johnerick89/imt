@@ -61,6 +61,13 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
       industry_id: "",
       residence_country_id: "",
       incorporation_country_id: "",
+      bank_name: initialData?.bank_name || "",
+      bank_address: initialData?.bank_address || "",
+      bank_city: initialData?.bank_city || "",
+      bank_state: initialData?.bank_state || "",
+      bank_zip: initialData?.bank_zip || "",
+      bank_account_number: initialData?.bank_account_number || "",
+      bank_account_name: initialData?.bank_account_name || "",
     },
   });
 
@@ -499,6 +506,145 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
             )}
           />
         </FormItem>
+      </div>
+
+      {/* Bank Details */}
+      <div>
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Bank Details</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormItem
+            label="Bank Name"
+            invalid={!!errors.bank_name}
+            errorMessage={errors.bank_name?.message}
+          >
+            <Controller
+              name="bank_name"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  placeholder="Enter bank name"
+                  disabled={isLoading}
+                  invalid={!!errors.bank_name}
+                />
+              )}
+            />
+          </FormItem>
+
+          <FormItem
+            label="Account Number"
+            invalid={!!errors.bank_account_number}
+            errorMessage={errors.bank_account_number?.message}
+          >
+            <Controller
+              name="bank_account_number"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  placeholder="Enter account number"
+                  disabled={isLoading}
+                  invalid={!!errors.bank_account_number}
+                />
+              )}
+            />
+          </FormItem>
+
+          <FormItem
+            label="Account Holder Name"
+            invalid={!!errors.bank_account_name}
+            errorMessage={errors.bank_account_name?.message}
+          >
+            <Controller
+              name="bank_account_name"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  placeholder="Enter account holder name"
+                  disabled={isLoading}
+                  invalid={!!errors.bank_account_name}
+                />
+              )}
+            />
+          </FormItem>
+
+          <FormItem
+            label="Bank Address"
+            invalid={!!errors.bank_address}
+            errorMessage={errors.bank_address?.message}
+          >
+            <Controller
+              name="bank_address"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  placeholder="Enter bank address"
+                  disabled={isLoading}
+                  invalid={!!errors.bank_address}
+                />
+              )}
+            />
+          </FormItem>
+
+          <FormItem
+            label="City"
+            invalid={!!errors.bank_city}
+            errorMessage={errors.bank_city?.message}
+          >
+            <Controller
+              name="bank_city"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  placeholder="Enter city"
+                  disabled={isLoading}
+                  invalid={!!errors.bank_city}
+                />
+              )}
+            />
+          </FormItem>
+
+          <FormItem
+            label="State/Province"
+            invalid={!!errors.bank_state}
+            errorMessage={errors.bank_state?.message}
+          >
+            <Controller
+              name="bank_state"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  placeholder="Enter state/province"
+                  disabled={isLoading}
+                  invalid={!!errors.bank_state}
+                />
+              )}
+            />
+          </FormItem>
+
+          <FormItem
+            label="ZIP/Postal Code"
+            invalid={!!errors.bank_zip}
+            errorMessage={errors.bank_zip?.message}
+          >
+            <Controller
+              name="bank_zip"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  placeholder="Enter ZIP/postal code"
+                  disabled={isLoading}
+                  invalid={!!errors.bank_zip}
+                />
+              )}
+            />
+          </FormItem>
+        </div>
       </div>
 
       {/* Submit Button */}

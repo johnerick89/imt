@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../lib/prisma.lib";
 import type {
   ICharge,
   CreateChargeRequest,
@@ -8,8 +8,6 @@ import type {
   ChargeResponse,
   ChargeStats,
 } from "./charges.interfaces";
-
-const prisma = new PrismaClient();
 
 export class ChargeService {
   async createCharge(

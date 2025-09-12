@@ -1,4 +1,5 @@
-import { CustomerStatus, PrismaClient } from "@prisma/client";
+import { CustomerStatus } from "@prisma/client";
+import { prisma } from "../../lib/prisma.lib";
 import type {
   IBeneficiary,
   CreateBeneficiaryRequest,
@@ -8,8 +9,6 @@ import type {
   BeneficiaryResponse,
   BeneficiaryStats,
 } from "./beneficiaries.interfaces";
-
-const prisma = new PrismaClient();
 
 export class BeneficiaryService {
   async createBeneficiary(
@@ -105,6 +104,11 @@ export class BeneficiaryService {
           { id_number: { contains: search, mode: "insensitive" } },
           { tax_number: { contains: search, mode: "insensitive" } },
           { reg_number: { contains: search, mode: "insensitive" } },
+          { email: { contains: search, mode: "insensitive" } },
+          { phone: { contains: search, mode: "insensitive" } },
+          { bank_name: { contains: search, mode: "insensitive" } },
+          { bank_account_number: { contains: search, mode: "insensitive" } },
+          { bank_account_name: { contains: search, mode: "insensitive" } },
         ];
       }
 

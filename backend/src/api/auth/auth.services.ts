@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../lib/prisma.lib";
 import {
   IUser,
   ILoginRequest,
@@ -11,8 +11,6 @@ import {
   generateToken,
   sanitizeUser,
 } from "./auth.utils";
-
-const prisma = new PrismaClient();
 
 export class AuthService {
   async login(loginData: ILoginRequest): Promise<ILoginResponse> {

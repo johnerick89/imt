@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../lib/prisma.lib";
 import type {
   IOccupation,
   CreateOccupationRequest,
@@ -8,8 +8,6 @@ import type {
   OccupationResponse,
   OccupationStats,
 } from "./occupations.interfaces";
-
-const prisma = new PrismaClient();
 
 export class OccupationService {
   async createOccupation(

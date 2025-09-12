@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../lib/prisma.lib";
 import type {
   ICorridor,
   CreateCorridorRequest,
@@ -8,8 +8,6 @@ import type {
   CorridorResponse,
   CorridorStats,
 } from "./corridors.interfaces";
-
-const prisma = new PrismaClient();
 export class CorridorService {
   async createCorridor(
     data: CreateCorridorRequest,

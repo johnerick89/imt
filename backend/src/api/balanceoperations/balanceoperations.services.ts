@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../lib/prisma.lib";
 import { GlTransactionService } from "../gltransactions/gltransactions.services";
 import type {
   BalanceOperationRequest,
@@ -18,7 +18,6 @@ import {
   ValidationError,
 } from "../../utils/AppError";
 
-const prisma = new PrismaClient();
 const glTransactionService = new GlTransactionService();
 
 export class BalanceOperationService {

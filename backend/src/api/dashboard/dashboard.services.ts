@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../lib/prisma.lib";
 import type {
   DashboardData,
   TransactionSummary,
@@ -8,8 +8,6 @@ import type {
   OrganisationCorridorActivity,
   SystemHealth,
 } from "./dashboard.interfaces";
-
-const prisma = new PrismaClient();
 
 export class DashboardService {
   async getDashboardData(organisationId: string): Promise<DashboardData> {

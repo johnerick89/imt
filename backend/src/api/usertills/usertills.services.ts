@@ -1,4 +1,5 @@
-import { PrismaClient, UserTillStatus } from "@prisma/client";
+import { UserTillStatus } from "@prisma/client";
+import { prisma } from "../../lib/prisma.lib";
 import type {
   IUserTill,
   CreateUserTillRequest,
@@ -8,8 +9,6 @@ import type {
   UserTillResponse,
   UserTillStatsResponse,
 } from "./usertills.interfaces";
-
-const prisma = new PrismaClient();
 
 export class UserTillService {
   async createUserTill(data: CreateUserTillRequest): Promise<UserTillResponse> {

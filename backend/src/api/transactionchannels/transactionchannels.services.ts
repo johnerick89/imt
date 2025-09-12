@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../lib/prisma.lib";
 import type {
   ITransactionChannel,
   TransactionChannelFilters,
@@ -7,8 +7,6 @@ import type {
   TransactionChannelStats,
   TransactionChannelStatsResponse,
 } from "./transactionchannels.interfaces";
-
-const prisma = new PrismaClient();
 
 export class TransactionChannelService {
   // Get Transaction Channels

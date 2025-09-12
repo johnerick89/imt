@@ -5,6 +5,7 @@ import {
   type NavigationItem,
   type NavigationSection,
 } from "../navigation";
+import siteConfig from "../config/site.config";
 
 const Sidebar: React.FC = () => {
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
@@ -110,9 +111,9 @@ const Sidebar: React.FC = () => {
       <div className="p-4 border-b border-gray-700">
         <div className="flex items-center">
           <img
-            src="/logo-green.svg"
-            alt="MoneyFlow logo"
-            className="h-18 w-200" // adjust size to fit
+            src={siteConfig?.logo || "/logo-green.svg"}
+            alt={siteConfig?.display_name || "Money Flow"}
+            className="h-24 w-200" // adjust size to fit
           />
         </div>
       </div>

@@ -78,6 +78,7 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
     () => customersData?.data?.customers || [],
     [customersData]
   );
+  console.log("customers", customers);
   const organisations = useMemo(
     () => organisationsData?.data?.organisations || [],
     [organisationsData]
@@ -151,7 +152,7 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
     customer_id: watchedCustomerId,
   });
   const beneficiaries = beneficiariesData?.data?.beneficiaries || [];
-
+  console.log("beneficiaries", beneficiaries);
   // Watch for currency changes to calculate amounts
   const watchedOriginAmount = watch("origin_amount");
   const watchedRate = watch("rate");
@@ -260,7 +261,7 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
   const handleFormSubmit = (data: FormData) => {
     const submitData: CreateOutboundTransactionRequest = {
       corridor_id: data.corridor_id,
-      till_id: data.till_id,
+      till_id: data.till_id || currentUserTill?.till_id || "",
       customer_id: data.customer_id,
       origin_amount: parseFloat(data.origin_amount),
       origin_channel_id: data.origin_channel_id,
@@ -319,7 +320,7 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
                 <SearchableSelect
                   options={customers.map((customer) => ({
                     value: customer.id,
-                    label: `${customer.first_name} ${customer.last_name} (${customer.email})`,
+                    label: `${customer.full_name} (${customer.email})`,
                   }))}
                   value={field.value}
                   onChange={(value) => {

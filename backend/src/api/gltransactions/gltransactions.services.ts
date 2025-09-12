@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../lib/prisma.lib";
 import {
   IGlTransaction,
   GlTransactionFilters,
@@ -10,8 +10,6 @@ import {
   ReverseGlTransactionRequest,
   ReverseGlTransactionResponse,
 } from "./gltransactions.interfaces";
-
-const prisma = new PrismaClient();
 
 export class GlTransactionService {
   // Get GL Transactions

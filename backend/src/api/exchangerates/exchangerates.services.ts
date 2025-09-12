@@ -1,8 +1,5 @@
-import {
-  ExchangeRateOperatorStatus,
-  ExchangeRateStatus,
-  PrismaClient,
-} from "@prisma/client";
+import { ExchangeRateOperatorStatus, ExchangeRateStatus } from "@prisma/client";
+import { prisma } from "../../lib/prisma.lib";
 import type {
   IExchangeRate,
   CreateExchangeRateRequest,
@@ -13,8 +10,6 @@ import type {
   ExchangeRateResponse,
   ExchangeRateStats,
 } from "./exchangerates.interfaces";
-
-const prisma = new PrismaClient();
 
 export class ExchangeRateService {
   async createExchangeRate(

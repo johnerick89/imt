@@ -1,9 +1,7 @@
 import { Response } from "express";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../lib/prisma.lib";
 import { DashboardService } from "./dashboard.services";
 import type CustomRequest from "../../types/CustomReq.type";
-
-const prisma = new PrismaClient();
 
 const dashboardService = new DashboardService();
 
