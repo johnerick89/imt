@@ -73,6 +73,12 @@ const corsConfig = {
   maxAge: 86400,
 };
 
+// const corsConfig = {
+//   credentials: true,
+//   origin: true,
+//   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+// };
+
 // Middleware (order matters)
 app.use(cors(corsConfig));
 app.use((req, res, next) => {

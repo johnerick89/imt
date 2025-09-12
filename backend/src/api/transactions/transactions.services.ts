@@ -84,6 +84,13 @@ export class TransactionService {
       });
 
       if (!corridor) {
+        console.log(
+          "Invalid or inactive corridor:",
+          data.corridor_id,
+          organisationId,
+          data.dest_currency_id,
+          data.destination_country_id
+        );
         throw new Error("Invalid or inactive corridor");
       }
 
