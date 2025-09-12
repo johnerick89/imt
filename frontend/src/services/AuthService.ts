@@ -9,6 +9,10 @@ import type {
 class AuthService {
   async login(credentials: LoginRequest): Promise<AuthResponse> {
     try {
+      const API_BASE_URL =
+        import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+      console.log("API_BASE_URL", API_BASE_URL);
+      console.log("Login credentials:", credentials);
       const response = await apiClient.post("/api/v1/auth/login", credentials);
       return response.data;
     } catch (error: unknown) {
@@ -41,15 +45,15 @@ class AuthService {
       const axiosError = error as {
         response?: { data?: { message?: string }; status?: number };
       };
-      
+
       // Log the error for debugging
       console.error("AuthService.getProfile error:", error);
-      
+
       // If it's a 401 error, don't throw - let the caller handle it
       if (axiosError.response?.status === 401) {
         throw new Error("Authentication failed. Please log in again.");
       }
-      
+
       throw new Error(
         axiosError.response?.data?.message || "Failed to fetch profile"
       );
