@@ -21,6 +21,7 @@ import type {
   CreateCorridorRequest,
   UpdateCorridorRequest,
   CorridorFilters,
+  CorridorStatsFilters,
 } from "../types/CorridorsTypes";
 
 const CorridorsPage: React.FC = () => {
@@ -38,6 +39,10 @@ const CorridorsPage: React.FC = () => {
     organisation_id: currentUser?.organisation_id || "",
   });
 
+  const statsFilters: CorridorStatsFilters = {
+    origin_organisation_id: currentUser?.organisation_id || "",
+  };
+
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -48,7 +53,7 @@ const CorridorsPage: React.FC = () => {
 
   // Data fetching
   const { data: corridorsData, isLoading } = useCorridors(filters);
-  const { data: statsData } = useCorridorStats();
+  const { data: statsData } = useCorridorStats(statsFilters);
   const { data: countriesData } = useCountries({ limit: 1000 });
   const { data: currenciesData } = useCurrencies({ limit: 1000 });
 
