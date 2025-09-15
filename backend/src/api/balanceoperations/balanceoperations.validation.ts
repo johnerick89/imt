@@ -1,10 +1,7 @@
 import { z } from "zod";
 
 export const balanceOperationSchema = z.object({
-  amount: z
-    .string()
-    .transform((val) => parseFloat(val))
-    .pipe(z.number().positive("Amount must be positive")),
+  amount: z.preprocess((val) => (val === "" ? undefined : val), z.number()),
   source_type: z.enum(["BANK_ACCOUNT", "VAULT", "TILL"]).optional(),
   source_id: z.string().uuid("Invalid source ID").optional(),
   destination_type: z.enum(["BANK_ACCOUNT", "VAULT", "TILL"]).optional(),
@@ -16,10 +13,7 @@ export const balanceOperationSchema = z.object({
 });
 
 export const orgBalanceOperationSchema = z.object({
-  amount: z
-    .string()
-    .transform((val) => parseFloat(val))
-    .pipe(z.number().positive("Amount must be positive")),
+  amount: z.preprocess((val) => (val === "" ? undefined : val), z.number()),
   source_type: z.literal("BANK_ACCOUNT").optional().default("BANK_ACCOUNT"),
   source_id: z.string().uuid("Invalid source ID"),
   description: z
@@ -29,10 +23,7 @@ export const orgBalanceOperationSchema = z.object({
 });
 
 export const tillBalanceOperationSchema = z.object({
-  amount: z
-    .string()
-    .transform((val) => parseFloat(val))
-    .pipe(z.number().positive("Amount must be positive")),
+  amount: z.preprocess((val) => (val === "" ? undefined : val), z.number()),
   source_type: z.literal("VAULT").optional().default("VAULT"),
   source_id: z.string().uuid("Invalid source ID"),
   description: z
@@ -42,10 +33,7 @@ export const tillBalanceOperationSchema = z.object({
 });
 
 export const vaultBalanceOperationSchema = z.object({
-  amount: z
-    .string()
-    .transform((val) => parseFloat(val))
-    .pipe(z.number().positive("Amount must be positive")),
+  amount: z.preprocess((val) => (val === "" ? undefined : val), z.number()),
   source_type: z.literal("BANK_ACCOUNT").optional().default("BANK_ACCOUNT"),
   source_id: z.string().uuid("Invalid source ID"),
   description: z

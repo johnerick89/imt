@@ -7,6 +7,7 @@ import {
   useCreateOutboundTransaction,
   useCancelTransaction,
   useReverseTransaction,
+  useApproveTransaction,
 } from "../hooks/useTransactions";
 import { useCurrencies } from "../hooks/useCurrencies";
 import { useOrganisations } from "../hooks/useOrganisations";
@@ -16,6 +17,7 @@ import { useCustomers } from "../hooks/useCustomers";
 import TransactionsTable from "../components/TransactionsTable";
 import CreateTransactionForm from "../components/CreateTransactionForm";
 import TransactionDetailsModal from "../components/TransactionDetailsModal";
+import ApproveTransactionModal from "../components/ApproveTransactionModal";
 import { SearchableSelect } from "../components/ui/SearchableSelect";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
@@ -35,6 +37,7 @@ const OutboundTransactions: React.FC = () => {
     useState<Transaction | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
 
   // Use the current user's organisation if no organisationId in URL
   const effectiveOrganisationId = organisationId || user?.organisation_id;
@@ -76,6 +79,7 @@ const OutboundTransactions: React.FC = () => {
   const createTransactionMutation = useCreateOutboundTransaction();
   const cancelTransactionMutation = useCancelTransaction();
   const reverseTransactionMutation = useReverseTransaction();
+  const approveTransactionMutation = useApproveTransaction();
 
   // Handle filter changes
   const handleFilterChange = (
@@ -145,6 +149,27 @@ const OutboundTransactions: React.FC = () => {
       } catch (error) {
         console.error("Error reversing transaction:", error);
       }
+    }
+  };
+
+  // Handle approve transaction
+  const handleApproveTransaction = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setIsApproveModalOpen(true);
+  };
+
+  const handleApproveConfirm = async (remarks: string) => {
+    if (!selectedTransaction) return;
+
+    try {
+      await approveTransactionMutation.mutateAsync({
+        transactionId: selectedTransaction.id,
+        data: { remarks: remarks || undefined },
+      });
+      setIsApproveModalOpen(false);
+      setSelectedTransaction(null);
+    } catch (error) {
+      console.error("Error approving transaction:", error);
     }
   };
 
@@ -516,6 +541,7 @@ const OutboundTransactions: React.FC = () => {
           onView={handleViewTransaction}
           onCancel={handleCancelTransaction}
           onReverse={handleReverseTransaction}
+          onApprove={handleApproveTransaction}
           isLoading={isLoadingTransactions || isLoadingStats}
         />
 
@@ -569,10 +595,23 @@ const OutboundTransactions: React.FC = () => {
         transaction={selectedTransaction}
         onCancel={handleCancelTransaction}
         onReverse={handleReverseTransaction}
+        onApprove={handleApproveTransaction}
         isLoading={
           cancelTransactionMutation.isPending ||
-          reverseTransactionMutation.isPending
+          reverseTransactionMutation.isPending ||
+          approveTransactionMutation.isPending
         }
+      />
+
+      <ApproveTransactionModal
+        isOpen={isApproveModalOpen}
+        onClose={() => {
+          setIsApproveModalOpen(false);
+          setSelectedTransaction(null);
+        }}
+        onApprove={handleApproveConfirm}
+        transaction={selectedTransaction}
+        isLoading={approveTransactionMutation.isPending}
       />
     </>
   );

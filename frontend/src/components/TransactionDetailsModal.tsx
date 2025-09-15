@@ -11,6 +11,7 @@ interface TransactionDetailsModalProps {
   transaction: Transaction | null;
   onCancel?: (transaction: Transaction) => void;
   onReverse?: (transaction: Transaction) => void;
+  onApprove?: (transaction: Transaction) => void;
   isLoading?: boolean;
 }
 
@@ -22,6 +23,7 @@ export const TransactionDetailsModal: React.FC<
   transaction,
   onCancel,
   onReverse,
+  onApprove,
   isLoading = false,
 }) => {
   const [activeTab, setActiveTab] = useState<"details" | "charges" | "audit">(
@@ -41,6 +43,9 @@ export const TransactionDetailsModal: React.FC<
     transaction.remittance_status === "PENDING";
   const canReverse =
     transaction.status === "APPROVED" &&
+    transaction.remittance_status === "PENDING";
+  const canApprove =
+    transaction.status === "PENDING_APPROVAL" &&
     transaction.remittance_status === "PENDING";
 
   const renderDetailsTab = () => (
@@ -152,7 +157,7 @@ export const TransactionDetailsModal: React.FC<
                 Phone
               </label>
               <p className="text-sm text-gray-900">
-                {transaction.customer?.phone || "N/A"}
+                {transaction.customer?.phone_number || "N/A"}
               </p>
             </div>
           </div>
@@ -184,7 +189,7 @@ export const TransactionDetailsModal: React.FC<
                 Account Number
               </label>
               <p className="text-sm text-gray-900">
-                {transaction.beneficiary?.account_number || "N/A"}
+                {transaction.beneficiary?.bank_account_number || "N/A"}
               </p>
             </div>
           </div>
@@ -261,7 +266,7 @@ export const TransactionDetailsModal: React.FC<
               </label>
               <p className="text-sm text-gray-900">
                 {transaction.corridor
-                  ? `${transaction.corridor.base_country.country_code} → ${transaction.corridor.destination_country.country_code}`
+                  ? `${transaction?.corridor?.base_country?.code} → ${transaction.corridor.destination_country?.code}`
                   : "N/A"}
               </p>
             </div>
@@ -630,6 +635,16 @@ export const TransactionDetailsModal: React.FC<
           <Button variant="outline" onClick={onClose}>
             Close
           </Button>
+          {canApprove && (
+            <Button
+              variant="default"
+              onClick={() => onApprove?.(transaction)}
+              disabled={isLoading}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              Approve Transaction
+            </Button>
+          )}
           {canCancel && (
             <Button
               variant="destructive"
