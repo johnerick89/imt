@@ -1,4 +1,9 @@
-import { IntegrationType, IntegrationStatus } from "@prisma/client";
+import {
+  IntegrationType,
+  IntegrationStatus,
+  Organisation,
+  User,
+} from "@prisma/client";
 export interface IIntegration {
   id: string;
   name: string;
@@ -15,22 +20,9 @@ export interface IIntegration {
   created_at: Date;
   updated_at: Date;
   created_by?: string | null;
-  created_by_user?: {
-    id: string;
-    first_name: string;
-    last_name: string;
-    email: string;
-  } | null;
-  organisation?: {
-    id: string;
-    name: string;
-    type: string;
-  } | null;
-  origin_organisation?: {
-    id: string;
-    name: string;
-    type: string;
-  } | null;
+  created_by_user?: User | null;
+  organisation?: Organisation | null;
+  origin_organisation?: Organisation | null;
 }
 
 export interface CreateIntegrationRequest {
@@ -95,11 +87,11 @@ export interface IntegrationResponse {
 }
 
 export interface IntegrationStats {
-  totalIntegrations: number;
-  activeIntegrations: number;
-  inactiveIntegrations: number;
-  pendingIntegrations: number;
-  blockedIntegrations: number;
+  total: number;
+  active: number;
+  inactive: number;
+  pending: number;
+  blocked: number;
 }
 
 export interface IntegrationStatsResponse {
@@ -107,4 +99,8 @@ export interface IntegrationStatsResponse {
   message: string;
   data: IntegrationStats;
   error?: string;
+}
+
+export interface IntegrationStatsFilters {
+  origin_organisation_id?: string | null;
 }

@@ -18,6 +18,7 @@
     "classnames": "^2.5.1",
     "framer-motion": "^12.23.12",
     "jwt-decode": "^4.0.0",
+    "lodash": "^4.17.21",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-hook-form": "^7.62.0",
@@ -28,6 +29,7 @@
   "devDependencies": {
     "@eslint/js": "^9.33.0",
     "@tailwindcss/forms": "^0.5.10",
+    "@types/lodash": "^4.17.20",
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",
     "@vitejs/plugin-react": "^5.0.0",

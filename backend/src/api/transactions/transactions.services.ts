@@ -77,8 +77,6 @@ export class TransactionService {
         where: {
           id: data.corridor_id,
           organisation_id: organisationId,
-          base_currency_id: data.dest_currency_id,
-          destination_country_id: data.destination_country_id,
           status: "ACTIVE",
         },
       });

@@ -7,8 +7,10 @@ export const createIntegrationSchema = z.object({
     .min(1, "Name is required")
     .max(256, "Name must be less than 256 characters"),
   description: z.string().optional(),
-  organisation_id: z.string().uuid().optional(),
-  origin_organisation_id: z.string().uuid().optional(),
+  organisation_id: z.string().uuid("Organisation ID must be a valid UUID"),
+  origin_organisation_id: z
+    .string()
+    .uuid("Origin organisation ID must be a valid UUID"),
   type: z.enum([
     IntegrationType.API,
     IntegrationType.WEBHOOK,
@@ -37,8 +39,14 @@ export const updateIntegrationSchema = z.object({
     .max(256, "Name must be less than 256 characters")
     .optional(),
   description: z.string().optional(),
-  organisation_id: z.string().uuid().optional(),
-  origin_organisation_id: z.string().uuid().optional(),
+  organisation_id: z
+    .string()
+    .uuid("Organisation ID must be a valid UUID")
+    .optional(),
+  origin_organisation_id: z
+    .string()
+    .uuid("Origin organisation ID must be a valid UUID")
+    .optional(),
   type: z
     .enum([
       IntegrationType.API,
@@ -90,7 +98,39 @@ export const integrationFiltersSchema = z.object({
       IntegrationStatus.BLOCKED,
     ])
     .optional(),
-  organisation_id: z.string().uuid().optional(),
-  origin_organisation_id: z.string().uuid().optional(),
-  created_by: z.string().uuid().optional(),
+  organisation_id: z
+    .string()
+    .optional()
+    .transform((val) => (val === "" ? null : val))
+    .pipe(z.string().uuid().nullable().optional()),
+  origin_organisation_id: z
+    .string()
+    .optional()
+    .transform((val) => (val === "" ? null : val))
+    .pipe(
+      z
+        .string()
+        .uuid("Origin organisation ID must be a valid UUID")
+        .nullable()
+        .optional()
+    ),
+  created_by: z
+    .string()
+    .optional()
+    .transform((val) => (val === "" ? null : val))
+    .pipe(z.string().uuid().nullable().optional()),
+});
+
+export const integrationStatsFiltersSchema = z.object({
+  origin_organisation_id: z
+    .string()
+    .optional()
+    .transform((val) => (val === "" ? null : val))
+    .pipe(
+      z
+        .string()
+        .uuid("Origin organisation ID must be a valid UUID")
+        .nullable()
+        .optional()
+    ),
 });

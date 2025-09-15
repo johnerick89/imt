@@ -170,6 +170,8 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
     [corridorsData]
   );
 
+  console.log("corridors", corridors);
+
   // Watch for corridor changes to auto-populate exchange rates
   useEffect(() => {
     if (watchedCorridorId && currentOrganisation) {

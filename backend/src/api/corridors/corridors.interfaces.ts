@@ -1,42 +1,30 @@
+import type {
+  Organisation,
+  Country,
+  Currency,
+  User,
+  CorridorStatus,
+} from "@prisma/client";
+
 export interface ICorridor {
   id: string;
   name: string;
   description: string;
   base_country_id: string;
-  base_country: {
-    id: string;
-    name: string;
-    code: string;
-  };
+  base_country: Country;
   destination_country_id: string;
-  destination_country: {
-    id: string;
-    name: string;
-    code: string;
-  };
+  destination_country: Country;
   base_currency_id: string;
-  base_currency: {
-    id: string;
-    currency_name: string;
-    currency_code: string;
-    currency_symbol: string;
-  };
+  base_currency: Currency;
   organisation_id: string;
-  organisation: {
-    id: string;
-    name: string;
-    type: string;
-  };
+  organisation: Organisation;
   created_at: Date;
   created_by?: string | null;
   updated_at: Date;
-  status: "ACTIVE" | "INACTIVE" | "PENDING" | "BLOCKED";
-  created_by_user?: {
-    id: string;
-    first_name: string;
-    last_name: string;
-    email: string;
-  } | null;
+  status: CorridorStatus;
+  created_by_user?: User;
+  origin_organisation_id?: string | null;
+  origin_organisation?: Organisation;
 }
 
 export interface CreateCorridorRequest {
@@ -46,7 +34,8 @@ export interface CreateCorridorRequest {
   destination_country_id: string;
   base_currency_id: string;
   organisation_id: string;
-  status?: "ACTIVE" | "INACTIVE" | "PENDING" | "BLOCKED";
+  status?: CorridorStatus;
+  origin_organisation_id?: string;
 }
 
 export interface UpdateCorridorRequest {
@@ -56,19 +45,20 @@ export interface UpdateCorridorRequest {
   destination_country_id?: string;
   base_currency_id?: string;
   organisation_id?: string;
-  status?: "ACTIVE" | "INACTIVE" | "PENDING" | "BLOCKED";
+  status?: CorridorStatus;
+  origin_organisation_id?: string;
 }
 
 export interface CorridorFilters {
   page?: number;
   limit?: number;
   search?: string;
-  status?: "ACTIVE" | "INACTIVE" | "PENDING" | "BLOCKED";
-  base_country_id?: string;
-  destination_country_id?: string;
-  base_currency_id?: string;
-  organisation_id?: string;
-  created_by?: string;
+  status?: CorridorStatus;
+  base_country_id?: string | null;
+  destination_country_id?: string | null;
+  base_currency_id?: string | null;
+  organisation_id?: string | null;
+  origin_organisation_id?: string | null;
 }
 
 export interface CorridorListResponse {
@@ -106,4 +96,8 @@ export interface CorridorStatsResponse {
   message: string;
   data: CorridorStats;
   error?: string;
+}
+
+export interface CorridorStatsFilters {
+  origin_organisation_id?: string | null;
 }

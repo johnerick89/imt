@@ -1,3 +1,17 @@
+import type { Organisation } from "./OrganisationsTypes";
+import type { Country } from "./CountriesTypes";
+import type { Currency } from "./CurrenciesTypes";
+import type { User } from "./UsersTypes";
+
+export const CorridorStatus = {
+  ACTIVE: "ACTIVE",
+  INACTIVE: "INACTIVE",
+  PENDING: "PENDING",
+  BLOCKED: "BLOCKED",
+} as const;
+export type CorridorStatus =
+  (typeof CorridorStatus)[keyof typeof CorridorStatus];
+
 export interface Corridor {
   id: string;
   name: string;
@@ -6,38 +20,18 @@ export interface Corridor {
   destination_country_id: string;
   base_currency_id: string;
   organisation_id: string;
-  status: "ACTIVE" | "INACTIVE" | "PENDING" | "BLOCKED";
+  status: CorridorStatus;
   created_at: string;
   updated_at: string;
   created_by: string;
   updated_by?: string | null;
-  base_country?: {
-    id: string;
-    name: string;
-    code: string;
-  };
-  destination_country?: {
-    id: string;
-    name: string;
-    code: string;
-  };
-  base_currency?: {
-    id: string;
-    currency_code: string;
-    currency_name: string;
-    currency_symbol: string;
-  };
-  organisation?: {
-    id: string;
-    name: string;
-    type: string;
-  };
-  created_by_user?: {
-    id: string;
-    first_name: string;
-    last_name: string;
-    email: string;
-  };
+  base_country?: Country;
+  destination_country?: Country;
+  base_currency?: Currency;
+  organisation?: Organisation;
+  created_by_user?: User;
+  origin_organisation_id?: string;
+  origin_organisation?: Organisation;
 }
 
 export interface CreateCorridorRequest {
@@ -47,7 +41,8 @@ export interface CreateCorridorRequest {
   destination_country_id: string;
   base_currency_id: string;
   organisation_id: string;
-  status: "ACTIVE" | "INACTIVE" | "PENDING" | "BLOCKED";
+  status: CorridorStatus;
+  origin_organisation_id?: string;
 }
 
 export interface UpdateCorridorRequest {
@@ -57,7 +52,8 @@ export interface UpdateCorridorRequest {
   destination_country_id?: string;
   base_currency_id?: string;
   organisation_id?: string;
-  status?: "ACTIVE" | "INACTIVE" | "PENDING" | "BLOCKED";
+  status?: CorridorStatus;
+  origin_organisation_id?: string;
 }
 
 export interface CorridorFilters {
@@ -70,6 +66,11 @@ export interface CorridorFilters {
   base_currency_id?: string;
   organisation_id?: string;
   created_by?: string;
+  origin_organisation_id?: string;
+}
+
+export interface CorridorStatsFilters {
+  origin_organisation_id?: string;
 }
 
 export interface CorridorListResponse {

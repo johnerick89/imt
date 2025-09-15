@@ -64,14 +64,24 @@ const CorridorsTable: React.FC<CorridorsTableProps> = ({
         ),
       },
       {
+        accessorKey: "origin_organisation",
+        header: "Origin Organisation",
+        cell: ({ row }) => (
+          <span className="text-sm text-gray-900">
+            {row.original.origin_organisation?.name || "N/A"}
+          </span>
+        ),
+      },
+      {
         accessorKey: "organisation",
-        header: "Organisation",
+        header: "Destination Organisation",
         cell: ({ row }) => (
           <span className="text-sm text-gray-900">
             {row.original.organisation?.name || "N/A"}
           </span>
         ),
       },
+
       {
         accessorKey: "status",
         header: "Status",

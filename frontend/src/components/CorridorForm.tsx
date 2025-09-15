@@ -13,6 +13,7 @@ import type {
 } from "../types/CorridorsTypes";
 import type { Country } from "../types/CountriesTypes";
 import type { Currency } from "../types/CurrenciesTypes";
+import { useSession } from "../hooks/useSession";
 
 interface CorridorFormProps {
   initialData?: Corridor;
@@ -27,6 +28,8 @@ const CorridorForm: React.FC<CorridorFormProps> = ({
   isLoading = false,
   isEdit = false,
 }) => {
+  const { user } = useSession();
+  const currentUserOrganisationId = user?.organisation_id;
   const { data: countriesData } = useAllCountries();
   const { data: currenciesData } = useAllCurrencies();
 
@@ -44,6 +47,7 @@ const CorridorForm: React.FC<CorridorFormProps> = ({
           base_currency_id: initialData.base_currency?.id || "",
           organisation_id: initialData.organisation_id,
           status: initialData.status,
+          origin_organisation_id: initialData.origin_organisation_id || "",
         }
       : {
           name: "",
@@ -53,6 +57,7 @@ const CorridorForm: React.FC<CorridorFormProps> = ({
           base_currency_id: "",
           organisation_id: "",
           status: "ACTIVE",
+          origin_organisation_id: currentUserOrganisationId || "",
         },
   });
 

@@ -4,8 +4,11 @@ import {
   createCorridorSchema,
   updateCorridorSchema,
   corridorFiltersSchema,
+  corridorStatsFiltersSchema,
 } from "./corridors.validation";
 import type CustomRequest from "../../types/CustomReq.type";
+import { AppError } from "../../utils/AppError";
+import { asyncHandler } from "../../middlewares/error.middleware";
 
 export class CorridorController {
   private corridorService: CorridorService;
@@ -14,14 +17,11 @@ export class CorridorController {
     this.corridorService = new CorridorService();
   }
 
-  async createCorridor(req: CustomRequest, res: Response) {
-    try {
+  createCorridor = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const userId = req.user?.id;
       if (!userId) {
-        return res.status(401).json({
-          success: false,
-          message: "User not authenticated",
-        });
+        throw new AppError("User not authenticated", 401);
       }
 
       const validatedData = createCorridorSchema.parse(req.body);
@@ -30,110 +30,52 @@ export class CorridorController {
         validatedData,
         userId
       );
-      return res.status(201).json(result);
-    } catch (error) {
-      if (error instanceof Error) {
-        return res.status(400).json({
-          success: false,
-          message: error.message,
-        });
-      }
-      return res.status(500).json({
-        success: false,
-        message: "Internal server error",
-      });
+      res.status(201).json(result);
     }
-  }
+  );
 
-  async getCorridors(req: Request, res: Response) {
-    try {
+  getCorridors = asyncHandler(
+    async (req: Request, res: Response): Promise<void> => {
+      console.log(req.query);
       const validatedFilters = corridorFiltersSchema.parse(req.query);
       const result = await this.corridorService.getCorridors(validatedFilters);
-      return res.status(200).json(result);
-    } catch (error) {
-      if (error instanceof Error) {
-        return res.status(400).json({
-          success: false,
-          message: error.message,
-        });
-      }
-      return res.status(500).json({
-        success: false,
-        message: "Internal server error",
-      });
+      res.status(200).json(result);
     }
-  }
+  );
 
-  async getCorridorById(req: Request, res: Response) {
-    try {
+  getCorridorById = asyncHandler(
+    async (req: Request, res: Response): Promise<void> => {
       const { id } = req.params;
       const result = await this.corridorService.getCorridorById(id);
-      return res.status(200).json(result);
-    } catch (error) {
-      if (error instanceof Error) {
-        return res.status(404).json({
-          success: false,
-          message: error.message,
-        });
-      }
-      return res.status(500).json({
-        success: false,
-        message: "Internal server error",
-      });
+      res.status(200).json(result);
     }
-  }
+  );
 
-  async updateCorridor(req: Request, res: Response) {
-    try {
+  updateCorridor = asyncHandler(
+    async (req: Request, res: Response): Promise<void> => {
       const { id } = req.params;
       const validatedData = updateCorridorSchema.parse(req.body);
       const result = await this.corridorService.updateCorridor(
         id,
         validatedData
       );
-      return res.status(200).json(result);
-    } catch (error) {
-      if (error instanceof Error) {
-        return res.status(400).json({
-          success: false,
-          message: error.message,
-        });
-      }
-      return res.status(500).json({
-        success: false,
-        message: "Internal server error",
-      });
+      res.status(200).json(result);
     }
-  }
+  );
 
-  async deleteCorridor(req: Request, res: Response) {
-    try {
+  deleteCorridor = asyncHandler(
+    async (req: Request, res: Response): Promise<void> => {
       const { id } = req.params;
       const result = await this.corridorService.deleteCorridor(id);
-      return res.status(200).json(result);
-    } catch (error) {
-      if (error instanceof Error) {
-        return res.status(400).json({
-          success: false,
-          message: error.message,
-        });
-      }
-      return res.status(500).json({
-        success: false,
-        message: "Internal server error",
-      });
+      res.status(200).json(result);
     }
-  }
+  );
 
-  async getCorridorStats(req: Request, res: Response) {
-    try {
-      const result = await this.corridorService.getCorridorStats();
-      return res.status(200).json(result);
-    } catch (error) {
-      return res.status(500).json({
-        success: false,
-        message: "Internal server error",
-      });
+  getCorridorStats = asyncHandler(
+    async (req: Request, res: Response): Promise<void> => {
+      const statsFilters = corridorStatsFiltersSchema.parse(req.query);
+      const result = await this.corridorService.getCorridorStats(statsFilters);
+      res.status(200).json(result);
     }
-  }
+  );
 }

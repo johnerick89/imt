@@ -4,6 +4,7 @@ import type {
   IntegrationFilters,
   CreateIntegrationRequest,
   UpdateIntegrationRequest,
+  IntegrationStatsFilters,
 } from "../types/IntegrationsTypes";
 
 // Query keys
@@ -14,7 +15,8 @@ export const integrationKeys = {
     [...integrationKeys.lists(), filters] as const,
   details: () => [...integrationKeys.all, "detail"] as const,
   detail: (id: string) => [...integrationKeys.details(), id] as const,
-  stats: () => [...integrationKeys.all, "stats"] as const,
+  stats: (filters: IntegrationStatsFilters | undefined) =>
+    [...integrationKeys.all, "stats", filters] as const,
 };
 
 // Hook to get integrations list
@@ -37,16 +39,16 @@ export const useIntegration = (id: string) => {
 };
 
 // Hook to get integration stats
-export const useIntegrationStats = () => {
+export const useIntegrationStats = (filters?: IntegrationStatsFilters) => {
   return useQuery({
-    queryKey: integrationKeys.stats(),
-    queryFn: () => IntegrationsService.getIntegrationStats(),
+    queryKey: integrationKeys.stats(filters),
+    queryFn: () => IntegrationsService.getIntegrationStats(filters),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 
 // Hook to create an integration
-export const useCreateIntegration = () => {
+export const useCreateIntegration = (filters?: IntegrationStatsFilters) => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -56,7 +58,9 @@ export const useCreateIntegration = () => {
       // Invalidate and refetch integrations list
       queryClient.invalidateQueries({ queryKey: integrationKeys.lists() });
       // Invalidate stats
-      queryClient.invalidateQueries({ queryKey: integrationKeys.stats() });
+      queryClient.invalidateQueries({
+        queryKey: integrationKeys.stats(filters),
+      });
     },
   });
 };
@@ -83,7 +87,7 @@ export const useUpdateIntegration = () => {
 };
 
 // Hook to delete an integration
-export const useDeleteIntegration = () => {
+export const useDeleteIntegration = (filters?: IntegrationStatsFilters) => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -94,7 +98,9 @@ export const useDeleteIntegration = () => {
       // Invalidate and refetch integrations list
       queryClient.invalidateQueries({ queryKey: integrationKeys.lists() });
       // Invalidate stats
-      queryClient.invalidateQueries({ queryKey: integrationKeys.stats() });
+      queryClient.invalidateQueries({
+        queryKey: integrationKeys.stats(filters),
+      });
     },
   });
 };

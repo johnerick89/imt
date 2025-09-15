@@ -6,6 +6,7 @@ import type {
   IntegrationStatsResponse,
   CreateIntegrationRequest,
   UpdateIntegrationRequest,
+  IntegrationStatsFilters,
 } from "../types/IntegrationsTypes";
 
 class IntegrationsService {
@@ -95,9 +96,13 @@ class IntegrationsService {
     }
   }
 
-  async getIntegrationStats(): Promise<IntegrationStatsResponse> {
+  async getIntegrationStats(
+    filters?: IntegrationStatsFilters
+  ): Promise<IntegrationStatsResponse> {
     try {
-      const response = await apiClient.get("/api/v1/integrations/stats");
+      const response = await apiClient.get("/api/v1/integrations/stats", {
+        params: filters,
+      });
       return response.data;
     } catch (error: unknown) {
       const axiosError = error as {
@@ -105,7 +110,8 @@ class IntegrationsService {
       };
       console.error("Error fetching integration stats:", error);
       throw new Error(
-        axiosError.response?.data?.message || "Failed to fetch integration stats"
+        axiosError.response?.data?.message ||
+          "Failed to fetch integration stats"
       );
     }
   }

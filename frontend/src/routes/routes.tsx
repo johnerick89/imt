@@ -33,6 +33,9 @@ import OutboundTransactionsPage from "../pages/OutboundTransactionsPage";
 import InboundTransactionsPage from "../pages/InboundTransactionsPage";
 import ChargesPaymentsPage from "../pages/ChargesPaymentsPage";
 import ChargesPaymentDetailsPage from "../pages/ChargesPaymentDetailsPage";
+import TransactionsPage from "../pages/TransactionsPage";
+import ConnectionsPage from "../pages/ConnectionsPage";
+import FinancialSettingsPage from "../pages/FinancialSettingsPage";
 
 // Public Route Component (redirects to dashboard if already authenticated)
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -89,7 +92,7 @@ const AppRoutes: React.FC = () => {
         <Route path="dashboard" element={<DashboardPage />} />
 
         {/* Transactions */}
-        <Route path="transactions" />
+        <Route path="transactions" element={<TransactionsPage />} />
         <Route
           path="transactions/outbound"
           element={<OutboundTransactionsPage />}
@@ -122,6 +125,7 @@ const AppRoutes: React.FC = () => {
             />
           }
         />
+        <Route path="connections" element={<ConnectionsPage />} />
         <Route
           path="balances"
           element={
@@ -173,6 +177,7 @@ const AppRoutes: React.FC = () => {
         <Route path="corridors" element={<CorridorsPage />} />
         <Route path="charges" element={<ChargesPage />} />
         <Route path="integrations" element={<IntegrationsPage />} />
+        <Route path="financial-settings" element={<FinancialSettingsPage />} />
         <Route
           path="taxes"
           element={

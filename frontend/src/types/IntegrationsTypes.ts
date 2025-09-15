@@ -81,11 +81,15 @@ export interface IntegrationResponse {
 }
 
 export interface IntegrationStats {
-  totalIntegrations: number;
-  activeIntegrations: number;
-  inactiveIntegrations: number;
-  pendingIntegrations: number;
-  blockedIntegrations: number;
+  total: number;
+  active: number;
+  inactive: number;
+  pending: number;
+  blocked: number;
+}
+
+export interface IntegrationStatsFilters {
+  origin_organisation_id?: string | null;
 }
 
 export interface IntegrationStatsResponse {
