@@ -28,7 +28,7 @@ const VaultsPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
-  const limit = 10;
+  const limit = 100;
 
   // Modals state
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -45,7 +45,7 @@ const VaultsPage: React.FC = () => {
   // API hooks
   const { data: vaultsData, isLoading } = useVaults({
     page,
-    limit: 100,
+    limit,
     search: searchTerm,
     organisation_id: organisationId,
   });

@@ -55,11 +55,15 @@ export const vaultBalanceOperationSchema = z.object({
 });
 
 export const orgBalanceFiltersSchema = z.object({
-  page: z.coerce.number().min(1, "Page must be at least 1").default(1),
-  limit: z.coerce
-    .number()
-    .min(1, "Limit must be at least 1")
-    .max(100, "Limit must be at most 100")
+  page: z
+    .string()
+    .transform((val) => parseInt(val, 10))
+    .pipe(z.number().min(1).max(100))
+    .default(1),
+  limit: z
+    .string()
+    .transform((val) => parseInt(val, 10))
+    .pipe(z.number().min(1).max(100))
     .default(10),
   search: z.string().optional(),
   base_org_id: z.string().uuid().optional(),

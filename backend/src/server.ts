@@ -13,80 +13,38 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-const appUrl = process.env.APP_URL?.trim(); // Safe access, trim any spaces
-
+// Allowed origins (stable, no regex for now)
 const allowedOrigins = [
-  // Dynamic from env (production or custom local)
-  ...(appUrl ? [appUrl] : []),
-
-  // Local dev fallbacks (keep these for flexibility)
+  process.env.APP_URL?.trim(),
   "http://localhost:3000",
   "http://localhost:5173",
-  "http://localhost:5174",
-  "http://localhost:5175",
-  "http://localhost:5176",
   "http://127.0.0.1:3000",
   "http://127.0.0.1:5173",
-  "http://127.0.0.1:5174",
-  "http://127.0.0.1:5175",
-  "http://127.0.0.1:5176",
+].filter(Boolean);
 
-  // Regex for any local port (covers Vite variations)
-  /^http:\/\/localhost:[0-9]{4}$/,
-  /^http:\/\/127\.0\.0\.1:[0-9]{4}$/,
-];
+// ✅ Final CORS config
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true); // allow curl/Postman
+      if (/^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin)) {
+        return callback(null, true);
+      }
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
 
-const corsConfig = {
-  origin: (
-    origin: string | undefined,
-    callback: (err: Error | null, allow?: boolean) => void
-  ) => {
-    console.log(`CORS Debug: ${origin} - Origin: ${origin}`);
-    if (!origin) return callback(null, true);
-    const isAllowed = allowedOrigins.some((allowed) =>
-      typeof allowed === "string"
-        ? allowed === origin
-        : (allowed as RegExp).test(origin)
-    );
-    if (isAllowed) {
-      console.log(`CORS: Origin ${origin} allowed`);
-      callback(null, true);
-    } else {
-      console.warn(`CORS: Origin ${origin} not allowed`);
-      callback(null, false);
-    }
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],
-  allowedHeaders: [
-    "Content-Type",
-    "Authorization",
-    "X-API-Key",
-    "X-Requested-With",
-    "Accept",
-    "Origin",
-    "Access-Control-Request-Method",
-    "Access-Control-Request-Headers",
-  ],
-  exposedHeaders: ["Content-Length", "X-Foo", "X-Bar"],
-  optionsSuccessStatus: 200,
-  maxAge: 86400,
-};
+      console.log("Blocked origin: ", origin);
 
-// const corsConfig = {
-//   credentials: true,
-//   origin: true,
-//   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-// };
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"], // minimal set
+  })
+);
 
-// Middleware (order matters)
-app.use(cors(corsConfig));
-app.use((req, res, next) => {
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
-  return next();
-});
+// Security + utilities
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cookieParser());
 app.use(express.json({ limit: "10mb" }));
@@ -99,22 +57,20 @@ app.use(
       success: false,
       message: "Too many requests, please try again later.",
     },
-    skip: (req) => req.method === "OPTIONS",
+    skip: (req) => req.method === "OPTIONS", // skip preflight
   })
 );
 app.use(morgan("combined"));
 
+// Debug helper (see CORS headers in response)
 if (process.env.NODE_ENV === "development") {
   app.use((req, res, next) => {
-    if (req.method === "OPTIONS" || req.headers.origin) {
-      console.log(
-        `CORS Debug: ${req.method} ${req.url} - Origin: ${req.headers.origin}`
-      );
-    }
+    res.setHeader("X-Debug-Origin", req.headers.origin || "none");
     next();
   });
 }
 
+// Health endpoint
 app.get("/health", (req, res) => {
   res.status(200).json({
     success: true,
@@ -122,14 +78,18 @@ app.get("/health", (req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+// Routes
 app.use("/", routes);
+
+// Error handling
 app.use("*", notFoundHandler);
 app.use(errorHandler);
 
+// Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
-  console.log(`🔐 Auth API: http://localhost:${PORT}/api/v1/auth`);
 });
 
 export default app;

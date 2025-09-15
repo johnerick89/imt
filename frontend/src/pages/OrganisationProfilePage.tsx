@@ -232,6 +232,7 @@ const OrganisationProfilePage: React.FC = () => {
       await createCorridorMutation.mutateAsync({
         ...(data as CreateCorridorRequest),
         organisation_id: id || "",
+        origin_organisation_id: user?.organisation_id || "",
       });
       setShowCreateCorridorModal(false);
     } catch (error) {

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CorridorStatus } from "@prisma/client";
 
 export const createCorridorSchema = z.object({
   name: z
@@ -12,9 +13,10 @@ export const createCorridorSchema = z.object({
     .uuid("Destination country ID must be a valid UUID"),
   base_currency_id: z.string().uuid("Base currency ID must be a valid UUID"),
   organisation_id: z.string().uuid("Organisation ID must be a valid UUID"),
-  status: z
-    .enum(["ACTIVE", "INACTIVE", "PENDING", "BLOCKED"])
-    .default("ACTIVE"),
+  status: z.enum(CorridorStatus).default("ACTIVE"),
+  origin_organisation_id: z
+    .string()
+    .uuid("Origin organisation ID must be a valid UUID"),
 });
 
 export const updateCorridorSchema = z.object({
@@ -40,7 +42,11 @@ export const updateCorridorSchema = z.object({
     .string()
     .uuid("Organisation ID must be a valid UUID")
     .optional(),
-  status: z.enum(["ACTIVE", "INACTIVE", "PENDING", "BLOCKED"]).optional(),
+  status: z.enum(CorridorStatus).optional(),
+  origin_organisation_id: z
+    .string()
+    .uuid("Origin organisation ID must be a valid UUID")
+    .optional(),
 });
 
 export const corridorFiltersSchema = z.object({
@@ -55,10 +61,55 @@ export const corridorFiltersSchema = z.object({
     .pipe(z.number().min(1).max(100))
     .default(10),
   search: z.string().optional(),
-  status: z.enum(["ACTIVE", "INACTIVE", "PENDING", "BLOCKED"]).optional(),
-  base_country_id: z.string().uuid().optional(),
-  destination_country_id: z.string().uuid().optional(),
-  base_currency_id: z.string().uuid().optional(),
-  organisation_id: z.string().uuid().optional(),
-  created_by: z.string().uuid().optional(),
+  status: z.enum(CorridorStatus).optional(),
+  base_country_id: z
+    .string()
+    .optional()
+    .transform((val) => (val === "" ? null : val))
+    .pipe(z.string().uuid().nullable().optional()),
+  destination_country_id: z
+    .string()
+    .optional()
+    .transform((val) => (val === "" ? null : val))
+    .pipe(z.string().uuid().nullable().optional()),
+  base_currency_id: z
+    .string()
+    .optional()
+    .transform((val) => (val === "" ? null : val))
+    .pipe(z.string().uuid().nullable().optional()),
+  organisation_id: z
+    .string()
+    .optional()
+    .transform((val) => (val === "" ? null : val))
+    .pipe(z.string().uuid().nullable().optional()),
+  created_by: z
+    .string()
+    .optional()
+    .transform((val) => (val === "" ? null : val))
+    .pipe(z.string().uuid().nullable().optional()),
+  origin_organisation_id: z
+    .string()
+    .optional()
+    .transform((val) => (val === "" ? null : val))
+    .pipe(
+      z
+        .string()
+        .uuid("Origin organisation ID must be a valid UUID")
+        .nullable()
+        .optional()
+    ),
+});
+
+export const corridorStatsFiltersSchema = z.object({
+  origin_organisation_id: z
+    .string()
+    .optional()
+    .transform((val) => (val === "" ? null : val))
+    .pipe(
+      z
+        .string()
+        .uuid("Origin organisation ID must be a valid UUID")
+        .nullable()
+        .optional()
+    ),
 });

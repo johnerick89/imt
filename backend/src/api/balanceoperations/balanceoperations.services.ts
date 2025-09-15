@@ -824,27 +824,9 @@ export class BalanceOperationService {
         take: limit,
         orderBy: { created_at: "desc" },
         include: {
-          base_org: {
-            select: {
-              id: true,
-              name: true,
-              type: true,
-            },
-          },
-          dest_org: {
-            select: {
-              id: true,
-              name: true,
-              type: true,
-            },
-          },
-          currency: {
-            select: {
-              id: true,
-              currency_code: true,
-              currency_name: true,
-            },
-          },
+          base_org: true,
+          dest_org: true,
+          currency: true,
         },
       }),
       prisma.orgBalance.count({ where }),
@@ -972,7 +954,7 @@ export class BalanceOperationService {
         },
         orderBy: { updated_at: "desc" },
         skip,
-        take: limit,
+        take: Number(limit),
       }),
       prisma.orgBalance.count({ where }),
     ]);

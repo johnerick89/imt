@@ -8,6 +8,7 @@ import type {
   IntegrationListResponse,
   IntegrationResponse,
   IntegrationStats,
+  IntegrationStatsFilters,
 } from "./integrations.interfaces";
 
 export class IntegrationService {
@@ -16,6 +17,34 @@ export class IntegrationService {
     userId: string
   ): Promise<IntegrationResponse> {
     try {
+      // Validate origin organisation exists
+      const originOrganisation = await prisma.organisation.findUnique({
+        where: { id: data.origin_organisation_id },
+      });
+      if (!originOrganisation) {
+        throw new Error("Origin organisation not found");
+      }
+
+      // Validate destination organisation exists
+      const destinationOrganisation = await prisma.organisation.findUnique({
+        where: { id: data.organisation_id },
+      });
+      if (!destinationOrganisation) {
+        throw new Error("Destination organisation not found");
+      }
+
+      // Check if integration already exists
+      const existingIntegration = await prisma.integration.findFirst({
+        where: {
+          origin_organisation_id: data.origin_organisation_id,
+          organisation_id: data.organisation_id,
+          name: data.name,
+        },
+      });
+      if (existingIntegration) {
+        throw new Error("Integration already exists");
+      }
+
       const integration = await prisma.integration.create({
         data: {
           ...data,
@@ -256,36 +285,39 @@ export class IntegrationService {
     }
   }
 
-  async getIntegrationStats(): Promise<IntegrationStats> {
+  async getIntegrationStats(
+    filters: IntegrationStatsFilters
+  ): Promise<IntegrationStats> {
     try {
-      const [
-        totalIntegrations,
-        activeIntegrations,
-        inactiveIntegrations,
-        pendingIntegrations,
-        blockedIntegrations,
-      ] = await Promise.all([
-        prisma.integration.count(),
+      const { origin_organisation_id } = filters;
+
+      const where: any = {};
+      if (origin_organisation_id) {
+        where.origin_organisation_id = origin_organisation_id;
+      }
+
+      const [total, active, inactive, pending, blocked] = await Promise.all([
+        prisma.integration.count({ where }),
         prisma.integration.count({
-          where: { status: IntegrationStatus.ACTIVE },
+          where: { ...where, status: IntegrationStatus.ACTIVE },
         }),
         prisma.integration.count({
-          where: { status: IntegrationStatus.INACTIVE },
+          where: { ...where, status: IntegrationStatus.INACTIVE },
         }),
         prisma.integration.count({
-          where: { status: IntegrationStatus.PENDING },
+          where: { ...where, status: IntegrationStatus.PENDING },
         }),
         prisma.integration.count({
-          where: { status: IntegrationStatus.BLOCKED },
+          where: { ...where, status: IntegrationStatus.BLOCKED },
         }),
       ]);
 
       return {
-        totalIntegrations,
-        activeIntegrations,
-        inactiveIntegrations,
-        pendingIntegrations,
-        blockedIntegrations,
+        total,
+        active,
+        inactive,
+        pending,
+        blocked,
       };
     } catch (error) {
       console.error("Error fetching integration stats:", error);

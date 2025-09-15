@@ -1,3 +1,4 @@
+import type { Organisation, Currency } from "@prisma/client";
 export interface BalanceOperationRequest {
   amount: number;
   source_type?: "BANK_ACCOUNT" | "VAULT" | "TILL";
@@ -54,23 +55,11 @@ export interface VaultBalanceOperationRequest {
 export interface OrgBalance {
   id: string;
   base_org_id: string;
-  base_org: {
-    id: string;
-    name: string;
-    type: string;
-  };
+  base_org: Organisation;
   dest_org_id: string;
-  dest_org: {
-    id: string;
-    name: string;
-    type: string;
-  };
+  dest_org: Organisation;
   currency_id: string;
-  currency: {
-    id: string;
-    currency_code: string;
-    currency_name: string;
-  };
+  currency: Currency;
   balance: number;
   locked_balance?: number | null;
   created_at: string;

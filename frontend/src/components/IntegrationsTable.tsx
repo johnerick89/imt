@@ -51,6 +51,24 @@ const IntegrationsTable: React.FC<IntegrationsTableProps> = ({
         cell: ({ row }) => <StatusBadge status={row.original.status} />,
       },
       {
+        accessorKey: "origin_organisation",
+        header: "Origin Organisation",
+        cell: ({ row }) => (
+          <span className="text-sm text-gray-900">
+            {row.original.origin_organisation?.name || "N/A"}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "organisation",
+        header: "Destination Organisation",
+        cell: ({ row }) => (
+          <span className="text-sm text-gray-900">
+            {row.original.organisation?.name || "N/A"}
+          </span>
+        ),
+      },
+      {
         accessorKey: "endpoint_url",
         header: "Endpoint",
         cell: ({ row }) => (

@@ -6,6 +6,7 @@ import type {
   CreateCorridorRequest,
   UpdateCorridorRequest,
   CorridorFilters,
+  CorridorStatsFilters,
 } from "../types/CorridorsTypes";
 
 class CorridorsService {
@@ -93,9 +94,13 @@ class CorridorsService {
     }
   }
 
-  async getCorridorStats(): Promise<CorridorStatsResponse> {
+  async getCorridorStats(
+    filters: CorridorStatsFilters
+  ): Promise<CorridorStatsResponse> {
     try {
-      const response = await apiClient.get("/api/v1/corridors/stats");
+      const response = await apiClient.get("/api/v1/corridors/stats", {
+        params: filters,
+      });
       return response.data;
     } catch (error: unknown) {
       const axiosError = error as {

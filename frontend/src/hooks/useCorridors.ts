@@ -4,6 +4,7 @@ import type {
   CorridorFilters,
   CreateCorridorRequest,
   UpdateCorridorRequest,
+  CorridorStatsFilters,
 } from "../types/CorridorsTypes";
 
 export const corridorKeys = {
@@ -33,10 +34,10 @@ export const useCorridor = (id: string) => {
   });
 };
 
-export const useCorridorStats = () => {
+export const useCorridorStats = (filters: CorridorStatsFilters) => {
   return useQuery({
     queryKey: corridorKeys.stats(),
-    queryFn: () => CorridorsService.getCorridorStats(),
+    queryFn: () => CorridorsService.getCorridorStats(filters),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
