@@ -200,25 +200,25 @@ const IntegrationsPage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="text-2xl font-bold text-gray-900">
-              {stats.totalIntegrations}
+              {stats.total}
             </div>
             <div className="text-sm text-gray-600">Total Integrations</div>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="text-2xl font-bold text-green-600">
-              {stats.activeIntegrations}
+              {stats.active}
             </div>
             <div className="text-sm text-gray-600">Active</div>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="text-2xl font-bold text-red-600">
-              {stats.inactiveIntegrations}
+              {stats.inactive}
             </div>
             <div className="text-sm text-gray-600">Inactive</div>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="text-2xl font-bold text-orange-600">
-              {stats.pendingIntegrations}
+              {stats.pending}
             </div>
             <div className="text-sm text-gray-600">Pending</div>
           </div>
