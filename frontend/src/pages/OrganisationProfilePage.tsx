@@ -136,7 +136,9 @@ const OrganisationProfilePage: React.FC = () => {
 
   // Corridor hooks
   const { data: corridorsData, isLoading: corridorsLoading } = useCorridors({
-    organisation_id: id || "",
+    organisation_id: user?.organisation_id || "",
+    limit: 100,
+    origin_organisation_id: user?.organisation_id || "",
   });
 
   const createCorridorMutation = useCreateCorridor();
@@ -145,7 +147,9 @@ const OrganisationProfilePage: React.FC = () => {
 
   // Charge hooks
   const { data: chargesData, isLoading: chargesLoading } = useCharges({
-    origin_organisation_id: id || "",
+    origin_organisation_id: user?.organisation_id || "",
+    limit: 100,
+    destination_organisation_id: id || "",
   });
 
   const createChargeMutation = useCreateCharge();
@@ -155,7 +159,8 @@ const OrganisationProfilePage: React.FC = () => {
   // Balance hooks
   const { data: currenciesData } = useCurrencies({ limit: 1000 });
   const { data: bankAccountsData } = useBankAccounts({
-    organisation_id: id || "",
+    organisation_id: user?.organisation_id || "",
+    limit: 100,
   });
   const { data: balanceHistoryData, isLoading: balanceHistoryLoading } =
     useOrgBalanceHistory(id || "", balanceHistoryFilters);

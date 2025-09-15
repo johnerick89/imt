@@ -51,7 +51,10 @@ const OrgBalances: React.FC = () => {
   const { data: statsData } = useOrgBalanceStats(user?.organisation_id);
   const { data: currenciesData } = useCurrencies({ limit: 1000 });
   const { data: organisationsData } = useOrganisations({ limit: 1000 });
-  const { data: bankAccountsData } = useBankAccounts({ limit: 1000 });
+  const { data: bankAccountsData } = useBankAccounts({
+    limit: 1000,
+    organisation_id: user?.organisation_id,
+  });
 
   const balances = balancesData?.data?.balances || [];
   const stats = statsData?.data;

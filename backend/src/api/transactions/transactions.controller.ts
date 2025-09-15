@@ -37,7 +37,8 @@ export class TransactionController {
       const result = await transactionService.createOutboundTransaction(
         orgId,
         validation.data,
-        userId
+        userId,
+        req.ip || ""
       );
       res.status(201).json({
         success: true,
@@ -68,7 +69,8 @@ export class TransactionController {
       const result = await transactionService.cancelTransaction(
         transactionId,
         validation.data,
-        userId
+        userId,
+        req.ip || ""
       );
       res.json(result);
     }
@@ -95,7 +97,8 @@ export class TransactionController {
       const result = await transactionService.approveTransaction(
         transactionId,
         validation.data,
-        userId
+        userId,
+        req.ip || ""
       );
       res.json(result);
     }
@@ -122,7 +125,8 @@ export class TransactionController {
       const result = await transactionService.reverseTransaction(
         transactionId,
         validation.data,
-        userId
+        userId,
+        req.ip || ""
       );
       res.json(result);
     }
@@ -234,7 +238,8 @@ export class TransactionController {
       const result = await transactionService.approveInboundTransaction(
         transactionId,
         validation.data,
-        userId
+        userId,
+        req.ip || ""
       );
 
       res.status(200).json(result);
@@ -262,7 +267,8 @@ export class TransactionController {
       const result = await transactionService.reverseInboundTransaction(
         transactionId,
         validation.data,
-        userId
+        userId,
+        req.ip || ""
       );
 
       res.status(200).json(result);

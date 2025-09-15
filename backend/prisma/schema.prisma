@@ -68,6 +68,7 @@ model User {
   transaction_parties     TransactionParty[]
   charges_payments        ChargesPayment[]
   vaults                  Vault[]
+  transaction_audits      TransactionAudit[]
 
   @@index([email])
   @@index([id])
@@ -884,17 +885,17 @@ model Transaction {
   transaction_no               String?             @db.VarChar(128)
   corridor_id                  String              @db.Uuid
   corridor                     Corridor?           @relation(fields: [corridor_id], references: [id])
-  till_id                      String              @db.Uuid
+  till_id                      String?             @db.Uuid
   till                         Till?               @relation(fields: [till_id], references: [id])
   direction                    Direction
-  customer_id                  String              @db.Uuid
+  customer_id                  String?             @db.Uuid
   customer                     Customer?           @relation("Customer", fields: [customer_id], references: [id])
   origin_amount                Decimal             @db.Decimal(22, 9)
   origin_channel_id            String              @db.Uuid
   origin_channel               TransactionChannel? @relation("OriginChannel", fields: [origin_channel_id], references: [id])
   origin_currency_id           String              @db.Uuid
   origin_currency              Currency            @relation("OriginCurrency", fields: [origin_currency_id], references: [id])
-  beneficiary_id               String              @db.Uuid
+  beneficiary_id               String?             @db.Uuid
   beneficiary                  Beneficiary?        @relation("Beneficiary", fields: [beneficiary_id], references: [id])
   dest_amount                  Decimal             @db.Decimal(22, 9)
   dest_channel_id              String              @db.Uuid
@@ -949,6 +950,7 @@ model Transaction {
   sender_trasaction_party      TransactionParty?   @relation("SenderTransactionParty", fields: [sender_trasaction_party_id], references: [id])
   receiver_trasaction_party_id String?             @db.Uuid
   receiver_trasaction_party    TransactionParty?   @relation("ReceiverTransactionParty", fields: [receiver_trasaction_party_id], references: [id])
+  transaction_audits           TransactionAudit[]
 
   @@index([corridor_id])
   @@index([till_id])
@@ -1096,6 +1098,7 @@ enum GLTransactionType {
   OUTBOUND_TRANSACTION_REVERSAL
   INBOUND_TRANSACTION
   INBOUND_TRANSACTION_REVERSAL
+  ORG_BALANCE_TOPUP
 }
 
 enum GLTransactionStatus {
@@ -1350,4 +1353,33 @@ model Parameter {
 
   @@index([name])
   @@map("parameters")
+}
+
+enum AuditAction {
+  CREATED
+  APPROVED
+  CANCELLED
+  REVERSED
+  STATUS_CHANGED
+  REMITTANCE_STATUS_CHANGED
+  REQUEST_STATUS_CHANGED
+}
+
+model TransactionAudit {
+  id             String      @id @default(uuid()) @db.Uuid
+  transaction_id String      @db.Uuid
+  transaction    Transaction @relation(fields: [transaction_id], references: [id])
+  action         AuditAction
+  user_id        String?     @db.Uuid
+  user           User?       @relation(fields: [user_id], references: [id])
+  timestamp      DateTime    @default(now())
+  details        Json? // Optional JSON field to store specifics like old/new values, e.g., { "old_status": "PENDING_APPROVAL", "new_status": "APPROVED" }
+  ip_address     String?     @db.VarChar(45) // Optional: For tracking source IP
+  notes          String?     @db.VarChar(1024) // Optional: Additional remarks
+
+  @@index([transaction_id])
+  @@index([user_id])
+  @@index([timestamp])
+  @@index([action])
+  @@map("transaction_audits")
 }

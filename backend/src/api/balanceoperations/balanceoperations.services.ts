@@ -25,7 +25,8 @@ export class BalanceOperationService {
   async prefundOrganisation(
     orgId: string,
     data: OrgBalanceOperationRequest,
-    userId: string
+    userId: string,
+    baseOrgId: string
   ): Promise<BalanceOperationResponse> {
     return await prisma.$transaction(async (tx) => {
       // Get source bank account
@@ -48,7 +49,7 @@ export class BalanceOperationService {
       // Get or create organisation balance
       let orgBalance = await tx.orgBalance.findFirst({
         where: {
-          base_org_id: orgId,
+          base_org_id: baseOrgId,
           dest_org_id: orgId, // Self-balance
           currency_id: sourceBankAccount.currency_id,
         },
@@ -58,7 +59,7 @@ export class BalanceOperationService {
         // Create new organisation balance
         orgBalance = await tx.orgBalance.create({
           data: {
-            base_org_id: orgId,
+            base_org_id: baseOrgId,
             dest_org_id: orgId,
             currency_id: sourceBankAccount.currency_id,
             balance: 0,
@@ -121,19 +122,19 @@ export class BalanceOperationService {
       const orgGlAccountId = await glTransactionService.getGlAccountForEntity(
         "ORG_BALANCE",
         orgBalance.id,
-        orgId
+        baseOrgId
       );
       const bankGlAccountId = await glTransactionService.getGlAccountForEntity(
         "BANK_ACCOUNT",
         data.source_id,
-        orgId
+        baseOrgId
       );
 
       if (orgGlAccountId && bankGlAccountId) {
         await glTransactionService.createGlTransaction(
-          orgId,
+          baseOrgId,
           {
-            transaction_type: "VAULT_DEPOSIT", // Using closest match for org prefund
+            transaction_type: "ORG_BALANCE_TOPUP", // Using closest match for org prefund
             amount: data.amount,
             currency_id: sourceBankAccount.currency_id,
             description: `Organisation prefund: ${data.description}`,

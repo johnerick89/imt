@@ -1,3 +1,14 @@
+import type { Customer } from "./CustomersTypes";
+import type { Beneficiary } from "./BeneficiariesTypes";
+import type { Charge } from "./ChargesTypes";
+import type { Organisation } from "./OrganisationsTypes";
+import type { Till } from "./TillsTypes";
+import type { Currency } from "./CurrenciesTypes";
+import type { ExchangeRate } from "./ExchangeRatesTypes";
+import type { User } from "./UsersTypes";
+import type { TransactionChannel } from "./TransactionChannelsTypes";
+import type { Corridor } from "./CorridorsTypes";
+
 export const Direction = {
   INBOUND: "INBOUND",
   OUTBOUND: "OUTBOUND",
@@ -148,77 +159,19 @@ export interface Transaction {
   destination_organisation_id: string | null;
 
   // Relations
-  corridor?: {
-    id: string;
-    name: string;
-    base_country: { id: string; name: string; country_code: string };
-    destination_country: { id: string; name: string; country_code: string };
-    base_currency: { id: string; currency_code: string; currency_name: string };
-  };
-  till?: {
-    id: string;
-    name: string;
-    organisation: { id: string; name: string };
-  };
-  customer?: {
-    id: string;
-    first_name: string;
-    last_name: string;
-    email: string;
-    phone: string;
-  };
-  origin_channel?: {
-    id: string;
-    name: string;
-    description: string;
-  };
-  origin_currency?: {
-    id: string;
-    currency_code: string;
-    currency_name: string;
-  };
-  beneficiary?: {
-    id: string;
-    name: string;
-    account_number: string;
-    bank_name: string;
-  };
-  dest_channel?: {
-    id: string;
-    name: string;
-    description: string;
-  };
-  dest_currency?: {
-    id: string;
-    currency_code: string;
-    currency_name: string;
-  };
-  exchange_rate?: {
-    id: string;
-    rate: number;
-    currency_pair: string;
-  };
-  external_exchange_rate?: {
-    id: string;
-    rate: number;
-    currency_pair: string;
-  };
-  created_by_user?: {
-    id: string;
-    first_name: string;
-    last_name: string;
-    email: string;
-  };
-  origin_organisation?: {
-    id: string;
-    name: string;
-    type: string;
-  };
-  destination_organisation?: {
-    id: string;
-    name: string;
-    type: string;
-  };
+  corridor?: Corridor;
+  till?: Till;
+  customer?: Customer;
+  origin_currency?: Currency;
+  origin_channel?: TransactionChannel;
+  beneficiary?: Beneficiary;
+  dest_channel?: TransactionChannel;
+  dest_currency?: Currency;
+  exchange_rate?: ExchangeRate;
+  external_exchange_rate?: ExchangeRate;
+  created_by_user?: User;
+  origin_organisation?: Organisation;
+  destination_organisation?: Organisation;
   transaction_charges?: TransactionCharge[];
   transaction_parties?: TransactionParty[];
 }
@@ -241,20 +194,10 @@ export interface TransactionCharge {
   internal_percentage: number | null;
   external_amount: number | null;
   external_percentage: number | null;
-
   // Relations
-  charge?: {
-    id: string;
-    name: string;
-    description: string;
-    type: ChargeType;
-    rate: number;
-    application_method: string;
-  };
-  organisation?: {
-    id: string;
-    name: string;
-  };
+  charge?: Charge;
+  organisation?: Organisation;
+  transaction?: Transaction;
 }
 
 // Create Outbound Transaction Request

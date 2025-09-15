@@ -221,24 +221,105 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
     const originAmount = parseFloat(watchedOriginAmount);
     if (isNaN(originAmount)) return { totalCharges: 0, destinationAmount: 0 };
 
-    // Calculate charges in origin currency
-    let totalCharges = 0;
-    const applicableCharges = charges.filter(
-      (charge) =>
-        charge.status === "ACTIVE" &&
-        charge.direction === "OUTBOUND" &&
-        (charge.origin_organisation_id === organisationId ||
-          !charge.origin_organisation_id)
+    // Get applicable charges and sort by type (non-TAX first, TAX last)
+    const applicableCharges = charges
+      .filter(
+        (charge) =>
+          charge.status === "ACTIVE" &&
+          charge.direction === "OUTBOUND" &&
+          (charge.origin_organisation_id === organisationId ||
+            !charge.origin_organisation_id)
+      )
+      .sort((a, b) => {
+        // Sort by type: non-TAX first, TAX last
+        if (a.type === "TAX" && b.type !== "TAX") return 1;
+        if (a.type !== "TAX" && b.type === "TAX") return -1;
+        return 0;
+      });
+
+    // Calculate charges in two passes: non-TAX first, then TAX
+    const nonTaxCharges = applicableCharges.filter(
+      (charge) => charge.type !== "TAX"
+    );
+    const taxCharges = applicableCharges.filter(
+      (charge) => charge.type === "TAX"
     );
 
-    applicableCharges.forEach((charge) => {
+    let nonTaxChargesTotal = 0;
+    let totalCharges = 0;
+
+    // Debug logging (remove in production)
+    if (import.meta.env.DEV) {
+      console.log("Charge calculation debug:", {
+        originAmount,
+        nonTaxCharges: nonTaxCharges.map((c) => ({
+          name: c.name,
+          type: c.type,
+          rate: c.rate,
+          method: c.application_method,
+        })),
+        taxCharges: taxCharges.map((c) => ({
+          name: c.name,
+          type: c.type,
+          rate: c.rate,
+          method: c.application_method,
+        })),
+      });
+    }
+
+    // First pass: Calculate non-TAX charges
+    nonTaxCharges.forEach((charge) => {
+      let chargeAmount = 0;
       if (charge.application_method === "PERCENTAGE") {
-        const chargeAmount = (originAmount * charge.rate) / 100;
-        totalCharges += chargeAmount;
+        chargeAmount = (originAmount * charge.rate) / 100;
       } else {
-        totalCharges += charge.rate;
+        chargeAmount = charge.rate;
       }
+
+      // Apply min/max limits if they exist
+      if (charge.min_amount && chargeAmount < charge.min_amount) {
+        chargeAmount = charge.min_amount;
+      }
+      if (charge.max_amount && chargeAmount > charge.max_amount) {
+        chargeAmount = charge.max_amount;
+      }
+
+      nonTaxChargesTotal += chargeAmount;
     });
+
+    // Second pass: Calculate TAX charges based on non-TAX charges total
+    taxCharges.forEach((charge) => {
+      let chargeAmount = 0;
+      if (charge.application_method === "PERCENTAGE") {
+        chargeAmount = (nonTaxChargesTotal * charge.rate) / 100; // Tax on non-tax total
+      } else {
+        chargeAmount = charge.rate;
+      }
+
+      // Apply min/max limits if they exist
+      if (charge.min_amount && chargeAmount < charge.min_amount) {
+        chargeAmount = charge.min_amount;
+      }
+      if (charge.max_amount && chargeAmount > charge.max_amount) {
+        chargeAmount = charge.max_amount;
+      }
+
+      totalCharges += chargeAmount;
+    });
+
+    // Add non-TAX charges to total
+    totalCharges += nonTaxChargesTotal;
+
+    // Debug logging for calculation steps
+    if (import.meta.env.DEV) {
+      console.log("Charge calculation steps:", {
+        originAmount,
+        nonTaxChargesTotal,
+        taxChargesTotal: totalCharges - nonTaxChargesTotal,
+        totalCharges,
+        netAmount: originAmount - totalCharges,
+      });
+    }
 
     // Calculate net amount in origin currency
     const netAmount = originAmount - totalCharges;
@@ -655,6 +736,9 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
                       ).toFixed(2)}
                       % of origin amount)
                     </span>
+                    <div className="text-xs text-gray-500 mt-1">
+                      * Tax charges calculated on other charges total
+                    </div>
                   </>
                 ) : (
                   <span className="text-gray-500">No charges applicable</span>

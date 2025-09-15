@@ -1,24 +1,12 @@
-import {
-  Direction,
-  Status,
-  RemittanceStatus,
-  RequestStatus,
-  ChargeType,
-  TransactionChargeStatus,
-  GlEntry,
-  IntegrationMethod,
-} from "@prisma/client";
 import { GlTransactionService } from "../gltransactions/gltransactions.services";
 import { BalanceOperationService } from "../balanceoperations/balanceoperations.services";
 import type {
   ITransaction,
   ITransactionCharge,
   CreateOutboundTransactionRequest,
-  UpdateTransactionRequest,
   TransactionFilters,
   TransactionListResponse,
   TransactionResponse,
-  TransactionStats,
   TransactionStatsResponse,
   CancelTransactionRequest,
   ApproveTransactionRequest,
@@ -36,7 +24,8 @@ export class TransactionService {
   async createOutboundTransaction(
     organisationId: string,
     data: CreateOutboundTransactionRequest,
-    userId: string
+    userId: string,
+    ipAddress: string
   ): Promise<OutboundTransactionResult> {
     return await prisma.$transaction(async (tx) => {
       // 1. Validate that user has an open till
@@ -72,22 +61,43 @@ export class TransactionService {
         data.till_id = userTill.till_id;
       }
 
+      // 3.1. Validate till belongs to the organisation
+      const till = await tx.till.findUnique({
+        where: {
+          id: data.till_id,
+          organisation_id: organisationId,
+          status: "ACTIVE",
+        },
+      });
+
+      if (!till) {
+        throw new Error("Till not found or does not belong to organisation");
+      }
+
       // 4. Get corridor and validate it belongs to the organisation
       const corridor = await tx.corridor.findFirst({
         where: {
           id: data.corridor_id,
-          organisation_id: organisationId,
+          origin_organisation_id: organisationId,
+          organisation_id: data.destination_organisation_id,
+          base_currency_id: data.dest_currency_id,
+          destination_country_id: data.destination_country_id,
           status: "ACTIVE",
         },
       });
 
       if (!corridor) {
         console.log(
-          "Invalid or inactive corridor:",
+          "Invalid or inactive corridor:corridor_id=",
           data.corridor_id,
+          "organisationId=",
           organisationId,
+          "dest_currency_id=",
           data.dest_currency_id,
-          data.destination_country_id
+          "destination_country_id=",
+          data.destination_country_id,
+          "destination_organisation_id=",
+          data.destination_organisation_id
         );
         throw new Error("Invalid or inactive corridor");
       }
@@ -119,6 +129,18 @@ export class TransactionService {
           customer.incorporation_country_id;
 
         if (customerCountryId && customerCountryId !== data.origin_country_id) {
+          console.log(
+            "Customer's country (nationality/residence/incorporation) must match the origin country",
+            customerCountryId,
+            "origin_country_id",
+            data.origin_country_id,
+            "nationality_id",
+            customer.nationality_id,
+            "residence_country_id",
+            customer.residence_country_id,
+            "incorporation_country_id",
+            customer.incorporation_country_id
+          );
           throw new Error(
             "Customer's country (nationality/residence/incorporation) must match the origin country"
           );
@@ -183,10 +205,8 @@ export class TransactionService {
       const chargeCalculation = await this.calculateTransactionCharges(
         data.origin_amount,
         data.origin_currency_id,
-        data.dest_currency_id,
         organisationId,
-        data.destination_organisation_id,
-        data.corridor_id
+        data.destination_organisation_id
       );
 
       // 9. Generate transaction number
@@ -251,6 +271,21 @@ export class TransactionService {
         )
       );
 
+      // 11.1. Create transaction audit
+      await tx.transactionAudit.create({
+        data: {
+          transaction_id: transaction.id,
+          action: "CREATED",
+          user_id: userId,
+          details: {
+            old_status: "PENDING_APPROVAL",
+            new_status: "PENDING",
+          },
+          ip_address: ipAddress,
+          notes: "Transaction created",
+        },
+      });
+
       // 12. Get the created transaction with relations
       const createdTransaction = await tx.transaction.findUnique({
         where: { id: transaction.id },
@@ -300,7 +335,8 @@ export class TransactionService {
   async cancelTransaction(
     transactionId: string,
     data: CancelTransactionRequest,
-    userId: string
+    userId: string,
+    ipAddress: string
   ): Promise<TransactionResponse> {
     return await prisma.$transaction(async (tx) => {
       // Get transaction
@@ -346,6 +382,24 @@ export class TransactionService {
         data: {
           status: "REJECTED",
           updated_at: new Date(),
+        },
+      });
+
+      // 12.1. Create transaction audit
+      await tx.transactionAudit.create({
+        data: {
+          transaction_id: transactionId,
+          action: "CANCELLED",
+          user_id: userId,
+          details: {
+            old_status: "PENDING",
+            new_status: "CANCELLED",
+          },
+          ip_address: ipAddress,
+          notes:
+            "Transaction cancelled" + data.reason
+              ? `${transaction.remarks || ""}\nCancelled: ${data.reason}`.trim()
+              : transaction.remarks,
         },
       });
 
@@ -397,7 +451,8 @@ export class TransactionService {
   async approveTransaction(
     transactionId: string,
     data: ApproveTransactionRequest,
-    userId: string
+    userId: string,
+    ipAddress: string
   ): Promise<TransactionResponse> {
     return await prisma.$transaction(async (tx) => {
       // Get transaction with charges
@@ -511,6 +566,25 @@ export class TransactionService {
         await this.createInboundTransaction(transaction, userId);
       }
 
+      // 13.1. Create transaction audit
+
+      await tx.transactionAudit.create({
+        data: {
+          transaction_id: transactionId,
+          action: "APPROVED",
+          user_id: userId,
+          details: {
+            old_status: "PENDING",
+            new_status: "APPROVED",
+          },
+          ip_address: ipAddress,
+          notes:
+            "Transaction approved" + data.remarks
+              ? `${transaction.remarks || ""}\nApproved: ${data.remarks}`.trim()
+              : transaction.remarks,
+        },
+      });
+
       // Get updated transaction with relations
       const result = await tx.transaction.findUnique({
         where: { id: transactionId },
@@ -559,7 +633,8 @@ export class TransactionService {
   async reverseTransaction(
     transactionId: string,
     data: ReverseTransactionRequest,
-    userId: string
+    userId: string,
+    ipAddress: string
   ): Promise<TransactionResponse> {
     return await prisma.$transaction(async (tx) => {
       // Get transaction with charges
@@ -676,6 +751,25 @@ export class TransactionService {
         data.reason,
         userId
       );
+
+      // 14.1. Create transaction audit
+
+      await tx.transactionAudit.create({
+        data: {
+          transaction_id: transactionId,
+          action: "REVERSED",
+          user_id: userId,
+          details: {
+            old_status: "APPROVED",
+            new_status: "REVERSED",
+          },
+          ip_address: ipAddress,
+          notes:
+            "Transaction reversed" + data.reason
+              ? `${transaction.remarks || ""}\nReversed: ${data.reason}`.trim()
+              : transaction.remarks,
+        },
+      });
 
       // Get updated transaction with relations
       const result = await tx.transaction.findUnique({
@@ -1097,20 +1191,19 @@ export class TransactionService {
   private async calculateTransactionCharges(
     originAmount: number,
     originCurrencyId: string,
-    destCurrencyId: string,
     originOrganisationId: string,
-    destinationOrganisationId?: string,
-    corridorId?: string
+    destinationOrganisationId?: string
   ): Promise<TransactionChargeCalculation> {
     // Get applicable charges
     const charges = await prisma.charge.findMany({
       where: {
         status: "ACTIVE",
         direction: { in: ["OUTBOUND", "BOTH"] },
+        currency_id: originCurrencyId,
+        origin_organisation_id: originOrganisationId,
         OR: [
-          { origin_organisation_id: originOrganisationId },
           { destination_organisation_id: destinationOrganisationId },
-          { origin_organisation_id: null, destination_organisation_id: null }, // Global charges
+          { destination_organisation_id: null }, // Global charges
         ],
       },
       orderBy: [
@@ -1459,6 +1552,7 @@ export class TransactionService {
       if (!customer || !beneficiary) {
         throw new Error("Customer or beneficiary not found");
       }
+      // Insert counter_party (sender and receiver) - customer becomes SENDER, beneficiary becomes RECEIVER
 
       // Get a default till for the destination organisation
       const defaultTill = await tx.till.findFirst({
@@ -1468,9 +1562,9 @@ export class TransactionService {
         },
       });
 
-      if (!defaultTill) {
-        throw new Error("No active till found for destination organisation");
-      }
+      // if (!defaultTill) {
+      //   throw new Error("No active till found for destination organisation");
+      // }
 
       // Generate transaction number for inbound transaction
       const inboundTransactionNo = await this.generateTransactionNumber(
@@ -1482,13 +1576,11 @@ export class TransactionService {
         data: {
           transaction_no: inboundTransactionNo,
           corridor_id: transaction.corridor_id,
-          till_id: defaultTill.id, // Use default till, will be updated when approved
+          till_id: defaultTill?.id, // Use default till, will be updated when approved
           direction: "INBOUND",
-          customer_id: transaction.customer_id,
           origin_amount: transaction.dest_amount, // Original amount in destination currency
-          origin_channel_id: transaction.dest_channel_id,
-          origin_currency_id: transaction.dest_currency_id,
-          beneficiary_id: transaction.beneficiary_id,
+          origin_channel_id: transaction.origin_channel_id,
+          origin_currency_id: transaction.origin_currency_id,
           dest_amount: transaction.dest_amount, // Received amount in destination currency
           dest_channel_id: transaction.dest_channel_id,
           dest_currency_id: transaction.dest_currency_id,
@@ -1506,8 +1598,8 @@ export class TransactionService {
           external_exchange_rate_id: transaction.external_exchange_rate_id,
           origin_organisation_id: transaction.origin_organisation_id,
           destination_organisation_id: transaction.destination_organisation_id,
-          origin_country_id: transaction.destination_country_id, // Reversed
-          destination_country_id: transaction.origin_country_id, // Reversed
+          origin_country_id: transaction.origin_country_id, // Reversed
+          destination_country_id: transaction.destination_country_id, // Reversed
           amount_payable: transaction.dest_amount,
           amount_receivable: transaction.dest_amount,
           status: "PENDING_APPROVAL",
@@ -1860,7 +1952,8 @@ export class TransactionService {
   async approveInboundTransaction(
     transactionId: string,
     data: ApproveTransactionRequest,
-    userId: string
+    userId: string,
+    ipAddress: string
   ): Promise<TransactionResponse> {
     return await prisma.$transaction(async (tx) => {
       // Get transaction with relations
@@ -1991,6 +2084,21 @@ export class TransactionService {
         userId
       );
 
+      // Create transaction audit
+      await tx.transactionAudit.create({
+        data: {
+          transaction_id: transactionId,
+          action: "APPROVED",
+          user_id: userId,
+          details: {
+            old_status: "PENDING_APPROVAL",
+            new_status: "APPROVED",
+          },
+          ip_address: ipAddress,
+          notes: data.remarks || "Inbound transaction approved",
+        },
+      });
+
       // Get updated transaction with relations
       const result = await tx.transaction.findUnique({
         where: { id: transactionId },
@@ -2048,7 +2156,8 @@ export class TransactionService {
   async reverseInboundTransaction(
     transactionId: string,
     data: ReverseTransactionRequest,
-    userId: string
+    userId: string,
+    ipAddress: string
   ): Promise<TransactionResponse> {
     return await prisma.$transaction(async (tx) => {
       // Get transaction with relations
@@ -2184,6 +2293,21 @@ export class TransactionService {
               created_by_user: true,
             },
           },
+        },
+      });
+
+      // Create transaction audit
+      await tx.transactionAudit.create({
+        data: {
+          transaction_id: transactionId,
+          action: "REVERSED",
+          user_id: userId,
+          details: {
+            old_status: "APPROVED",
+            new_status: "REVERSED",
+          },
+          ip_address: ipAddress,
+          notes: data.remarks || `Inbound transaction reversed: ${data.reason}`,
         },
       });
 

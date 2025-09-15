@@ -11,8 +11,9 @@ import { Button } from "../components/ui/Button";
 import { Modal } from "../components/ui/Modal";
 import { Input } from "../components/ui/Input";
 import { Textarea } from "../components/ui/Textarea";
-import { StatusBadge } from "../components/ui/StatusBadge";
 import { formatToCurrency } from "../utils/textUtils";
+import InboundTransactionsTable from "./InboundTransactionsTable";
+import ApproveTransactionModal from "./ApproveTransactionModal";
 import type {
   Transaction,
   InboundTransactionFilters,
@@ -30,7 +31,6 @@ const InboundTransactions: React.FC = () => {
     useState<Transaction | null>(null);
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showReverseModal, setShowReverseModal] = useState(false);
-  const [approveRemarks, setApproveRemarks] = useState("");
   const [reverseReason, setReverseReason] = useState("");
   const [reverseRemarks, setReverseRemarks] = useState("");
 
@@ -52,22 +52,17 @@ const InboundTransactions: React.FC = () => {
     () => transactionsData?.data?.transactions || [],
     [transactionsData]
   );
-  const pagination = useMemo(
-    () => transactionsData?.data?.pagination,
-    [transactionsData]
-  );
   const stats = statsData?.data;
 
-  const handleApprove = async () => {
+  const handleApprove = async (remarks: string) => {
     if (!selectedTransaction) return;
 
     try {
       await approveMutation.mutateAsync({
         transactionId: selectedTransaction.id,
-        data: { remarks: approveRemarks },
+        data: { remarks: remarks || undefined },
       });
       setShowApproveModal(false);
-      setApproveRemarks("");
       setSelectedTransaction(null);
     } catch (error) {
       console.error("Error approving transaction:", error);
@@ -94,26 +89,20 @@ const InboundTransactions: React.FC = () => {
     }
   };
 
-  const getSenderInfo = (transaction: Transaction) => {
-    const sender = transaction.transaction_parties?.find(
-      (party) => party.role === "SENDER"
-    );
-    return sender ? sender.name : "Unknown Sender";
+  // Table handlers
+  const handleViewTransaction = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    // You can add a view modal here if needed
   };
 
-  const getReceiverInfo = (transaction: Transaction) => {
-    const receiver = transaction.transaction_parties?.find(
-      (party) => party.role === "RECEIVER"
-    );
-    return receiver ? receiver.name : "Unknown Receiver";
+  const handleApproveTransaction = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setShowApproveModal(true);
   };
 
-  const canApprove = (transaction: Transaction) => {
-    return ["PENDING", "PENDING_APPROVAL"].includes(transaction.status);
-  };
-
-  const canReverse = (transaction: Transaction) => {
-    return transaction.status === "APPROVED";
+  const handleReverseTransaction = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setShowReverseModal(true);
   };
 
   if (isLoading) {
@@ -310,219 +299,25 @@ const InboundTransactions: React.FC = () => {
       </div>
 
       {/* Transactions Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Transaction No
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Sender
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Receiver
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Amount
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {transactions.map((transaction) => (
-                <tr key={transaction.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {transaction.transaction_no}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {getSenderInfo(transaction)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {getReceiverInfo(transaction)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {formatToCurrency(transaction.origin_amount)}{" "}
-                    {transaction.origin_currency?.currency_code}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <StatusBadge status={transaction.status} />
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {transaction.created_at
-                      ? new Date(transaction.created_at).toLocaleDateString()
-                      : "N/A"}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                    {canApprove(transaction) && (
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          setSelectedTransaction(transaction);
-                          setShowApproveModal(true);
-                        }}
-                      >
-                        Approve
-                      </Button>
-                    )}
-                    {canReverse(transaction) && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedTransaction(transaction);
-                          setShowReverseModal(true);
-                        }}
-                      >
-                        Reverse
-                      </Button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        {pagination && pagination.totalPages > 1 && (
-          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-            <div className="flex-1 flex justify-between sm:hidden">
-              <Button
-                variant="outline"
-                disabled={filters.page === 1}
-                onClick={() =>
-                  setFilters({ ...filters, page: (filters.page || 1) - 1 })
-                }
-              >
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                disabled={filters.page === pagination.totalPages}
-                onClick={() =>
-                  setFilters({ ...filters, page: (filters.page || 1) + 1 })
-                }
-              >
-                Next
-              </Button>
-            </div>
-            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-gray-700">
-                  Showing{" "}
-                  <span className="font-medium">
-                    {(pagination.page - 1) * pagination.limit + 1}
-                  </span>{" "}
-                  to{" "}
-                  <span className="font-medium">
-                    {Math.min(
-                      pagination.page * pagination.limit,
-                      pagination.total
-                    )}
-                  </span>{" "}
-                  of <span className="font-medium">{pagination.total}</span>{" "}
-                  results
-                </p>
-              </div>
-              <div>
-                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={filters.page === 1}
-                    onClick={() =>
-                      setFilters({ ...filters, page: (filters.page || 1) - 1 })
-                    }
-                  >
-                    Previous
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={filters.page === pagination.totalPages}
-                    onClick={() =>
-                      setFilters({ ...filters, page: (filters.page || 1) + 1 })
-                    }
-                  >
-                    Next
-                  </Button>
-                </nav>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      <InboundTransactionsTable
+        transactions={transactions}
+        isLoading={isLoading}
+        onView={handleViewTransaction}
+        onApprove={handleApproveTransaction}
+        onReverse={handleReverseTransaction}
+      />
 
       {/* Approve Modal */}
-      <Modal
+      <ApproveTransactionModal
         isOpen={showApproveModal}
         onClose={() => {
           setShowApproveModal(false);
-          setApproveRemarks("");
           setSelectedTransaction(null);
         }}
-        title="Approve Inbound Transaction"
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-gray-600">
-            Are you sure you want to approve this transaction?
-          </p>
-          {selectedTransaction && (
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <p>
-                <strong>Transaction:</strong>{" "}
-                {selectedTransaction.transaction_no}
-              </p>
-              <p>
-                <strong>Amount:</strong>{" "}
-                {formatToCurrency(selectedTransaction.origin_amount)}{" "}
-                {selectedTransaction.origin_currency?.currency_code}
-              </p>
-              <p>
-                <strong>Sender:</strong> {getSenderInfo(selectedTransaction)}
-              </p>
-              <p>
-                <strong>Receiver:</strong>{" "}
-                {getReceiverInfo(selectedTransaction)}
-              </p>
-            </div>
-          )}
-          <Textarea
-            placeholder="Approval remarks (optional)"
-            value={approveRemarks}
-            onChange={(e) => setApproveRemarks(e.target.value)}
-            rows={3}
-          />
-          <div className="flex justify-end space-x-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowApproveModal(false);
-                setApproveRemarks("");
-                setSelectedTransaction(null);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleApprove}
-              disabled={approveMutation.isPending}
-            >
-              {approveMutation.isPending ? "Approving..." : "Approve"}
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        onApprove={handleApprove}
+        transaction={selectedTransaction}
+        isLoading={approveMutation.isPending}
+      />
 
       {/* Reverse Modal */}
       <Modal
@@ -552,11 +347,12 @@ const InboundTransactions: React.FC = () => {
                 {selectedTransaction.origin_currency?.currency_code}
               </p>
               <p>
-                <strong>Sender:</strong> {getSenderInfo(selectedTransaction)}
+                <strong>Sender:</strong>{" "}
+                {selectedTransaction.customer?.full_name || "Unknown Sender"}
               </p>
               <p>
                 <strong>Receiver:</strong>{" "}
-                {getReceiverInfo(selectedTransaction)}
+                {selectedTransaction.beneficiary?.name || "Unknown Receiver"}
               </p>
             </div>
           )}

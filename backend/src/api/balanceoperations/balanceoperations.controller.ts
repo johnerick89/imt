@@ -24,11 +24,13 @@ export class BalanceOperationController {
       const validation = orgBalanceOperationSchema.safeParse(req.body);
 
       if (!validation.success) {
-        console.log(validation.error);
+        console.log("body", req.body);
+        console.log("validation error", validation.error);
         throw new AppError("Validation error", 400);
       }
 
       const userId = req.user?.id;
+      const baseOrgId = req.user?.organisation_id;
       if (!userId) {
         throw new AppError("User not authenticated", 401);
       }
@@ -36,7 +38,8 @@ export class BalanceOperationController {
       const result = await balanceOperationService.prefundOrganisation(
         orgId,
         validation.data,
-        userId
+        userId,
+        baseOrgId || ""
       );
       res.json(result);
     }

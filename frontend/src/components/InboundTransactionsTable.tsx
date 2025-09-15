@@ -6,23 +6,17 @@ import { Button } from "./ui/Button";
 import { formatToCurrency } from "../utils/textUtils";
 import type { Transaction } from "../types/TransactionsTypes";
 
-interface TransactionsTableProps {
+interface InboundTransactionsTableProps {
   transactions: Transaction[];
   isLoading?: boolean;
   onView?: (transaction: Transaction) => void;
-  onCancel?: (transaction: Transaction) => void;
-  onReverse?: (transaction: Transaction) => void;
   onApprove?: (transaction: Transaction) => void;
+  onReverse?: (transaction: Transaction) => void;
 }
 
-export const TransactionsTable: React.FC<TransactionsTableProps> = ({
-  transactions,
-  isLoading = false,
-  onView,
-  onCancel,
-  onReverse,
-  onApprove,
-}) => {
+export const InboundTransactionsTable: React.FC<
+  InboundTransactionsTableProps
+> = ({ transactions, isLoading = false, onView, onApprove, onReverse }) => {
   const columns: ColumnDef<Transaction>[] = [
     {
       accessorKey: "transaction_no",
@@ -50,39 +44,24 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
     },
     {
       accessorKey: "beneficiary",
-      header: "Beneficiary",
+      header: "Beneficiary (Receiver)",
       cell: ({ row }) => {
         const beneficiary = row.original.beneficiary;
         return (
           <div>
             <div className="font-medium text-gray-900">
-              {beneficiary?.name || "N/A"}
+              {beneficiary ? `${beneficiary.name}` : "N/A"}
             </div>
             <div className="text-sm text-gray-500">
-              {beneficiary?.bank_name || ""}
+              {beneficiary?.email || ""}
             </div>
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: "destination_organisation",
-      header: "Receiving Organisation",
-      cell: ({ row }) => {
-        const org = row.original.destination_organisation;
-        return (
-          <div>
-            <div className="font-medium text-gray-900">
-              {org?.name || "N/A"}
-            </div>
-            <div className="text-sm text-gray-500">{org?.type || ""}</div>
           </div>
         );
       },
     },
     {
       accessorKey: "origin_amount",
-      header: "Amount Paid",
+      header: "Origin Amount",
       cell: ({ row }) => (
         <div className="text-right">
           <div className="font-medium text-gray-900">
@@ -96,7 +75,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
     },
     {
       accessorKey: "dest_amount",
-      header: "Amount to Transfer",
+      header: "Destination Amount",
       cell: ({ row }) => (
         <div className="text-right">
           <div className="font-medium text-gray-900">
@@ -163,14 +142,11 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
       header: "Actions",
       cell: ({ row }) => {
         const transaction = row.original;
-        const canCancel =
-          ["PENDING", "PENDING_APPROVAL"].includes(transaction.status) &&
+        const canApprove =
+          transaction.status === "PENDING_APPROVAL" &&
           transaction.remittance_status === "PENDING";
         const canReverse =
           transaction.status === "APPROVED" &&
-          transaction.remittance_status === "PENDING";
-        const canApprove =
-          transaction.status === "PENDING_APPROVAL" &&
           transaction.remittance_status === "PENDING";
 
         return (
@@ -182,15 +158,6 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
             >
               View
             </Button>
-            {canCancel && (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => onCancel?.(transaction)}
-              >
-                Cancel
-              </Button>
-            )}
             {canApprove && (
               <Button
                 variant="default"
@@ -226,4 +193,4 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
   );
 };
 
-export default TransactionsTable;
+export default InboundTransactionsTable;
