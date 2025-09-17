@@ -1,3 +1,4 @@
+import type { User } from "./UsersTypes";
 export interface Role {
   id: string;
   name: string;
@@ -5,12 +6,7 @@ export interface Role {
   created_at: Date;
   updated_at: Date;
   created_by?: string | null;
-  created_by_user?: {
-    id: string;
-    first_name: string;
-    last_name: string;
-    email: string;
-  } | null;
+  created_by_user?: User | null;
   permissions?: Permission[];
 }
 

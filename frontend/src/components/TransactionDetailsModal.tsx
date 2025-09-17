@@ -140,7 +140,7 @@ export const TransactionDetailsModal: React.FC<
               </label>
               <p className="text-sm text-gray-900">
                 {transaction.customer
-                  ? `${transaction.customer.first_name} ${transaction.customer.last_name}`
+                  ? `${transaction.customer.full_name}`
                   : "N/A"}
               </p>
             </div>

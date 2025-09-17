@@ -7,43 +7,35 @@ import {
   toggleUserStatusSchema,
 } from "./users.validation";
 import { IUserResponse, IUsersListResponse } from "./users.interfaces";
+import type CustomRequest from "../../types/CustomReq.type";
+import { AppError } from "../../utils/AppError";
+import { asyncHandler } from "../../middlewares/error.middleware";
 
 const usersService = new UsersService();
 
 export class UsersController {
-  async createUser(req: Request, res: Response): Promise<void> {
-    try {
+  createUser = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const validationResult = createUserSchema.safeParse(req.body);
       if (!validationResult.success) {
-        const response: IUserResponse = {
-          success: false,
-          message: "Validation failed",
-          error: validationResult.error.issues[0]?.message || "Invalid input",
-        };
-        res.status(400).json(response);
-        return;
+        throw new AppError(
+          validationResult.error.issues[0]?.message || "Invalid input",
+          400
+        );
       }
 
       const result = await usersService.createUser(validationResult.data);
 
-      if (result.success) {
-        res.status(201).json(result);
-      } else {
-        res.status(400).json(result);
+      if (!result.success) {
+        throw new AppError(result.message || "Failed to create user", 400);
       }
-    } catch (error) {
-      console.error("Error in createUser controller:", error);
-      const response: IUserResponse = {
-        success: false,
-        message: "Internal server error",
-        error: "INTERNAL_ERROR",
-      };
-      res.status(500).json(response);
-    }
-  }
 
-  async getUsers(req: Request, res: Response): Promise<void> {
-    try {
+      res.status(201).json(result);
+    }
+  );
+
+  getUsers = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const filters = {
         search: req.query.search as string,
         role: req.query.role as string,
@@ -55,131 +47,80 @@ export class UsersController {
 
       const validationResult = userFiltersSchema.safeParse(filters);
       if (!validationResult.success) {
-        const response: IUsersListResponse = {
-          success: false,
-          message: "Validation failed",
-          error: validationResult.error.issues[0]?.message || "Invalid input",
-        };
-        res.status(400).json(response);
-        return;
+        throw new AppError(
+          validationResult.error.issues[0]?.message || "Invalid input",
+          400
+        );
       }
 
       const result = await usersService.getUsers(validationResult.data);
 
-      if (result.success) {
-        res.status(200).json(result);
-      } else {
-        res.status(400).json(result);
+      if (!result.success) {
+        throw new AppError(result.message || "Failed to get users", 400);
       }
-    } catch (error) {
-      console.error("Error in getUsers controller:", error);
-      const response: IUsersListResponse = {
-        success: false,
-        message: "Internal server error",
-        error: "INTERNAL_ERROR",
-      };
-      res.status(500).json(response);
-    }
-  }
 
-  async getUserById(req: Request, res: Response): Promise<void> {
-    try {
+      res.status(200).json(result);
+    }
+  );
+
+  getUserById = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { id } = req.params;
 
       if (!id) {
-        const response: IUserResponse = {
-          success: false,
-          message: "User ID is required",
-          error: "MISSING_ID",
-        };
-        res.status(400).json(response);
-        return;
+        throw new AppError("User ID is required", 400);
       }
 
       const result = await usersService.getUserById(id);
 
-      if (result.success) {
-        res.status(200).json(result);
-      } else {
-        res.status(404).json(result);
+      if (!result.success) {
+        throw new AppError(result.message || "Failed to get user", 400);
       }
-    } catch (error) {
-      console.error("Error in getUserById controller:", error);
-      const response: IUserResponse = {
-        success: false,
-        message: "Internal server error",
-        error: "INTERNAL_ERROR",
-      };
-      res.status(500).json(response);
-    }
-  }
 
-  async updateUser(req: Request, res: Response): Promise<void> {
-    try {
+      res.status(200).json(result);
+    }
+  );
+
+  updateUser = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { id } = req.params;
 
       if (!id) {
-        const response: IUserResponse = {
-          success: false,
-          message: "User ID is required",
-          error: "MISSING_ID",
-        };
-        res.status(400).json(response);
-        return;
+        throw new AppError("User ID is required", 400);
       }
 
       const validationResult = updateUserSchema.safeParse(req.body);
       if (!validationResult.success) {
-        const response: IUserResponse = {
-          success: false,
-          message: "Validation failed",
-          error: validationResult.error.issues[0]?.message || "Invalid input",
-        };
-        res.status(400).json(response);
-        return;
+        throw new AppError(
+          validationResult.error.issues[0]?.message || "Invalid input",
+          400
+        );
       }
 
       const result = await usersService.updateUser(id, validationResult.data);
 
-      if (result.success) {
-        res.status(200).json(result);
-      } else {
-        res.status(400).json(result);
+      if (!result.success) {
+        throw new AppError(result.message || "Failed to update user", 400);
       }
-    } catch (error) {
-      console.error("Error in updateUser controller:", error);
-      const response: IUserResponse = {
-        success: false,
-        message: "Internal server error",
-        error: "INTERNAL_ERROR",
-      };
-      res.status(500).json(response);
-    }
-  }
 
-  async toggleUserStatus(req: Request, res: Response): Promise<void> {
-    try {
+      res.status(200).json(result);
+    }
+  );
+
+  toggleUserStatus = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { id } = req.params;
 
       if (!id) {
-        const response: IUserResponse = {
-          success: false,
-          message: "User ID is required",
-          error: "MISSING_ID",
-        };
-        res.status(400).json(response);
-        return;
+        throw new AppError("User ID is required", 400);
       }
 
       const validationResult = toggleUserStatusSchema.safeParse(req.body);
       if (!validationResult.success) {
-        const response: IUserResponse = {
-          success: false,
-          message: "Validation failed",
-          error: validationResult.error.issues[0]?.message || "Invalid input",
-        };
-        res.status(400).json(response);
-        return;
+        throw new AppError(
+          validationResult.error.issues[0]?.message || "Invalid input",
+          400
+        );
       }
 
       const result = await usersService.toggleUserStatus(
@@ -187,71 +128,44 @@ export class UsersController {
         validationResult.data.status
       );
 
-      if (result.success) {
-        res.status(200).json(result);
-      } else {
-        res.status(400).json(result);
+      if (!result.success) {
+        throw new AppError(
+          result.message || "Failed to toggle user status",
+          400
+        );
       }
-    } catch (error) {
-      console.error("Error in toggleUserStatus controller:", error);
-      const response: IUserResponse = {
-        success: false,
-        message: "Internal server error",
-        error: "INTERNAL_ERROR",
-      };
-      res.status(500).json(response);
-    }
-  }
 
-  async deleteUser(req: Request, res: Response): Promise<void> {
-    try {
+      res.status(200).json(result);
+    }
+  );
+
+  deleteUser = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { id } = req.params;
 
       if (!id) {
-        const response: IUserResponse = {
-          success: false,
-          message: "User ID is required",
-          error: "MISSING_ID",
-        };
-        res.status(400).json(response);
-        return;
+        throw new AppError("User ID is required", 400);
       }
 
       const result = await usersService.deleteUser(id);
 
-      if (result.success) {
-        res.status(200).json(result);
-      } else {
-        res.status(400).json(result);
+      if (!result.success) {
+        throw new AppError(result.message || "Failed to delete user", 400);
       }
-    } catch (error) {
-      console.error("Error in deleteUser controller:", error);
-      const response: IUserResponse = {
-        success: false,
-        message: "Internal server error",
-        error: "INTERNAL_ERROR",
-      };
-      res.status(500).json(response);
-    }
-  }
 
-  async getUserStats(req: Request, res: Response): Promise<void> {
-    try {
+      res.status(200).json(result);
+    }
+  );
+
+  getUserStats = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const result = await usersService.getUserStats();
 
-      if (result.success) {
-        res.status(200).json(result);
-      } else {
-        res.status(400).json(result);
+      if (!result.success) {
+        throw new AppError(result.message || "Failed to get user stats", 400);
       }
-    } catch (error) {
-      console.error("Error in getUserStats controller:", error);
-      const response = {
-        success: false,
-        message: "Internal server error",
-        error: "INTERNAL_ERROR",
-      };
-      res.status(500).json(response);
+
+      res.status(200).json(result);
     }
-  }
+  );
 }

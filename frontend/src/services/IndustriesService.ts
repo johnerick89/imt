@@ -1,47 +1,21 @@
 import apiClient from "./AxiosBase";
-import type { IndustryFilters } from "../types/IndustriesTypes";
-
-export interface Industry {
-  id: string;
-  name: string;
-  description?: string | null;
-  created_at: Date;
-  updated_at: Date;
-}
-
-export interface IndustriesListResponse {
-  success: boolean;
-  message: string;
-  data: {
-    industries: Industry[];
-    pagination: {
-      page: number;
-      limit: number;
-      total: number;
-      totalPages: number;
-    };
-  };
-  error?: string;
-}
-
-export interface IndustryResponse {
-  success: boolean;
-  message: string;
-  data: Industry;
-  error?: string;
-}
+import type {
+  IndustryFilters,
+  IndustryListResponse,
+  IndustryResponse,
+} from "../types/IndustriesTypes";
 
 export class IndustriesService {
   static async getIndustries(
     filters: IndustryFilters = {}
-  ): Promise<IndustriesListResponse> {
+  ): Promise<IndustryListResponse> {
     const params = new URLSearchParams();
 
     if (filters.page) params.append("page", filters.page.toString());
     if (filters.limit) params.append("limit", filters.limit.toString());
     if (filters.search) params.append("search", filters.search);
 
-    const response = await apiClient.get<IndustriesListResponse>(
+    const response = await apiClient.get<IndustryListResponse>(
       `/api/v1/industries?${params.toString()}`
     );
     return response.data;

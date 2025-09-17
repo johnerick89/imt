@@ -7,6 +7,7 @@ import {
   Vault,
   Charge,
   Till,
+  GlEntry,
 } from "@prisma/client";
 
 export interface IGlAccount {
@@ -37,6 +38,7 @@ export interface IGlAccount {
   charge?: Charge | null;
   vault_id?: string | null;
   vault?: Vault | null;
+  gl_entries?: GlEntry[] | null;
 }
 
 export interface GlAccountFilters {
@@ -139,6 +141,7 @@ export interface GenerateAccountsRequest {
   generate_for_vaults?: boolean;
   generate_for_charges?: boolean;
   generate_for_org_balances?: boolean;
+  generate_for_charges_payments?: boolean;
 }
 
 export interface GenerateAccountsResponse {

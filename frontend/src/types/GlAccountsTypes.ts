@@ -1,14 +1,27 @@
+import type { Currency } from "./CurrenciesTypes";
+import type { Organisation } from "./OrganisationsTypes";
+import type { BankAccount } from "./BankAccountsTypes";
+import type { Till } from "./TillsTypes";
+import type { Charge } from "./ChargesTypes";
+import type { Vault } from "./VaultsTypes";
+import type { User } from "./UsersTypes";
+import type { GlEntry } from "./GlTransactionsTypes";
+
+export const GlAccountType = {
+  ASSET: "ASSET",
+  LIABILITY: "LIABILITY",
+  EQUITY: "EQUITY",
+  REVENUE: "REVENUE",
+  EXPENSE: "EXPENSE",
+} as const;
+export type GlAccountType = (typeof GlAccountType)[keyof typeof GlAccountType];
 export interface GlAccount {
   id: string;
   name: string;
-  type: "ASSET" | "LIABILITY" | "EQUITY" | "REVENUE" | "EXPENSE";
+  type: GlAccountType;
   balance?: number | null;
   currency_id?: string | null;
-  currency?: {
-    id: string;
-    currency_code: string;
-    currency_name: string;
-  } | null;
+  currency?: Currency | null;
   locked_balance?: number | null;
   max_balance?: number | null;
   min_balance?: number | null;
@@ -19,32 +32,25 @@ export interface GlAccount {
   created_at: string;
   updated_at: string;
   opened_by?: string | null;
-  opened_by_user?: {
-    id: string;
-    first_name: string;
-    last_name: string;
-    email: string;
-  } | null;
+  opened_by_user?: User | null;
   organisation_id?: string | null;
-  organisation?: {
-    id: string;
-    name: string;
-    type: string;
-  } | null;
+  organisation?: Organisation | null;
   bank_account_id?: string | null;
-  bank_account?: {
-    id: string;
-    name: string;
-    account_number: string;
-    bank_name: string;
-  } | null;
+  bank_account?: BankAccount | null;
+  till_id?: string | null;
+  till?: Till | null;
+  charge_id?: string | null;
+  charge?: Charge | null;
+  vault_id?: string | null;
+  vault?: Vault | null;
+  gl_entries?: GlEntry[] | null;
 }
 
 export interface GlAccountFilters {
   page?: number;
   limit?: number;
   search?: string;
-  type?: "ASSET" | "LIABILITY" | "EQUITY" | "REVENUE" | "EXPENSE";
+  type?: GlAccountType;
   currency_id?: string;
   organisation_id?: string;
   opened_by?: string;
@@ -100,7 +106,7 @@ export interface GlAccountStatsResponse {
 
 export interface CreateGlAccountRequest {
   name: string;
-  type: "ASSET" | "LIABILITY" | "EQUITY" | "REVENUE" | "EXPENSE";
+  type: GlAccountType;
   balance?: number;
   currency_id?: string;
   locked_balance?: number;
@@ -112,7 +118,7 @@ export interface CreateGlAccountRequest {
 
 export interface UpdateGlAccountRequest {
   name?: string;
-  type?: "ASSET" | "LIABILITY" | "EQUITY" | "REVENUE" | "EXPENSE";
+  type?: GlAccountType;
   balance?: number;
   currency_id?: string;
   locked_balance?: number;
@@ -130,6 +136,7 @@ export interface GenerateAccountsRequest {
   generate_for_tills?: boolean;
   generate_for_vaults?: boolean;
   generate_for_charges?: boolean;
+  generate_for_charges_payments?: boolean;
   generate_for_org_balances?: boolean;
 }
 

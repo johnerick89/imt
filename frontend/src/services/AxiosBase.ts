@@ -9,8 +9,8 @@ const apiClient = axios.create({
     "Content-Type": "application/json",
     Accept: "application/json",
   },
-  withCredentials: true, // ✅ aligned with server
-  validateStatus: (status) => status < 500,
+  withCredentials: true,
+  validateStatus: (status) => status < 500, // Allow 4xx statuses to reach interceptor
 });
 
 // Request interceptor: attach token
@@ -27,8 +27,11 @@ apiClient.interceptors.request.use(
 
 // Response interceptor: handle errors
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    return response;
+  },
   (error) => {
+    // Network or CORS errors
     if (error.code === "ERR_NETWORK" || error.message?.includes("CORS")) {
       console.error("CORS/Network Error:", error.message);
       return Promise.reject(
@@ -36,24 +39,58 @@ apiClient.interceptors.response.use(
       );
     }
 
+    // Timeout errors
     if (error.code === "ECONNABORTED") {
       console.error("Request timeout:", error.message);
       return Promise.reject(new Error("Request timed out. Please try again."));
     }
 
-    if (error.response?.status === 401) {
-      console.warn("401 Unauthorized detected.");
-      const url = error.config?.url || "";
-      if (url.includes("/auth/login") || url.includes("/auth/register")) {
-        sessionStorage.removeItem("token");
-        sessionStorage.removeItem("user");
-        if (window.location.pathname !== "/login") {
-          window.location.href = "/login";
+    // Handle 4xx errors
+    if (error.response) {
+      const { status, data } = error.response;
+      const message = data?.message || "An error occurred";
+
+      if (status === 401) {
+        console.warn("401 Unauthorized detected.");
+        const url = error.config?.url || "";
+        if (!url.includes("/auth/login") && !url.includes("/auth/register")) {
+          sessionStorage.removeItem("token");
+          sessionStorage.removeItem("user");
+          if (window.location.pathname !== "/login") {
+            window.location.href = "/login";
+          }
         }
+        return Promise.reject(
+          new Error("Session expired. Please log in again.")
+        );
       }
+
+      if (status === 400) {
+        return Promise.reject(new Error(message || "Invalid request data"));
+      }
+
+      if (status === 403) {
+        return Promise.reject(
+          new Error(message || "Forbidden: Insufficient permissions")
+        );
+      }
+
+      if (status === 404) {
+        return Promise.reject(new Error(message || "Resource not found"));
+      }
+
+      if (status === 409) {
+        return Promise.reject(
+          new Error(message || "Conflict: Resource already exists")
+        );
+      }
+
+      // Fallback for other 4xx errors
+      return Promise.reject(new Error(message || `Client error: ${status}`));
     }
 
-    return Promise.reject(error);
+    // Fallback for unexpected errors
+    return Promise.reject(new Error("An unexpected error occurred"));
   }
 );
 

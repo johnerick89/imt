@@ -10,118 +10,53 @@ import type {
 
 class UsersService {
   async getUsers(filters: UserFilters = {}): Promise<UsersListResponse> {
-    try {
-      const params = new URLSearchParams();
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          params.append(key, value.toString());
-        }
-      });
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        params.append(key, value.toString());
+      }
+    });
 
-      const response = await apiClient.get(
-        `/api/v1/users?${params.toString()}`
-      );
-      return response.data;
-    } catch (error: unknown) {
-      const axiosError = error as {
-        response?: { data?: { message?: string } };
-      };
-      throw new Error(
-        axiosError.response?.data?.message || "Failed to fetch users"
-      );
-    }
+    const response = await apiClient.get(`/api/v1/users?${params.toString()}`);
+    return response.data;
   }
 
   async getUserById(userId: string): Promise<UserResponse> {
-    try {
-      const response = await apiClient.get(`/api/v1/users/${userId}`);
-      return response.data;
-    } catch (error: unknown) {
-      const axiosError = error as {
-        response?: { data?: { message?: string } };
-      };
-      throw new Error(
-        axiosError.response?.data?.message || "Failed to fetch user"
-      );
-    }
+    const response = await apiClient.get(`/api/v1/users/${userId}`);
+    return response.data;
   }
 
   async createUser(userData: CreateUserRequest): Promise<UserResponse> {
-    try {
-      const response = await apiClient.post("/api/v1/users", userData);
-      return response.data;
-    } catch (error: unknown) {
-      const axiosError = error as {
-        response?: { data?: { message?: string } };
-      };
-      throw new Error(
-        axiosError.response?.data?.message || "Failed to create user"
-      );
-    }
+    const response = await apiClient.post("/api/v1/users", userData);
+    return response.data;
   }
 
   async updateUser(
     userId: string,
     userData: UpdateUserRequest
   ): Promise<UserResponse> {
-    try {
-      const response = await apiClient.put(`/api/v1/users/${userId}`, userData);
-      return response.data;
-    } catch (error: unknown) {
-      const axiosError = error as {
-        response?: { data?: { message?: string } };
-      };
-      throw new Error(
-        axiosError.response?.data?.message || "Failed to update user"
-      );
-    }
+    const response = await apiClient.put(`/api/v1/users/${userId}`, userData);
+    return response.data;
   }
 
   async toggleUserStatus(
     userId: string,
     status: "ACTIVE" | "INACTIVE" | "PENDING" | "BLOCKED"
   ): Promise<UserResponse> {
-    try {
-      const response = await apiClient.patch(`/api/v1/users/${userId}/status`, {
-        status,
-      });
-      return response.data;
-    } catch (error: unknown) {
-      const axiosError = error as {
-        response?: { data?: { message?: string } };
-      };
-      throw new Error(
-        axiosError.response?.data?.message || "Failed to update user status"
-      );
-    }
+    const response = await apiClient.patch(`/api/v1/users/${userId}/status`, {
+      status,
+    });
+    return response.data;
   }
 
   async deleteUser(userId: string): Promise<UserResponse> {
-    try {
-      const response = await apiClient.delete(`/api/v1/users/${userId}`);
-      return response.data;
-    } catch (error: unknown) {
-      const axiosError = error as {
-        response?: { data?: { message?: string } };
-      };
-      throw new Error(
-        axiosError.response?.data?.message || "Failed to delete user"
-      );
-    }
+    const response = await apiClient.delete(`/api/v1/users/${userId}`);
+    return response.data;
   }
 
   async getUserStats(): Promise<UserStatsResponse> {
-    try {
-      const response = await apiClient.get("/api/v1/users/stats");
-      return response.data;
-    } catch (error: unknown) {
-      const axiosError = error as {
-        response?: { data?: { message?: string } };
-      };
-      throw new Error(
-        axiosError.response?.data?.message || "Failed to fetch user stats"
-      );
-    }
+    const response = await apiClient.get("/api/v1/users/stats");
+    return response.data;
   }
 }
 

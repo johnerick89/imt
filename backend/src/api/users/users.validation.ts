@@ -19,6 +19,7 @@ export const createUserSchema = z.object({
     .string()
     .min(1, "Role is required")
     .max(20, "Role must be less than 20 characters"),
+  role_id: z.string().uuid("Invalid role ID"),
   avatar: z.string().url("Invalid avatar URL").optional(),
   phone: z.string().optional(),
   address: z.string().optional(),
@@ -42,6 +43,7 @@ export const updateUserSchema = z.object({
     .min(1, "Role is required")
     .max(20, "Role must be less than 20 characters")
     .optional(),
+  role_id: z.string().uuid("Invalid role ID").optional(),
   avatar: z.string().url("Invalid avatar URL").optional(),
   phone: z.string().optional(),
   address: z.string().optional(),
@@ -52,6 +54,7 @@ export const updateUserSchema = z.object({
 export const userFiltersSchema = z.object({
   search: z.string().optional(),
   role: z.string().optional(),
+  role_id: z.string().uuid("Invalid role ID").optional(),
   status: z.nativeEnum(UserStatus).optional(),
   organisation_id: z.string().uuid().optional(),
   page: z.number().min(1, "Page must be at least 1").optional(),

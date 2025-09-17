@@ -6,6 +6,7 @@ import type {
   UpdateGlAccountRequest,
   GenerateAccountsRequest,
 } from "../types/GlAccountsTypes";
+import { useToast } from "../contexts/ToastContext";
 
 export const useGlAccounts = (filters: GlAccountFilters) => {
   return useQuery({
@@ -31,54 +32,112 @@ export const useGlAccountStats = (organisationId?: string) => {
 
 export const useCreateGlAccount = () => {
   const queryClient = useQueryClient();
-
+  const { showSuccess, showError } = useToast();
   return useMutation({
     mutationFn: (data: CreateGlAccountRequest) =>
       GlAccountsService.createGlAccount(data),
-    onSuccess: () => {
+    onSuccess: (response) => {
+      showSuccess(
+        "GL Account Created Successfully",
+        response.message || "The GL account has been created successfully."
+      );
       queryClient.invalidateQueries({ queryKey: ["glAccounts"] });
       queryClient.invalidateQueries({ queryKey: ["glAccountStats"] });
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to create GL account";
+      showError("GL Account Creation Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };
 
 export const useUpdateGlAccount = () => {
   const queryClient = useQueryClient();
-
+  const { showSuccess, showError } = useToast();
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateGlAccountRequest }) =>
       GlAccountsService.updateGlAccount(id, data),
-    onSuccess: (_, variables) => {
+    onSuccess: (response, variables) => {
+      showSuccess(
+        "GL Account Updated Successfully",
+        response.message || "The GL account has been updated successfully."
+      );
       queryClient.invalidateQueries({ queryKey: ["glAccounts"] });
       queryClient.invalidateQueries({
         queryKey: ["glAccount", variables.id],
       });
       queryClient.invalidateQueries({ queryKey: ["glAccountStats"] });
     },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to update GL account";
+      showError("GL Account Update Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
+    },
   });
 };
 
 export const useDeleteGlAccount = () => {
   const queryClient = useQueryClient();
-
+  const { showSuccess, showError } = useToast();
   return useMutation({
     mutationFn: (id: string) => GlAccountsService.deleteGlAccount(id),
-    onSuccess: () => {
+    onSuccess: (response) => {
+      showSuccess(
+        "GL Account Deleted Successfully",
+        response.message || "The GL account has been deleted successfully."
+      );
       queryClient.invalidateQueries({ queryKey: ["glAccounts"] });
       queryClient.invalidateQueries({ queryKey: ["glAccountStats"] });
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to delete GL account";
+      showError("GL Account Deletion Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };
 
 export const useGenerateGlAccounts = () => {
   const queryClient = useQueryClient();
-
+  const { showSuccess, showError } = useToast();
   return useMutation({
     mutationFn: (data: GenerateAccountsRequest) =>
       GlAccountsService.generateGlAccounts(data),
-    onSuccess: () => {
+    onSuccess: (response) => {
+      showSuccess(
+        "GL Accounts Generated Successfully",
+        response.message || "The GL accounts have been generated successfully."
+      );
       queryClient.invalidateQueries({ queryKey: ["glAccounts"] });
       queryClient.invalidateQueries({ queryKey: ["glAccountStats"] });
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to generate GL accounts";
+      showError("GL Accounts Generation Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };

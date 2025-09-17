@@ -9,6 +9,7 @@ export interface IRole {
   created_by_user?: User | null;
   permissions?: Permission[] | null;
   users?: User[] | null;
+  role_permissions?: IRolePermission[] | null;
 }
 
 export interface IPermission {
@@ -99,8 +100,16 @@ export interface CreateRolePermissionRequest {
 export interface RolePermissionResponse {
   success: boolean;
   message: string;
-  data: RolePermission & {
+  data: IRolePermission & {
     role: Role;
     permission: Permission;
   };
+}
+
+export interface IRolePermission {
+  id: string;
+  role_id: string;
+  permission_id: string;
+  role: IRole;
+  permission: IPermission;
 }

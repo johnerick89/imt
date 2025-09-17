@@ -7,6 +7,7 @@ import type {
   ApproveChargesPaymentRequest,
   ReverseChargesPaymentRequest,
 } from "../types/ChargesPaymentTypes";
+import { useToast } from "../contexts/ToastContext";
 
 const chargesPaymentService = ChargesPaymentService.getInstance();
 
@@ -50,7 +51,7 @@ export const useChargePaymentsStats = (organisationId: string) => {
 // Hook to create charges payment
 export const useCreateChargesPayment = () => {
   const queryClient = useQueryClient();
-
+  const { showSuccess, showError } = useToast();
   return useMutation({
     mutationFn: ({
       organisationId,
@@ -59,7 +60,11 @@ export const useCreateChargesPayment = () => {
       organisationId: string;
       data: CreateChargesPaymentRequest;
     }) => chargesPaymentService.createChargesPayment(organisationId, data),
-    onSuccess: () => {
+    onSuccess: (response) => {
+      showSuccess(
+        "Charges Payment Created Successfully",
+        response.message || "The charges payment has been created successfully."
+      );
       // Invalidate and refetch pending charges and stats
       queryClient.invalidateQueries({
         queryKey: ["pendingTransactionCharges"],
@@ -73,6 +78,18 @@ export const useCreateChargesPayment = () => {
       queryClient.invalidateQueries({
         queryKey: ["chargesPayments"],
       });
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to create charges payment";
+      showError("Charges Payment Creation Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };
@@ -104,7 +121,7 @@ export const useChargesPayment = (paymentId: string) => {
 // Hook to approve charges payment
 export const useApproveChargesPayment = () => {
   const queryClient = useQueryClient();
-
+  const { showSuccess, showError } = useToast();
   return useMutation({
     mutationFn: ({
       paymentId,
@@ -113,7 +130,12 @@ export const useApproveChargesPayment = () => {
       paymentId: string;
       data: ApproveChargesPaymentRequest;
     }) => chargesPaymentService.approveChargesPayment(paymentId, data),
-    onSuccess: (data, variables) => {
+    onSuccess: (response, variables) => {
+      showSuccess(
+        "Charges Payment Approved Successfully",
+        response.message ||
+          "The charges payment has been approved successfully."
+      );
       // Invalidate and refetch charges payments
       queryClient.invalidateQueries({
         queryKey: ["chargesPayments"],
@@ -129,7 +151,22 @@ export const useApproveChargesPayment = () => {
       });
 
       // Update the specific payment in cache
-      queryClient.setQueryData(["chargesPayment", variables.paymentId], data);
+      queryClient.setQueryData(
+        ["chargesPayment", variables.paymentId],
+        response.data
+      );
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to approve charges payment";
+      showError("Charges Payment Approval Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };
@@ -137,7 +174,7 @@ export const useApproveChargesPayment = () => {
 // Hook to reverse charges payment
 export const useReverseChargesPayment = () => {
   const queryClient = useQueryClient();
-
+  const { showSuccess, showError } = useToast();
   return useMutation({
     mutationFn: ({
       paymentId,
@@ -146,7 +183,12 @@ export const useReverseChargesPayment = () => {
       paymentId: string;
       data: ReverseChargesPaymentRequest;
     }) => chargesPaymentService.reverseChargesPayment(paymentId, data),
-    onSuccess: (data, variables) => {
+    onSuccess: (response, variables) => {
+      showSuccess(
+        "Charges Payment Reversed Successfully",
+        response.message ||
+          "The charges payment has been reversed successfully."
+      );
       // Invalidate and refetch charges payments
       queryClient.invalidateQueries({
         queryKey: ["chargesPayments"],
@@ -162,7 +204,22 @@ export const useReverseChargesPayment = () => {
       });
 
       // Update the specific payment in cache
-      queryClient.setQueryData(["chargesPayment", variables.paymentId], data);
+      queryClient.setQueryData(
+        ["chargesPayment", variables.paymentId],
+        response.data
+      );
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to reverse charges payment";
+      showError("Charges Payment Reversal Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };

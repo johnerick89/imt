@@ -1,3 +1,5 @@
+import type { Organisation } from "./OrganisationsTypes";
+import type { Role } from "./RolesTypes";
 export type UserStatus = "ACTIVE" | "INACTIVE" | "PENDING" | "BLOCKED";
 
 export interface User {
@@ -6,6 +8,8 @@ export interface User {
   first_name: string;
   last_name: string;
   role: string;
+  role_id: string;
+  user_role: Role;
   avatar: string | null;
   status: "ACTIVE" | "INACTIVE" | "PENDING" | "BLOCKED";
   phone: string | null;
@@ -17,32 +21,13 @@ export interface User {
   updated_at: string;
 }
 
-export interface Organisation {
-  id: string;
-  name: string;
-  description: string | null;
-  type: "PARTNER" | "AGENCY" | "CUSTOMER";
-  integration_mode: "INTERNAL" | "EXTERNAL";
-  contact_person: string | null;
-  contact_email: string | null;
-  contact_phone: string | null;
-  contact_address: string | null;
-  contact_city: string | null;
-  contact_state: string | null;
-  contact_zip: string | null;
-  status: "ACTIVE" | "INACTIVE" | "PENDING" | "BLOCKED";
-  base_currency_id: string | null;
-  country_id: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface CreateUserRequest {
   email: string;
   password: string;
   first_name: string;
   last_name: string;
   role: string;
+  role_id: string;
   avatar?: string;
   phone?: string;
   address?: string;
@@ -55,6 +40,7 @@ export interface UpdateUserRequest {
   first_name?: string;
   last_name?: string;
   role?: string;
+  role_id?: string;
   avatar?: string;
   phone?: string;
   address?: string;

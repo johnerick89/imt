@@ -9,6 +9,7 @@ import type {
   TillFilters,
   UserTillFilters,
 } from "../types/TillsTypes";
+import { useToast } from "../contexts/ToastContext";
 
 export const tillsKeys = {
   all: ["tills"] as const,
@@ -53,40 +54,82 @@ export const useTillStats = (filters: TillFilters = {}) => {
 
 export const useCreateTill = () => {
   const queryClient = useQueryClient();
-
+  const { showSuccess, showError } = useToast();
   return useMutation({
     mutationFn: (data: CreateTillRequest) => TillsService.createTill(data),
-    onSuccess: () => {
+    onSuccess: (response) => {
+      showSuccess(
+        "Till Created Successfully",
+        response.message || "The till has been created successfully."
+      );
       queryClient.invalidateQueries({ queryKey: tillsKeys.lists() });
       queryClient.invalidateQueries({ queryKey: tillsKeys.stats() });
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to create till";
+      showError("Till Creation Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };
 
 export const useUpdateTill = () => {
   const queryClient = useQueryClient();
-
+  const { showSuccess, showError } = useToast();
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateTillRequest }) =>
       TillsService.updateTill(id, data),
-    onSuccess: (_, variables) => {
+    onSuccess: (response, variables) => {
+      showSuccess(
+        "Till Updated Successfully",
+        response.message || "The till has been updated successfully."
+      );
       queryClient.invalidateQueries({ queryKey: tillsKeys.lists() });
       queryClient.invalidateQueries({
         queryKey: tillsKeys.detail(variables.id),
       });
       queryClient.invalidateQueries({ queryKey: tillsKeys.stats() });
     },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to update till";
+      showError("Till Update Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
+    },
   });
 };
 
 export const useDeleteTill = () => {
   const queryClient = useQueryClient();
-
+  const { showSuccess, showError } = useToast();
   return useMutation({
     mutationFn: (id: string) => TillsService.deleteTill(id),
-    onSuccess: () => {
+    onSuccess: (response) => {
+      showSuccess(
+        "Till Deleted Successfully",
+        response.message || "The till has been deleted successfully."
+      );
       queryClient.invalidateQueries({ queryKey: tillsKeys.lists() });
       queryClient.invalidateQueries({ queryKey: tillsKeys.stats() });
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to delete till";
+      showError("Till Deletion Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };
@@ -94,54 +137,110 @@ export const useDeleteTill = () => {
 // Till Operations
 export const useOpenTill = () => {
   const queryClient = useQueryClient();
-
+  const { showSuccess, showError } = useToast();
   return useMutation({
     mutationFn: (id: string) => TillsService.openTill(id),
-    onSuccess: (_, variables) => {
+    onSuccess: (response, variables) => {
+      showSuccess(
+        "Till Opened Successfully",
+        response.message || "The till has been opened successfully."
+      );
       queryClient.invalidateQueries({ queryKey: tillsKeys.lists() });
       queryClient.invalidateQueries({ queryKey: tillsKeys.detail(variables) });
       queryClient.invalidateQueries({ queryKey: tillsKeys.stats() });
       queryClient.invalidateQueries({ queryKey: userTillsKeys.lists() });
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to open till";
+      showError("Till Opening Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };
 
 export const useCloseTill = () => {
   const queryClient = useQueryClient();
-
+  const { showSuccess, showError } = useToast();
   return useMutation({
     mutationFn: (id: string) => TillsService.closeTill(id),
-    onSuccess: (_, variables) => {
+    onSuccess: (response, variables) => {
+      showSuccess(
+        "Till Closed Successfully",
+        response.message || "The till has been closed successfully."
+      );
       queryClient.invalidateQueries({ queryKey: tillsKeys.lists() });
       queryClient.invalidateQueries({ queryKey: tillsKeys.detail(variables) });
       queryClient.invalidateQueries({ queryKey: tillsKeys.stats() });
       queryClient.invalidateQueries({ queryKey: userTillsKeys.lists() });
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to close till";
+      showError("Till Closing Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };
 
 export const useBlockTill = () => {
   const queryClient = useQueryClient();
-
+  const { showSuccess, showError } = useToast();
   return useMutation({
     mutationFn: (id: string) => TillsService.blockTill(id),
-    onSuccess: (_, variables) => {
+    onSuccess: (response, variables) => {
+      showSuccess(
+        "Till Blocked Successfully",
+        response.message || "The till has been blocked successfully."
+      );
       queryClient.invalidateQueries({ queryKey: tillsKeys.lists() });
       queryClient.invalidateQueries({ queryKey: tillsKeys.detail(variables) });
       queryClient.invalidateQueries({ queryKey: tillsKeys.stats() });
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to block till";
+      showError("Till Blocking Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };
 
 export const useDeactivateTill = () => {
   const queryClient = useQueryClient();
-
+  const { showSuccess, showError } = useToast();
   return useMutation({
     mutationFn: (id: string) => TillsService.deactivateTill(id),
-    onSuccess: (_, variables) => {
+    onSuccess: (response, variables) => {
+      showSuccess(
+        "Till Deactivated Successfully",
+        response.message || "The till has been deactivated successfully."
+      );
       queryClient.invalidateQueries({ queryKey: tillsKeys.lists() });
       queryClient.invalidateQueries({ queryKey: tillsKeys.detail(variables) });
       queryClient.invalidateQueries({ queryKey: tillsKeys.stats() });
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to deactivate till";
+      showError("Till Deactivation Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };
@@ -164,66 +263,136 @@ export const useUserTill = (id: string) => {
 
 export const useCreateUserTill = () => {
   const queryClient = useQueryClient();
-
+  const { showSuccess, showError } = useToast();
   return useMutation({
     mutationFn: (data: CreateUserTillRequest) =>
       UserTillsService.createUserTill(data),
-    onSuccess: () => {
+    onSuccess: (response) => {
+      showSuccess(
+        "User Till Created Successfully",
+        response.message || "The user till has been created successfully."
+      );
       queryClient.invalidateQueries({ queryKey: userTillsKeys.lists() });
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to create user till";
+      showError("User Till Creation Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };
 
 export const useUpdateUserTill = () => {
   const queryClient = useQueryClient();
-
+  const { showSuccess, showError } = useToast();
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateUserTillRequest }) =>
       UserTillsService.updateUserTill(id, data),
-    onSuccess: (_, variables) => {
+    onSuccess: (response, variables) => {
+      showSuccess(
+        "User Till Updated Successfully",
+        response.message || "The user till has been updated successfully."
+      );
       queryClient.invalidateQueries({ queryKey: userTillsKeys.lists() });
       queryClient.invalidateQueries({
         queryKey: userTillsKeys.detail(variables.id),
       });
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to update user till";
+      showError("User Till Update Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };
 
 export const useDeleteUserTill = () => {
   const queryClient = useQueryClient();
-
+  const { showSuccess, showError } = useToast();
   return useMutation({
     mutationFn: (id: string) => UserTillsService.deleteUserTill(id),
-    onSuccess: () => {
+    onSuccess: (response) => {
+      showSuccess(
+        "User Till Deleted Successfully",
+        response.message || "The user till has been deleted successfully."
+      );
       queryClient.invalidateQueries({ queryKey: userTillsKeys.lists() });
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to delete user till";
+      showError("User Till Deletion Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };
 
 export const useCloseUserTill = () => {
   const queryClient = useQueryClient();
-
+  const { showSuccess, showError } = useToast();
   return useMutation({
     mutationFn: (id: string) => UserTillsService.closeUserTill(id),
-    onSuccess: (_, variables) => {
+    onSuccess: (response, variables) => {
+      showSuccess(
+        "User Till Closed Successfully",
+        response.message || "The user till has been closed successfully."
+      );
       queryClient.invalidateQueries({ queryKey: userTillsKeys.lists() });
       queryClient.invalidateQueries({
         queryKey: userTillsKeys.detail(variables),
       });
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to close user till";
+      showError("User Till Closing Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };
 
 export const useBlockUserTill = () => {
   const queryClient = useQueryClient();
-
+  const { showSuccess, showError } = useToast();
   return useMutation({
     mutationFn: (id: string) => UserTillsService.blockUserTill(id),
-    onSuccess: (_, variables) => {
+    onSuccess: (response, variables) => {
+      showSuccess(
+        "User Till Blocked Successfully",
+        response.message || "The user till has been blocked successfully."
+      );
       queryClient.invalidateQueries({ queryKey: userTillsKeys.lists() });
       queryClient.invalidateQueries({
         queryKey: userTillsKeys.detail(variables),
       });
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to block user till";
+      showError("User Till Blocking Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };

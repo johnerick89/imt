@@ -30,6 +30,15 @@ export class AuthService {
               updated_at: true,
             },
           },
+          user_role: {
+            include: {
+              role_permissions: {
+                include: {
+                  permission: true,
+                },
+              },
+            },
+          },
         },
       });
 
@@ -64,13 +73,13 @@ export class AuthService {
       });
 
       // Generate JWT token
-      const token = generateToken(user);
+      const token = generateToken(user as unknown as IUser);
 
       return {
         success: true,
         message: "Login successful",
         token,
-        user: sanitizeUser(user),
+        user: sanitizeUser(user as unknown as IUser),
       };
     } catch (error) {
       console.error("Login error:", error);
@@ -125,13 +134,13 @@ export class AuthService {
       });
 
       // Generate JWT token
-      const token = generateToken(newUser);
+      const token = generateToken(newUser as unknown as IUser);
 
       return {
         success: true,
         message: "Registration successful",
         token,
-        user: sanitizeUser(newUser),
+        user: sanitizeUser(newUser as unknown as IUser),
       };
     } catch (error) {
       console.error("Registration error:", error);
@@ -148,7 +157,7 @@ export class AuthService {
         where: { id: userId },
       });
 
-      return user;
+      return user as unknown as IUser;
     } catch (error) {
       console.error("Get user error:", error);
       return null;

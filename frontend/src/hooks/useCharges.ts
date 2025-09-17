@@ -5,6 +5,7 @@ import type {
   UpdateChargeRequest,
   ChargeFilters,
 } from "../types/ChargesTypes";
+import { useToast } from "../contexts/ToastContext";
 
 export const chargeKeys = {
   all: ["charges"] as const,
@@ -39,39 +40,81 @@ export const useChargeStats = () => {
 
 export const useCreateCharge = () => {
   const queryClient = useQueryClient();
-
+  const { showSuccess, showError } = useToast();
   return useMutation({
     mutationFn: (data: CreateChargeRequest) =>
       ChargesService.createCharge(data),
-    onSuccess: () => {
+    onSuccess: (response) => {
+      showSuccess(
+        "Charge Created Successfully",
+        response.message || "The charge has been created successfully."
+      );
       queryClient.invalidateQueries({ queryKey: chargeKeys.lists() });
       queryClient.invalidateQueries({ queryKey: chargeKeys.stats() });
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to create charge";
+      showError("Charge Creation Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };
 
 export const useUpdateCharge = () => {
   const queryClient = useQueryClient();
-
+  const { showSuccess, showError } = useToast();
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateChargeRequest }) =>
       ChargesService.updateCharge(id, data),
-    onSuccess: (_, { id }) => {
+    onSuccess: (response, { id }) => {
+      showSuccess(
+        "Charge Updated Successfully",
+        response.message || "The charge has been updated successfully."
+      );
       queryClient.invalidateQueries({ queryKey: chargeKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: chargeKeys.lists() });
       queryClient.invalidateQueries({ queryKey: chargeKeys.stats() });
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to update charge";
+      showError("Charge Update Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };
 
 export const useDeleteCharge = () => {
   const queryClient = useQueryClient();
-
+  const { showSuccess, showError } = useToast();
   return useMutation({
     mutationFn: (id: string) => ChargesService.deleteCharge(id),
-    onSuccess: () => {
+    onSuccess: (response) => {
+      showSuccess(
+        "Charge Deleted Successfully",
+        response.message || "The charge has been deleted successfully."
+      );
       queryClient.invalidateQueries({ queryKey: chargeKeys.lists() });
       queryClient.invalidateQueries({ queryKey: chargeKeys.stats() });
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to delete charge";
+      showError("Charge Deletion Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };

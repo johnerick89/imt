@@ -5,10 +5,12 @@ import { ConfirmModal } from "../components/ConfirmModal";
 import GlAccountForm from "../components/GlAccountForm";
 import GlAccountsTable from "../components/GlAccountsTable";
 import GenerateAccountsModal from "../components/GenerateAccountsModal";
+import ViewGlAccountModal from "../components/ViewGlAccountModal";
 import { SearchableSelect } from "../components/ui/SearchableSelect";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
 import { useSession, useCurrencies } from "../hooks";
+import { usePermissions } from "../hooks/usePermissions";
 import {
   useGlAccounts,
   useGlAccountStats,
@@ -28,6 +30,12 @@ import type {
 
 const GlAccountsPage: React.FC = () => {
   const { user } = useSession();
+  const {
+    canCreateGlAccounts,
+    canEditGlAccounts,
+    canDeleteGlAccounts,
+    canGenerateGlAccounts,
+  } = usePermissions();
 
   // Filter state
   const [filters, setFilters] = useState<GlAccountFilters>({
@@ -45,6 +53,7 @@ const GlAccountsPage: React.FC = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
   const [selectedGlAccount, setSelectedGlAccount] = useState<GlAccount | null>(
     null
   );
@@ -124,6 +133,11 @@ const GlAccountsPage: React.FC = () => {
     }
   };
 
+  const openViewModal = (glAccount: GlAccount) => {
+    setSelectedGlAccount(glAccount);
+    setShowViewModal(true);
+  };
+
   const openEditModal = (glAccount: GlAccount) => {
     setSelectedGlAccount(glAccount);
     setShowEditModal(true);
@@ -159,21 +173,25 @@ const GlAccountsPage: React.FC = () => {
           <p className="text-gray-600">Manage general ledger accounts</p>
         </div>
         <div className="flex space-x-3">
-          <Button
-            onClick={() => setShowGenerateModal(true)}
-            variant="outline"
-            className="flex items-center space-x-2"
-          >
-            <FiSettings className="h-4 w-4" />
-            <span>Generate Accounts</span>
-          </Button>
-          <Button
-            onClick={() => setShowCreateModal(true)}
-            className="flex items-center space-x-2"
-          >
-            <FiPlus className="h-4 w-4" />
-            <span>Add GL Account</span>
-          </Button>
+          {canGenerateGlAccounts() && (
+            <Button
+              onClick={() => setShowGenerateModal(true)}
+              variant="outline"
+              className="flex items-center space-x-2"
+            >
+              <FiSettings className="h-4 w-4" />
+              <span>Generate Accounts</span>
+            </Button>
+          )}
+          {canCreateGlAccounts() && (
+            <Button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center space-x-2"
+            >
+              <FiPlus className="h-4 w-4" />
+              <span>Add GL Account</span>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -406,8 +424,9 @@ const GlAccountsPage: React.FC = () => {
       <div className="bg-white rounded-lg shadow">
         <GlAccountsTable
           data={glAccounts}
-          onEdit={openEditModal}
-          onDelete={openDeleteModal}
+          onView={openViewModal}
+          onEdit={canEditGlAccounts() ? openEditModal : undefined}
+          onDelete={canDeleteGlAccounts() ? openDeleteModal : undefined}
           isLoading={glAccountsLoading}
         />
       </div>
@@ -500,6 +519,16 @@ const GlAccountsPage: React.FC = () => {
         onClose={() => setShowGenerateModal(false)}
         onSubmit={handleGenerateGlAccounts}
         isLoading={generateGlAccountsMutation.isPending}
+      />
+
+      {/* View GL Account Modal */}
+      <ViewGlAccountModal
+        isOpen={showViewModal}
+        onClose={() => {
+          setShowViewModal(false);
+          setSelectedGlAccount(null);
+        }}
+        glAccountId={selectedGlAccount?.id || null}
       />
     </div>
   );

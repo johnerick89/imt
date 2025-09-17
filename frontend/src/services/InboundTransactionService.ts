@@ -1,4 +1,4 @@
-import AxiosBase from "./AxiosBase";
+import apiClient from "./AxiosBase";
 import type {
   InboundTransactionFilters,
   InboundTransactionListResponse,
@@ -10,11 +10,8 @@ import type {
 
 export class InboundTransactionService {
   private static instance: InboundTransactionService;
-  private axiosBase;
 
-  private constructor() {
-    this.axiosBase = AxiosBase;
-  }
+  private constructor() {}
 
   public static getInstance(): InboundTransactionService {
     if (!InboundTransactionService.instance) {
@@ -30,97 +27,72 @@ export class InboundTransactionService {
     organisationId: string,
     filters?: InboundTransactionFilters
   ): Promise<InboundTransactionListResponse> {
-    try {
-      const params = new URLSearchParams();
+    const params = new URLSearchParams();
 
-      if (filters) {
-        Object.entries(filters).forEach(([key, value]) => {
-          if (value !== undefined && value !== null && value !== "") {
-            params.append(key, value.toString());
-          }
-        });
-      }
-
-      const response = await this.axiosBase.get(
-        `/api/v1/transactions/organisations/${organisationId}/inbound?${params.toString()}`
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching inbound transactions:", error);
-      throw error;
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+          params.append(key, value.toString());
+        }
+      });
     }
+
+    const response = await apiClient.get(
+      `/api/v1/transactions/organisations/${organisationId}/inbound?${params.toString()}`
+    );
+    return response.data;
   }
 
   /**
-   * Get a single inbound transaction by ID
+   * Get inbound transaction by ID
    */
   async getInboundTransactionById(
     transactionId: string
   ): Promise<InboundTransactionResponse> {
-    try {
-      const response = await this.axiosBase.get(
-        `/api/v1/transactions/inbound/${transactionId}`
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching inbound transaction:", error);
-      throw error;
-    }
+    const response = await apiClient.get(
+      `/api/v1/transactions/inbound/${transactionId}`
+    );
+    return response.data;
   }
 
   /**
-   * Approve an inbound transaction
+   * Get inbound transaction stats
+   */
+  async getInboundTransactionStats(
+    organisationId: string
+  ): Promise<InboundTransactionStatsResponse> {
+    const response = await apiClient.get(
+      `/api/v1/transactions/organisations/${organisationId}/inbound-stats`
+    );
+    return response.data;
+  }
+
+  /**
+   * Approve inbound transaction
    */
   async approveInboundTransaction(
     transactionId: string,
     data: ApproveTransactionRequest
   ): Promise<InboundTransactionResponse> {
-    try {
-      const response = await this.axiosBase.post(
-        `/api/v1/transactions/inbound/${transactionId}/approve`,
-        data
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error approving inbound transaction:", error);
-      throw error;
-    }
+    const response = await apiClient.post(
+      `/api/v1/transactions/inbound/${transactionId}/approve`,
+      data
+    );
+    return response.data;
   }
 
   /**
-   * Reverse an inbound transaction
+   * Reverse inbound transaction
    */
   async reverseInboundTransaction(
     transactionId: string,
     data: ReverseTransactionRequest
   ): Promise<InboundTransactionResponse> {
-    try {
-      const response = await this.axiosBase.post(
-        `/api/v1/transactions/inbound/${transactionId}/reverse`,
-        data
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error reversing inbound transaction:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get inbound transaction stats for an organisation
-   */
-  async getInboundTransactionStats(
-    organisationId: string
-  ): Promise<InboundTransactionStatsResponse> {
-    try {
-      const response = await this.axiosBase.get(
-        `/api/v1/transactions/organisations/${organisationId}/inbound/stats`
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching inbound transaction stats:", error);
-      throw error;
-    }
+    const response = await apiClient.post(
+      `/api/v1/transactions/inbound/${transactionId}/reverse`,
+      data
+    );
+    return response.data;
   }
 }
 

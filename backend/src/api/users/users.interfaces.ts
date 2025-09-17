@@ -23,6 +23,7 @@ export interface ICreateUserRequest {
   first_name: string;
   last_name: string;
   role: string;
+  role_id: string;
   avatar?: string;
   phone?: string;
   address?: string;
@@ -34,6 +35,7 @@ export interface IUpdateUserRequest {
   first_name?: string;
   last_name?: string;
   role?: string;
+  role_id?: string;
   avatar?: string;
   phone?: string;
   address?: string;
@@ -64,6 +66,7 @@ export interface IUsersListResponse {
 export interface IUserFilters {
   search?: string;
   role?: string;
+  role_id?: string;
   status?: UserStatus;
   organisation_id?: string;
   page?: number;

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import UsersService from "../services/UsersService";
 import AuthService from "../services/AuthService";
+import { useToast } from "../contexts/ToastContext";
 import type {
   UserFilters,
   CreateUserRequest,
@@ -65,15 +66,31 @@ export const useUserStats = () => {
 // Hook to create a user
 export const useCreateUser = () => {
   const queryClient = useQueryClient();
+  const { showError, showSuccess } = useToast();
 
   return useMutation({
     mutationFn: (userData: CreateUserRequest) =>
       UsersService.createUser(userData),
-    onSuccess: () => {
+    onSuccess: (response) => {
       // Invalidate and refetch users list
       queryClient.invalidateQueries({ queryKey: userKeys.lists() });
       // Invalidate stats
       queryClient.invalidateQueries({ queryKey: userKeys.stats() });
+
+      showSuccess(
+        "User Created Successfully",
+        response.message || "The user has been created successfully."
+      );
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to create user";
+      showError("User Creation Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };
@@ -81,6 +98,7 @@ export const useCreateUser = () => {
 // Hook to update a user
 export const useUpdateUser = () => {
   const queryClient = useQueryClient();
+  const { showError, showSuccess } = useToast();
 
   return useMutation({
     mutationFn: ({
@@ -90,11 +108,26 @@ export const useUpdateUser = () => {
       userId: string;
       userData: UpdateUserRequest;
     }) => UsersService.updateUser(userId, userData),
-    onSuccess: (data, variables) => {
+    onSuccess: (response, variables) => {
       // Update the user in the cache
-      queryClient.setQueryData(userKeys.detail(variables.userId), data);
+      queryClient.setQueryData(userKeys.detail(variables.userId), response);
       // Invalidate and refetch users list
       queryClient.invalidateQueries({ queryKey: userKeys.lists() });
+
+      showSuccess(
+        "User Updated Successfully",
+        response.message || "The user has been updated successfully."
+      );
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to update user";
+      showError("User Update Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };
@@ -102,6 +135,7 @@ export const useUpdateUser = () => {
 // Hook to toggle user status
 export const useToggleUserStatus = () => {
   const queryClient = useQueryClient();
+  const { showError, showSuccess } = useToast();
 
   return useMutation({
     mutationFn: ({
@@ -111,13 +145,29 @@ export const useToggleUserStatus = () => {
       userId: string;
       status: "ACTIVE" | "INACTIVE" | "PENDING" | "BLOCKED";
     }) => UsersService.toggleUserStatus(userId, status),
-    onSuccess: (data, variables) => {
+    onSuccess: (response, variables) => {
       // Update the user in the cache
-      queryClient.setQueryData(userKeys.detail(variables.userId), data);
+      queryClient.setQueryData(userKeys.detail(variables.userId), response);
       // Invalidate and refetch users list
       queryClient.invalidateQueries({ queryKey: userKeys.lists() });
       // Invalidate stats
       queryClient.invalidateQueries({ queryKey: userKeys.stats() });
+
+      showSuccess(
+        "User Status Updated Successfully",
+        response.message ||
+          `User status has been updated to ${variables.status.toLowerCase()}.`
+      );
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to update user status";
+      showError("User Status Update Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };
@@ -125,16 +175,32 @@ export const useToggleUserStatus = () => {
 // Hook to delete a user
 export const useDeleteUser = () => {
   const queryClient = useQueryClient();
+  const { showError, showSuccess } = useToast();
 
   return useMutation({
     mutationFn: (userId: string) => UsersService.deleteUser(userId),
-    onSuccess: (_, userId) => {
+    onSuccess: (response, userId) => {
       // Remove the user from the cache
       queryClient.removeQueries({ queryKey: userKeys.detail(userId) });
       // Invalidate and refetch users list
       queryClient.invalidateQueries({ queryKey: userKeys.lists() });
       // Invalidate stats
       queryClient.invalidateQueries({ queryKey: userKeys.stats() });
+
+      showSuccess(
+        "User Deleted Successfully",
+        response.message || "The user has been deleted successfully."
+      );
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to delete user";
+      showError("User Deletion Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };

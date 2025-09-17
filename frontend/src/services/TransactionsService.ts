@@ -1,4 +1,4 @@
-import axios from "./AxiosBase";
+import apiClient from "./AxiosBase";
 import type {
   TransactionListResponse,
   TransactionResponse,
@@ -17,7 +17,7 @@ export const TransactionsService = {
     organisationId: string,
     filters: TransactionFilters
   ): Promise<TransactionListResponse> {
-    const response = await axios.get(
+    const response = await apiClient.get(
       `/api/v1/transactions/organisations/${organisationId}/transactions`,
       {
         params: filters,
@@ -30,7 +30,7 @@ export const TransactionsService = {
   async getTransactionById(
     transactionId: string
   ): Promise<TransactionResponse> {
-    const response = await axios.get(
+    const response = await apiClient.get(
       `/api/v1/transactions/transactions/${transactionId}`
     );
     return response.data;
@@ -40,7 +40,7 @@ export const TransactionsService = {
   async getTransactionStats(
     organisationId: string
   ): Promise<TransactionStatsResponse> {
-    const response = await axios.get(
+    const response = await apiClient.get(
       `/api/v1/transactions/organisations/${organisationId}/transactions/stats`
     );
     return response.data;
@@ -55,7 +55,7 @@ export const TransactionsService = {
     message: string;
     data: OutboundTransactionResult;
   }> {
-    const response = await axios.post(
+    const response = await apiClient.post(
       `/api/v1/transactions/organisations/${organisationId}/outbound`,
       data
     );
@@ -67,7 +67,7 @@ export const TransactionsService = {
     transactionId: string,
     data: CancelTransactionRequest
   ): Promise<TransactionResponse> {
-    const response = await axios.post(
+    const response = await apiClient.post(
       `/api/v1/transactions/transactions/${transactionId}/cancel`,
       data
     );
@@ -79,7 +79,7 @@ export const TransactionsService = {
     transactionId: string,
     data: ApproveTransactionRequest
   ): Promise<TransactionResponse> {
-    const response = await axios.post(
+    const response = await apiClient.post(
       `/api/v1/transactions/transactions/${transactionId}/approve`,
       data
     );
@@ -91,7 +91,7 @@ export const TransactionsService = {
     transactionId: string,
     data: ReverseTransactionRequest
   ): Promise<TransactionResponse> {
-    const response = await axios.post(
+    const response = await apiClient.post(
       `/api/v1/transactions/transactions/${transactionId}/reverse`,
       data
     );

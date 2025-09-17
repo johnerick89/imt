@@ -39,8 +39,8 @@ model User {
   created_by              String?              @db.Uuid
   countries_created       Country[]
   organisation_created    Organisation[]       @relation("CreatedByUser")
-  Integration             Integration[]
-  UserActivity            UserActivity[]
+  integrations_created    Integration[]
+  user_activities         UserActivity[]
   role_id                 String?              @db.Uuid
   user_role               Role?                @relation("UserRole", fields: [role_id], references: [id])
   created_by_roles        Role[]               @relation("RolesCreatedByUser")

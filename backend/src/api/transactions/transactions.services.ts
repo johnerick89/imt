@@ -15,6 +15,7 @@ import type {
   OutboundTransactionResult,
 } from "./transactions.interfaces";
 import { prisma } from "../../lib/prisma.lib";
+import { AppError } from "../../utils/AppError";
 
 const glTransactionService = new GlTransactionService();
 const balanceOperationService = new BalanceOperationService();
@@ -45,17 +46,26 @@ export class TransactionService {
       });
 
       if (!userTill) {
-        throw new Error("User must have an open till to create transactions");
+        throw new AppError(
+          "User must have an open till to create transactions",
+          400
+        );
       }
 
       // 2. Validate till belongs to the organisation
       if (userTill.till.organisation_id !== organisationId) {
-        throw new Error("Till does not belong to the specified organisation");
+        throw new AppError(
+          "Till does not belong to the specified organisation",
+          400
+        );
       }
 
       // 3. Validate till is the same as the one in the request
       if (userTill.till_id !== data.till_id && data.till_id !== null) {
-        throw new Error("Transaction till must match the user's open till");
+        throw new AppError(
+          "Transaction till must match the user's open till",
+          400
+        );
       }
       if (data.till_id === null) {
         data.till_id = userTill.till_id;
@@ -71,7 +81,10 @@ export class TransactionService {
       });
 
       if (!till) {
-        throw new Error("Till not found or does not belong to organisation");
+        throw new AppError(
+          "Till not found or does not belong to organisation",
+          400
+        );
       }
 
       // 4. Get corridor and validate it belongs to the organisation
@@ -99,7 +112,7 @@ export class TransactionService {
           "destination_organisation_id=",
           data.destination_organisation_id
         );
-        throw new Error("Invalid or inactive corridor");
+        throw new AppError("Invalid or inactive corridor", 400);
       }
 
       // 5. Get customer and validate it belongs to the organisation
@@ -116,8 +129,9 @@ export class TransactionService {
       });
 
       if (!customer) {
-        throw new Error(
-          "Customer not found or does not belong to organisation"
+        throw new AppError(
+          "Customer not found or does not belong to organisation",
+          400
         );
       }
 
@@ -141,8 +155,9 @@ export class TransactionService {
             "incorporation_country_id",
             customer.incorporation_country_id
           );
-          throw new Error(
-            "Customer's country (nationality/residence/incorporation) must match the origin country"
+          throw new AppError(
+            "Customer's country (nationality/residence/incorporation) must match the origin country",
+            400
           );
         }
       }
@@ -161,7 +176,10 @@ export class TransactionService {
       });
 
       if (!beneficiary) {
-        throw new Error("Beneficiary not found or does not belong to customer");
+        throw new AppError(
+          "Beneficiary not found or does not belong to customer",
+          400
+        );
       }
 
       // 6.1. Validate beneficiary country matches destination country
@@ -175,8 +193,9 @@ export class TransactionService {
           beneficiaryCountryId &&
           beneficiaryCountryId !== data.destination_country_id
         ) {
-          throw new Error(
-            "Beneficiary's country (nationality/residence/incorporation) must match the destination country"
+          throw new AppError(
+            "Beneficiary's country (nationality/residence/incorporation) must match the destination country",
+            400
           );
         }
       }
@@ -195,8 +214,9 @@ export class TransactionService {
           !orgBalance ||
           parseFloat(orgBalance.balance.toString()) < data.origin_amount
         ) {
-          throw new Error(
-            "Insufficient organisation balance for this transaction"
+          throw new AppError(
+            "Insufficient organisation balance for this transaction",
+            400
           );
         }
       }
@@ -348,17 +368,21 @@ export class TransactionService {
       });
 
       if (!transaction) {
-        throw new Error("Transaction not found");
+        throw new AppError("Transaction not found", 400);
       }
 
       // Check if transaction can be cancelled
       if (!["PENDING", "PENDING_APPROVAL"].includes(transaction.status)) {
-        throw new Error("Transaction cannot be cancelled in current status");
+        throw new AppError(
+          "Transaction cannot be cancelled in current status",
+          400
+        );
       }
 
       if (transaction.remittance_status !== "PENDING") {
-        throw new Error(
-          "Transaction cannot be cancelled when remittance status is not pending"
+        throw new AppError(
+          "Transaction cannot be cancelled when remittance status is not pending",
+          400
         );
       }
 
@@ -475,12 +499,15 @@ export class TransactionService {
       });
 
       if (!transaction) {
-        throw new Error("Transaction not found");
+        throw new AppError("Transaction not found", 400);
       }
 
       // Check if transaction can be approved
       if (!["PENDING", "PENDING_APPROVAL"].includes(transaction.status)) {
-        throw new Error("Transaction cannot be approved in current status");
+        throw new AppError(
+          "Transaction cannot be approved in current status",
+          400
+        );
       }
 
       // Update transaction status
@@ -657,17 +684,18 @@ export class TransactionService {
       });
 
       if (!transaction) {
-        throw new Error("Transaction not found");
+        throw new AppError("Transaction not found", 400);
       }
 
       // Check if transaction can be reversed
       if (transaction.status !== "APPROVED") {
-        throw new Error("Only approved transactions can be reversed");
+        throw new AppError("Only approved transactions can be reversed", 400);
       }
 
       if (transaction.remittance_status !== "PENDING") {
-        throw new Error(
-          "Transaction cannot be reversed when remittance status is not pending"
+        throw new AppError(
+          "Transaction cannot be reversed when remittance status is not pending",
+          400
         );
       }
 
@@ -1022,7 +1050,7 @@ export class TransactionService {
     });
 
     if (!transaction) {
-      throw new Error("Transaction not found");
+      throw new AppError("Transaction not found", 400);
     }
 
     return {
@@ -1527,7 +1555,7 @@ export class TransactionService {
       });
 
       if (!destinationOrg) {
-        throw new Error("Destination organisation not found");
+        throw new AppError("Destination organisation not found", 400);
       }
 
       // Get customer and beneficiary details
@@ -1550,7 +1578,7 @@ export class TransactionService {
       });
 
       if (!customer || !beneficiary) {
-        throw new Error("Customer or beneficiary not found");
+        throw new AppError("Customer or beneficiary not found", 400);
       }
       // Insert counter_party (sender and receiver) - customer becomes SENDER, beneficiary becomes RECEIVER
 
@@ -1563,7 +1591,7 @@ export class TransactionService {
       });
 
       // if (!defaultTill) {
-      //   throw new Error("No active till found for destination organisation");
+      //   throw new AppError("No active till found for destination organisation", 400   );
       // }
 
       // Generate transaction number for inbound transaction
@@ -1906,7 +1934,7 @@ export class TransactionService {
     });
 
     if (!transaction) {
-      throw new Error("Inbound transaction not found");
+      throw new AppError("Inbound transaction not found", 400);
     }
 
     return {
@@ -1970,12 +1998,15 @@ export class TransactionService {
       });
 
       if (!transaction) {
-        throw new Error("Inbound transaction not found");
+        throw new AppError("Inbound transaction not found", 400);
       }
 
       // Check if transaction can be approved
       if (!["PENDING", "PENDING_APPROVAL"].includes(transaction.status)) {
-        throw new Error("Transaction cannot be approved in current status");
+        throw new AppError(
+          "Transaction cannot be approved in current status",
+          400
+        );
       }
 
       // Get user's open till
@@ -1994,7 +2025,10 @@ export class TransactionService {
       });
 
       if (!userTill) {
-        throw new Error("User must have an open till to approve transactions");
+        throw new AppError(
+          "User must have an open till to approve transactions",
+          400
+        );
       }
 
       // Check organisation balance
@@ -2011,7 +2045,7 @@ export class TransactionService {
         parseFloat(orgBalance.balance.toString()) <
           parseFloat(transaction.origin_amount.toString())
       ) {
-        throw new Error(
+        throw new AppError(
           "Insufficient organisation balance for this transaction"
         );
       }
@@ -2174,12 +2208,15 @@ export class TransactionService {
       });
 
       if (!transaction) {
-        throw new Error("Inbound transaction not found");
+        throw new AppError("Inbound transaction not found", 400);
       }
 
       // Check if transaction can be reversed
       if (transaction.status !== "APPROVED") {
-        throw new Error("Only approved inbound transactions can be reversed");
+        throw new AppError(
+          "Only approved inbound transactions can be reversed",
+          400
+        );
       }
 
       // Update transaction status
