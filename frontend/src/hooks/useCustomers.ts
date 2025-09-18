@@ -4,6 +4,7 @@ import type {
   CreateCustomerRequest,
   UpdateCustomerRequest,
   CustomerFilters,
+  CustomerStatsFilters,
 } from "../types/CustomersTypes";
 import { useToast } from "../contexts/ToastContext";
 
@@ -32,10 +33,10 @@ export const useCustomer = (id: string) => {
   });
 };
 
-export const useCustomerStats = () => {
+export const useCustomerStats = (filters: CustomerStatsFilters) => {
   return useQuery({
     queryKey: customerKeys.stats(),
-    queryFn: () => CustomersService.getCustomerStats(),
+    queryFn: () => CustomersService.getCustomerStats(filters),
   });
 };
 

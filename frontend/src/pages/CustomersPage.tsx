@@ -40,7 +40,9 @@ const CustomersPage: React.FC = () => {
 
   const { data: customersData, isLoading: customersLoading } =
     useCustomers(filters);
-  const { data: statsData, isLoading: statsLoading } = useCustomerStats();
+  const { data: statsData, isLoading: statsLoading } = useCustomerStats({
+    organisation_id: organisationId,
+  });
   const stats = statsData?.data || null;
   const loading = customersLoading || statsLoading;
   const createCustomerMutation = useCreateCustomer();
