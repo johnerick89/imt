@@ -8,6 +8,7 @@ import type {
   UpdateUserRequest,
   UpdatePasswordRequest,
   ResetPasswordRequest,
+  UserStatsFilters,
 } from "../types/UsersTypes";
 
 // Query keys
@@ -57,10 +58,10 @@ export const useCurrentUser = () => {
 };
 
 // Hook to get user stats
-export const useUserStats = () => {
+export const useUserStats = (filters: UserStatsFilters = {}) => {
   return useQuery({
     queryKey: userKeys.stats(),
-    queryFn: () => UsersService.getUserStats(),
+    queryFn: () => UsersService.getUserStats(filters),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };

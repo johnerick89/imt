@@ -57,6 +57,10 @@ export interface UserFilters {
   limit?: number;
 }
 
+export interface UserStatsFilters {
+  organisation_id?: string;
+}
+
 export interface UsersListResponse {
   success: boolean;
   message: string;

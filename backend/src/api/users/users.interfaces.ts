@@ -79,3 +79,7 @@ export interface IUserStats {
   administrators: number;
   branches: number;
 }
+
+export interface IUserStatsFilters {
+  organisation_id?: string;
+}

@@ -7,6 +7,7 @@ import {
   toggleUserStatusSchema,
   updatePasswordSchema,
   resetPasswordSchema,
+  userStatsFiltersSchema,
 } from "./users.validation";
 import { IUserResponse, IUsersListResponse } from "./users.interfaces";
 import type CustomRequest from "../../types/CustomReq.type";
@@ -161,7 +162,14 @@ export class UsersController {
 
   getUserStats = asyncHandler(
     async (req: CustomRequest, res: Response): Promise<void> => {
-      const result = await usersService.getUserStats();
+      const validationResult = userStatsFiltersSchema.safeParse(req.query);
+      if (!validationResult.success) {
+        throw new AppError(
+          validationResult.error.issues[0]?.message || "Invalid input",
+          400
+        );
+      }
+      const result = await usersService.getUserStats(validationResult.data);
 
       if (!result.success) {
         throw new AppError(result.message || "Failed to get user stats", 400);

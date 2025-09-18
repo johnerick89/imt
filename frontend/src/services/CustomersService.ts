@@ -6,6 +6,7 @@ import type {
   CustomerListResponse,
   CustomerResponse,
   CustomerStatsResponse,
+  CustomerStatsFilters,
 } from "../types/CustomersTypes";
 
 export class CustomersService {
@@ -78,9 +79,12 @@ export class CustomersService {
     return response.data;
   }
 
-  static async getCustomerStats(): Promise<CustomerStatsResponse> {
+  static async getCustomerStats(
+    filters: CustomerStatsFilters
+  ): Promise<CustomerStatsResponse> {
     const response = await apiClient.get<CustomerStatsResponse>(
-      "/api/v1/customers/stats"
+      "/api/v1/customers/stats",
+      { params: filters }
     );
     return response.data;
   }

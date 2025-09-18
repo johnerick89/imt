@@ -165,3 +165,11 @@ export const customerFiltersSchema = z.object({
   created_by: z.string().uuid().optional(),
   status: z.enum(CustomerStatus).optional(),
 });
+
+export const customerStatsFiltersSchema = z.object({
+  organisation_id: z.string().uuid().optional(),
+});
+
+export type CustomerStatsFiltersInput = z.infer<
+  typeof customerStatsFiltersSchema
+>;

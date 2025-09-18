@@ -4,6 +4,7 @@ import {
   createCustomerSchema,
   updateCustomerSchema,
   customerFiltersSchema,
+  customerStatsFiltersSchema,
 } from "./customers.validation";
 import type CustomRequest from "../../types/CustomReq.type";
 
@@ -127,7 +128,10 @@ export class CustomerController {
 
   async getCustomerStats(req: Request, res: Response) {
     try {
-      const result = await this.customerService.getCustomerStats();
+      const validatedFilters = customerStatsFiltersSchema.parse(req.query);
+      const result = await this.customerService.getCustomerStats(
+        validatedFilters
+      );
       return res.status(200).json(result);
     } catch (error) {
       return res.status(500).json({

@@ -214,3 +214,7 @@ export interface CustomerStatsResponse {
   data: CustomerStats;
   error?: string;
 }
+
+export interface CustomerStatsFilters {
+  organisation_id?: string;
+}
