@@ -7,6 +7,7 @@ import type {
   CustomerListResponse,
   CustomerResponse,
   CustomerStats,
+  CustomerStatsFilters,
 } from "./customers.interfaces";
 
 export class CustomerService {
@@ -426,7 +427,7 @@ export class CustomerService {
     }
   }
 
-  async getCustomerStats(): Promise<{
+  async getCustomerStats(filters: CustomerStatsFilters): Promise<{
     success: boolean;
     message: string;
     data: CustomerStats;
@@ -434,12 +435,39 @@ export class CustomerService {
     try {
       const [total, individual, corporate, business, highRisk, adverseMedia] =
         await Promise.all([
-          prisma.customer.count(),
-          prisma.customer.count({ where: { customer_type: "INDIVIDUAL" } }),
-          prisma.customer.count({ where: { customer_type: "CORPORATE" } }),
-          prisma.customer.count({ where: { customer_type: "BUSINESS" } }),
-          prisma.customer.count({ where: { risk_rating: { gte: 70 } } }),
-          prisma.customer.count({ where: { has_adverse_media: true } }),
+          prisma.customer.count({
+            where: { organisation_id: filters.organisation_id },
+          }),
+          prisma.customer.count({
+            where: {
+              customer_type: "INDIVIDUAL",
+              organisation_id: filters.organisation_id,
+            },
+          }),
+          prisma.customer.count({
+            where: {
+              customer_type: "CORPORATE",
+              organisation_id: filters.organisation_id,
+            },
+          }),
+          prisma.customer.count({
+            where: {
+              customer_type: "BUSINESS",
+              organisation_id: filters.organisation_id,
+            },
+          }),
+          prisma.customer.count({
+            where: {
+              risk_rating: { gte: 70 },
+              organisation_id: filters.organisation_id,
+            },
+          }),
+          prisma.customer.count({
+            where: {
+              has_adverse_media: true,
+              organisation_id: filters.organisation_id,
+            },
+          }),
         ]);
 
       return {
