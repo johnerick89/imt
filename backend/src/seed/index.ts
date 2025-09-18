@@ -70,16 +70,26 @@ export async function seedOrganisations() {
       let createdOrganisation = await prisma.organisation.findFirst({
         where: { name: organisation.name },
       });
+      if (!createdOrganisation) {
+        createdOrganisation = await prisma.organisation.findFirst({
+          where: { type: organisation.type },
+        });
+      }
       if (createdOrganisation) {
         return createdOrganisation;
       }
       const adminUser = await prisma.user.findFirst({
         where: { email: "johndoe@example.com" },
       });
+      const country = await prisma.country.findFirst({
+        where: { code: organisation.country_code },
+      });
+      const { country_code, ...organisationData } = organisation;
       createdOrganisation = await prisma.organisation.create({
         data: {
-          ...organisation,
+          ...organisationData,
           created_by: adminUser?.id,
+          country_id: country?.id,
         },
       });
 
@@ -385,7 +395,9 @@ export async function seedDatabase(
 
   try {
     if (normalizedSeeds.length === 0) {
-      console.log("No specific seed provided. Seeding all items...");
+      console.log(
+        "No specific seed provided. Seeding all items, seeding fro API..."
+      );
       for (const key in seedFunctions) {
         await seedFunctions[key]();
         seeded.push(key);
@@ -460,5 +472,5 @@ main()
     process.exit(1);
   })
   .finally(async () => {
-    await prisma.$disconnect();
+    console.log("Seed operation completed successfully");
   });

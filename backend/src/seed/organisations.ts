@@ -17,6 +17,7 @@ const organisations = [
     contact_city: "Customer Organisation",
     contact_state: "Customer Organisation",
     contact_zip: "1234567890",
+    country_code: "KE",
   },
 ];
 
