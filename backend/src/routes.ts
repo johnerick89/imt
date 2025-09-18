@@ -99,7 +99,7 @@ router.get("/api", (req, res) => {
       transactionchannels: "/api/v1/transactionchannels",
       chargespayments: "/api/v1/chargespayments",
       reports: "/api/v1/reports",
-      seed: "/api/v1/seed",
+      // seed: "/api/v1/seed",
     },
   });
 });
