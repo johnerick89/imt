@@ -8,6 +8,7 @@ import {
   IUserStats,
   IUserResponse,
   IUsersListResponse,
+  IUserStatsFilters,
 } from "./users.interfaces";
 import { comparePassword, hashPassword } from "../auth/auth.utils";
 import {
@@ -275,16 +276,25 @@ export class UsersService {
     };
   }
 
-  async getUserStats(): Promise<{
+  async getUserStats(filters: IUserStatsFilters): Promise<{
     success: boolean;
     message: string;
     data?: IUserStats;
     error?: string;
   }> {
     const [totalUsers, activeUsers, administrators] = await Promise.all([
-      prisma.user.count(),
-      prisma.user.count({ where: { status: UserStatus.ACTIVE } }),
-      prisma.user.count({ where: { role: "Admin" } }),
+      prisma.user.count({
+        where: { organisation_id: filters.organisation_id },
+      }),
+      prisma.user.count({
+        where: {
+          status: UserStatus.ACTIVE,
+          organisation_id: filters.organisation_id,
+        },
+      }),
+      prisma.user.count({
+        where: { role: "Admin", organisation_id: filters.organisation_id },
+      }),
     ]);
 
     // For now, we'll use a placeholder for branches

@@ -58,7 +58,9 @@ const UsersPage: React.FC = () => {
     isLoading: usersLoading,
     error: usersError,
   } = useUsers(filters);
-  const { data: statsData, isLoading: statsLoading } = useUserStats();
+  const { data: statsData, isLoading: statsLoading } = useUserStats({
+    organisation_id: organisationId,
+  });
   const toggleUserStatusMutation = useToggleUserStatus();
   const deleteUserMutation = useDeleteUser();
 

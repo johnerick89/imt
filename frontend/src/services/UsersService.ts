@@ -6,6 +6,7 @@ import type {
   CreateUserRequest,
   UpdateUserRequest,
   UserStatsResponse,
+  UserStatsFilters,
 } from "../types/UsersTypes";
 
 class UsersService {
@@ -54,8 +55,10 @@ class UsersService {
     return response.data;
   }
 
-  async getUserStats(): Promise<UserStatsResponse> {
-    const response = await apiClient.get("/api/v1/users/stats");
+  async getUserStats(filters: UserStatsFilters): Promise<UserStatsResponse> {
+    const response = await apiClient.get("/api/v1/users/stats", {
+      params: filters,
+    });
     return response.data;
   }
 
