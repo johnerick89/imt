@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import RolesService from "../services/RolesService";
+import { useToast } from "../contexts/ToastContext";
 import type {
   CreateRoleRequest,
   UpdateRoleRequest,
@@ -55,12 +56,28 @@ export const usePermissions = (filters: PermissionFilters = {}) => {
 
 export const useCreateRole = () => {
   const queryClient = useQueryClient();
+  const { showError, showSuccess } = useToast();
 
   return useMutation({
     mutationFn: (data: CreateRoleRequest) => RolesService.createRole(data),
-    onSuccess: () => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: rolesKeys.lists() });
       queryClient.invalidateQueries({ queryKey: rolesKeys.stats() });
+
+      showSuccess(
+        "Role Created Successfully",
+        response.message || "The role has been created successfully."
+      );
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to create role";
+      showError("Role Creation Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };

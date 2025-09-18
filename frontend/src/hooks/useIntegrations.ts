@@ -6,6 +6,7 @@ import type {
   UpdateIntegrationRequest,
   IntegrationStatsFilters,
 } from "../types/IntegrationsTypes";
+import { useToast } from "../contexts/ToastContext";
 
 // Query keys
 export const integrationKeys = {
@@ -42,7 +43,7 @@ export const useIntegration = (id: string) => {
 export const useIntegrationStats = (filters?: IntegrationStatsFilters) => {
   return useQuery({
     queryKey: integrationKeys.stats(filters),
-    queryFn: () => IntegrationsService.getIntegrationStats(filters),
+    queryFn: () => IntegrationsService.getIntegrationStats(filters ?? {}),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
@@ -50,11 +51,15 @@ export const useIntegrationStats = (filters?: IntegrationStatsFilters) => {
 // Hook to create an integration
 export const useCreateIntegration = (filters?: IntegrationStatsFilters) => {
   const queryClient = useQueryClient();
-
+  const { showSuccess, showError } = useToast();
   return useMutation({
     mutationFn: (integrationData: CreateIntegrationRequest) =>
       IntegrationsService.createIntegration(integrationData),
-    onSuccess: () => {
+    onSuccess: (response) => {
+      showSuccess(
+        "Integration Created Successfully",
+        response.message || "The integration has been created successfully."
+      );
       // Invalidate and refetch integrations list
       queryClient.invalidateQueries({ queryKey: integrationKeys.lists() });
       // Invalidate stats
@@ -62,13 +67,23 @@ export const useCreateIntegration = (filters?: IntegrationStatsFilters) => {
         queryKey: integrationKeys.stats(filters),
       });
     },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to create integration";
+      showError("Integration Creation Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
+    },
   });
 };
 
 // Hook to update an integration
 export const useUpdateIntegration = () => {
   const queryClient = useQueryClient();
-
+  const { showSuccess, showError } = useToast();
   return useMutation({
     mutationFn: ({
       id,
@@ -77,11 +92,28 @@ export const useUpdateIntegration = () => {
       id: string;
       integrationData: UpdateIntegrationRequest;
     }) => IntegrationsService.updateIntegration(id, integrationData),
-    onSuccess: (data, variables) => {
+    onSuccess: (response, variables) => {
+      showSuccess(
+        "Integration Updated Successfully",
+        response.message || "The integration has been updated successfully."
+      );
       // Update the integration in the cache
-      queryClient.setQueryData(integrationKeys.detail(variables.id), data);
+      queryClient.setQueryData(
+        integrationKeys.detail(variables.id),
+        response.data
+      );
       // Invalidate and refetch integrations list
       queryClient.invalidateQueries({ queryKey: integrationKeys.lists() });
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to update integration";
+      showError("Integration Update Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };
@@ -89,10 +121,14 @@ export const useUpdateIntegration = () => {
 // Hook to delete an integration
 export const useDeleteIntegration = (filters?: IntegrationStatsFilters) => {
   const queryClient = useQueryClient();
-
+  const { showSuccess, showError } = useToast();
   return useMutation({
     mutationFn: (id: string) => IntegrationsService.deleteIntegration(id),
-    onSuccess: (_, id) => {
+    onSuccess: (response, id) => {
+      showSuccess(
+        "Integration Deleted Successfully",
+        response.message || "The integration has been deleted successfully."
+      );
       // Remove the integration from the cache
       queryClient.removeQueries({ queryKey: integrationKeys.detail(id) });
       // Invalidate and refetch integrations list
@@ -101,6 +137,16 @@ export const useDeleteIntegration = (filters?: IntegrationStatsFilters) => {
       queryClient.invalidateQueries({
         queryKey: integrationKeys.stats(filters),
       });
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to delete integration";
+      showError("Integration Deletion Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };

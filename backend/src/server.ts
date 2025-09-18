@@ -44,6 +44,14 @@ app.use(
   })
 );
 
+// const corsConfig = {
+//   credentials: true,
+//   origin: true,
+//   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+// };
+
+// app.use(cors(corsConfig));
+
 // Security + utilities
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cookieParser());

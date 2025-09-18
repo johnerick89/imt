@@ -26,9 +26,14 @@ const CustomersTable: React.FC<CustomersTableProps> = ({
       accessorKey: "full_name",
       header: "Full Name",
       cell: ({ row }: { row: { original: Customer } }) => (
-        <div className="font-medium text-gray-900">
-          {row.original.full_name}
-        </div>
+        <button
+          onClick={() => onView(row.original)}
+          className="text-left w-full p-2 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          <div className="font-medium text-blue-600 hover:text-blue-800">
+            {row.original.full_name}
+          </div>
+        </button>
       ),
     },
     {
@@ -60,33 +65,17 @@ const CustomersTable: React.FC<CustomersTableProps> = ({
       accessorKey: "organisation.name",
       header: "Organisation",
       cell: ({ row }: { row: { original: Customer } }) => (
-        <div className="text-gray-900">{row.original.organisation.name}</div>
+        <div className="text-gray-900">{row.original?.organisation?.name}</div>
       ),
     },
     {
       accessorKey: "branch.name",
       header: "Branch",
       cell: ({ row }: { row: { original: Customer } }) => (
-        <div className="text-gray-900">{row.original.branch.name}</div>
+        <div className="text-gray-900">{row.original?.branch?.name}</div>
       ),
     },
-    {
-      accessorKey: "risk_rating",
-      header: "Risk Rating",
-      cell: ({ row }: { row: { original: Customer } }) => (
-        <div
-          className={`font-medium ${
-            row.original.risk_rating >= 70
-              ? "text-red-600"
-              : row.original.risk_rating >= 40
-              ? "text-yellow-600"
-              : "text-green-600"
-          }`}
-        >
-          {row.original.risk_rating}
-        </div>
-      ),
-    },
+
     {
       accessorKey: "registration_date",
       header: "Registration Date",

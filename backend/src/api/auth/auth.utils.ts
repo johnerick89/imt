@@ -28,6 +28,7 @@ export const generateToken = (user: IUser): string => {
     phone: user.phone || "",
     address: user.address || "",
     organisation_id: user.organisation_id || "",
+    role_id: user.role_id || "",
   };
 
   return jwt.sign(payload, JWT_SECRET, {
@@ -55,5 +56,7 @@ export const sanitizeUser = (user: IUser): IAuthUser => {
     phone: user.phone || "",
     address: user.address || "",
     organisation_id: user.organisation_id || "",
+    user_role: user.user_role || null,
+    role_id: user.role_id || "",
   };
 };

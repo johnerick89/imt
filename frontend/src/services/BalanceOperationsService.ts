@@ -1,4 +1,4 @@
-import axios from "./AxiosBase";
+import apiClient from "./AxiosBase";
 import type {
   OrgBalanceListResponse,
   OrgBalanceStatsResponse,
@@ -17,9 +17,12 @@ export const BalanceOperationsService = {
   async getOrgBalances(
     filters: OrgBalanceFilters
   ): Promise<OrgBalanceListResponse> {
-    const response = await axios.get("/api/v1/balance/organisations/balances", {
-      params: filters,
-    });
+    const response = await apiClient.get(
+      "/api/v1/balance/organisations/balances",
+      {
+        params: filters,
+      }
+    );
     return response.data;
   },
 
@@ -27,7 +30,7 @@ export const BalanceOperationsService = {
     organisationId?: string
   ): Promise<OrgBalanceStatsResponse> {
     const params = organisationId ? { organisation_id: organisationId } : {};
-    const response = await axios.get(
+    const response = await apiClient.get(
       "/api/v1/balance/organisations/balances/stats",
       {
         params,
@@ -40,7 +43,7 @@ export const BalanceOperationsService = {
     orgId: string,
     data: PrefundRequest
   ): Promise<BalanceOperationResponse> {
-    const response = await axios.post(
+    const response = await apiClient.post(
       `/api/v1/balance/organisations/${orgId}/prefund`,
       data
     );
@@ -52,7 +55,7 @@ export const BalanceOperationsService = {
     tillId: string,
     data: TillTopupRequest
   ): Promise<BalanceOperationResponse> {
-    const response = await axios.post(
+    const response = await apiClient.post(
       `/api/v1/balance/tills/${tillId}/topup`,
       data
     );
@@ -63,7 +66,7 @@ export const BalanceOperationsService = {
     tillId: string,
     data: TillTopupRequest
   ): Promise<BalanceOperationResponse> {
-    const response = await axios.post(
+    const response = await apiClient.post(
       `/api/v1/balance/tills/${tillId}/withdraw`,
       data
     );
@@ -75,7 +78,7 @@ export const BalanceOperationsService = {
     vaultId: string,
     data: VaultTopupRequest
   ): Promise<BalanceOperationResponse> {
-    const response = await axios.post(
+    const response = await apiClient.post(
       `/api/v1/balance/vaults/${vaultId}/topup`,
       data
     );
@@ -86,7 +89,7 @@ export const BalanceOperationsService = {
     vaultId: string,
     data: VaultTopupRequest
   ): Promise<BalanceOperationResponse> {
-    const response = await axios.post(
+    const response = await apiClient.post(
       `/api/v1/balance/vaults/${vaultId}/withdraw`,
       data
     );
@@ -98,7 +101,7 @@ export const BalanceOperationsService = {
     orgId: string,
     filters: BalanceHistoryFilters = {}
   ): Promise<BalanceHistoryResponse> {
-    const response = await axios.get(
+    const response = await apiClient.get(
       `/api/v1/balance/organisations/${orgId}/balance-history`,
       { params: filters }
     );
@@ -109,7 +112,7 @@ export const BalanceOperationsService = {
     tillId: string,
     filters: BalanceHistoryFilters = {}
   ): Promise<BalanceHistoryResponse> {
-    const response = await axios.get(
+    const response = await apiClient.get(
       `/api/v1/balance/tills/${tillId}/balance-history`,
       { params: filters }
     );
@@ -120,7 +123,7 @@ export const BalanceOperationsService = {
     vaultId: string,
     filters: BalanceHistoryFilters = {}
   ): Promise<BalanceHistoryResponse> {
-    const response = await axios.get(
+    const response = await apiClient.get(
       `/api/v1/balance/vaults/${vaultId}/balance-history`,
       { params: filters }
     );
@@ -132,7 +135,7 @@ export const BalanceOperationsService = {
     orgId: string,
     data: OpeningBalanceRequest
   ): Promise<BalanceOperationResponse> {
-    const response = await axios.post(
+    const response = await apiClient.post(
       `/api/v1/balance/organisations/${orgId}/opening-balance`,
       data
     );

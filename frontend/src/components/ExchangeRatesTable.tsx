@@ -31,15 +31,18 @@ const ExchangeRatesTable: React.FC<ExchangeRatesTableProps> = ({
         accessorKey: "name",
         header: "Exchange Rate",
         cell: ({ row }) => (
-          <div>
-            <div className="font-medium text-gray-900">
+          <button
+            onClick={() => onView(row.original)}
+            className="text-left w-full p-2 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <div className="font-medium text-blue-600 hover:text-blue-800">
               {row.original.name || "Unnamed Rate"}
             </div>
             <div className="text-sm text-gray-500">
               {row.original.from_currency?.currency_code} →{" "}
               {row.original.to_currency?.currency_code}
             </div>
-          </div>
+          </button>
         ),
       },
       {

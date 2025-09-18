@@ -11,7 +11,7 @@ import {
   GenerateAccountsRequest,
   GenerateAccountsResponse,
 } from "./glaccounts.interfaces";
-
+import { GlAccountType } from "@prisma/client";
 export class GlAccountService {
   // Create GL Account
   async createGlAccount(
@@ -199,6 +199,11 @@ export class GlAccountService {
           charge: true,
           vault: true,
           till: true,
+          gl_entries: {
+            include: {
+              gl_transaction: true,
+            },
+          },
         },
       });
 
@@ -464,6 +469,7 @@ export class GlAccountService {
         generate_for_vaults,
         generate_for_charges,
         generate_for_org_balances,
+        generate_for_charges_payments,
       } = data;
 
       const generatedAccounts: IGlAccount[] = [];
@@ -632,7 +638,7 @@ export class GlAccountService {
         }
 
         // Generate for Charges
-        if (generate_for_charges) {
+        if (generate_for_charges || generate_for_charges_payments) {
           const charges = await tx.charge.findMany({
             where: {
               OR: [
@@ -648,6 +654,7 @@ export class GlAccountService {
               where: {
                 charge_id: charge.id,
                 organisation_id,
+                type: GlAccountType.REVENUE,
               },
             });
 
@@ -685,6 +692,53 @@ export class GlAccountService {
                   ? parseFloat(glAccount.min_balance.toString())
                   : null,
               });
+            }
+
+            // Generate EXPENSE accounts for charges_payment
+            if (generate_for_charges_payments) {
+              const existingExpenseAccount = await tx.glAccount.findFirst({
+                where: {
+                  charge_id: charge.id,
+                  organisation_id,
+                  type: GlAccountType.EXPENSE,
+                },
+              });
+
+              if (!existingExpenseAccount) {
+                const expenseGlAccount = await tx.glAccount.create({
+                  data: {
+                    name: `Charge Payment - ${charge.name}`,
+                    type: "EXPENSE",
+                    balance: 0,
+                    currency_id: charge.currency_id,
+                    organisation_id,
+                    opened_by: userId,
+                    charge_id: charge.id,
+                  },
+                  include: {
+                    currency: true,
+                    organisation: true,
+                    opened_by_user: true,
+                    charge: true,
+                  },
+                });
+
+                generatedAccounts.push({
+                  ...expenseGlAccount,
+                  balance: expenseGlAccount.balance
+                    ? parseFloat(expenseGlAccount.balance.toString())
+                    : null,
+                  locked_balance: expenseGlAccount.locked_balance
+                    ? parseFloat(expenseGlAccount.locked_balance.toString())
+                    : null,
+                  max_balance: expenseGlAccount.max_balance
+                    ? parseFloat(expenseGlAccount.max_balance.toString())
+                    : null,
+                  min_balance: expenseGlAccount.min_balance
+                    ? parseFloat(expenseGlAccount.min_balance.toString())
+                    : null,
+                });
+              }
             }
           }
         }

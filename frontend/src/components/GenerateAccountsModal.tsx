@@ -25,6 +25,7 @@ const GenerateAccountsModal: React.FC<GenerateAccountsModalProps> = ({
     generate_for_tills: true,
     generate_for_vaults: true,
     generate_for_charges: true,
+    generate_for_charges_payments: true,
     generate_for_org_balances: true,
   });
 
@@ -35,6 +36,7 @@ const GenerateAccountsModal: React.FC<GenerateAccountsModalProps> = ({
       generate_for_tills: true,
       generate_for_vaults: true,
       generate_for_charges: true,
+      generate_for_charges_payments: true,
       generate_for_org_balances: true,
     },
   });
@@ -54,6 +56,7 @@ const GenerateAccountsModal: React.FC<GenerateAccountsModalProps> = ({
       generate_for_tills: true,
       generate_for_vaults: true,
       generate_for_charges: true,
+      generate_for_charges_payments: true,
       generate_for_org_balances: true,
     });
     onClose();
@@ -79,6 +82,18 @@ const GenerateAccountsModal: React.FC<GenerateAccountsModalProps> = ({
             Generate accounts for:
           </label>
           <div className="space-y-3">
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={selectedOptions.generate_for_org_balances}
+                onChange={() => handleOptionChange("generate_for_org_balances")}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                disabled={isLoading}
+              />
+              <span className="ml-2 text-sm text-gray-700">
+                Organisation Balances (Asset accounts)
+              </span>
+            </label>
             <label className="flex items-center">
               <input
                 type="checkbox"
@@ -136,13 +151,15 @@ const GenerateAccountsModal: React.FC<GenerateAccountsModalProps> = ({
             <label className="flex items-center">
               <input
                 type="checkbox"
-                checked={selectedOptions.generate_for_org_balances}
-                onChange={() => handleOptionChange("generate_for_org_balances")}
+                checked={selectedOptions.generate_for_charges_payments}
+                onChange={() =>
+                  handleOptionChange("generate_for_charges_payments")
+                }
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 disabled={isLoading}
               />
               <span className="ml-2 text-sm text-gray-700">
-                Organisation Balances (Liability accounts)
+                Charges Payments (Expense accounts)
               </span>
             </label>
           </div>

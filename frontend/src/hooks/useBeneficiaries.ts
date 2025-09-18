@@ -5,6 +5,7 @@ import type {
   UpdateBeneficiaryRequest,
   CreateBeneficiaryRequest,
 } from "../types/BeneficiariesTypes";
+import { useToast } from "../contexts/ToastContext";
 
 export const beneficiariesKeys = {
   all: ["beneficiaries"] as const,
@@ -43,20 +44,34 @@ export const useBeneficiaryStats = () => {
 
 export const useCreateBeneficiary = () => {
   const queryClient = useQueryClient();
-
+  const { showSuccess, showError } = useToast();
   return useMutation({
     mutationFn: (data: CreateBeneficiaryRequest) =>
       BeneficiariesService.createBeneficiary(data),
-    onSuccess: () => {
+    onSuccess: (response) => {
+      showSuccess(
+        "Beneficiary Created Successfully",
+        response.message || "The beneficiary has been created successfully."
+      );
       queryClient.invalidateQueries({ queryKey: beneficiariesKeys.lists() });
       queryClient.invalidateQueries({ queryKey: beneficiariesKeys.stats() });
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to create beneficiary";
+      showError("Beneficiary Creation Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };
 
 export const useUpdateBeneficiary = () => {
   const queryClient = useQueryClient();
-
+  const { showSuccess, showError } = useToast();
   return useMutation({
     mutationFn: ({
       id,
@@ -65,24 +80,52 @@ export const useUpdateBeneficiary = () => {
       id: string;
       data: UpdateBeneficiaryRequest;
     }) => BeneficiariesService.updateBeneficiary(id, data),
-    onSuccess: (_, variables) => {
+    onSuccess: (response, variables) => {
+      showSuccess(
+        "Beneficiary Updated Successfully",
+        response.message || "The beneficiary has been updated successfully."
+      );
       queryClient.invalidateQueries({ queryKey: beneficiariesKeys.lists() });
       queryClient.invalidateQueries({
         queryKey: beneficiariesKeys.detail(variables.id),
       });
       queryClient.invalidateQueries({ queryKey: beneficiariesKeys.stats() });
     },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to update beneficiary";
+      showError("Beneficiary Update Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
+    },
   });
 };
 
 export const useDeleteBeneficiary = () => {
   const queryClient = useQueryClient();
-
+  const { showSuccess, showError } = useToast();
   return useMutation({
     mutationFn: BeneficiariesService.deleteBeneficiary,
-    onSuccess: () => {
+    onSuccess: (response) => {
+      showSuccess(
+        "Beneficiary Deleted Successfully",
+        response.message || "The beneficiary has been deleted successfully."
+      );
       queryClient.invalidateQueries({ queryKey: beneficiariesKeys.lists() });
       queryClient.invalidateQueries({ queryKey: beneficiariesKeys.stats() });
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to delete beneficiary";
+      showError("Beneficiary Deletion Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };

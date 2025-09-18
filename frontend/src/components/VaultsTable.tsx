@@ -30,7 +30,14 @@ const VaultsTable: React.FC<VaultsTableProps> = ({
         accessorKey: "name",
         header: "Name",
         cell: ({ row }) => (
-          <div className="font-medium text-gray-900">{row.original.name}</div>
+          <button
+            onClick={() => onView(row.original)}
+            className="text-left w-full p-2 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <div className="font-medium text-blue-600 hover:text-blue-800">
+              {row.original.name}
+            </div>
+          </button>
         ),
       },
       {

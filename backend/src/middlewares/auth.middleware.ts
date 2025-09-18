@@ -2,6 +2,7 @@ import { Response, NextFunction } from "express";
 import { verifyToken } from "../api/auth/auth.utils";
 import { IAuthUser } from "../api/auth/auth.interfaces";
 import CustomReq from "../types/CustomReq.type";
+import { RoleService } from "../api/roles/roles.services";
 
 export interface AuthRequest extends CustomReq {
   user?: IAuthUser;
@@ -12,6 +13,7 @@ export const authMiddleware = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
+  const roleService = new RoleService();
   try {
     if (req.method === "OPTIONS") return next();
     const authHeader = req.headers.authorization;
@@ -19,7 +21,8 @@ export const authMiddleware = async (
     const isPublicPath =
       path.includes("/login") ||
       path.includes("/register") ||
-      path.includes("/health");
+      path.includes("/health") ||
+      path.includes("/seed");
 
     console.log(
       "authHeader",
@@ -55,7 +58,10 @@ export const authMiddleware = async (
     }
 
     // Attach user to request
-    req.user = decoded;
+    const role = decoded?.role_id
+      ? await roleService.getRoleById(decoded?.role_id)
+      : null;
+    req.user = { ...decoded, user_role: role?.data || null };
     req.organisation_id = decoded.organisation_id ?? undefined;
     next();
   } catch (error) {

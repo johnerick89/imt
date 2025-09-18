@@ -1,4 +1,4 @@
-import AxiosBase from "./AxiosBase";
+import apiClient from "./AxiosBase";
 import type {
   ChargesPaymentFilters,
   PendingTransactionChargesFilters,
@@ -13,11 +13,8 @@ import type {
 
 export class ChargesPaymentService {
   private static instance: ChargesPaymentService;
-  private axiosBase;
 
-  private constructor() {
-    this.axiosBase = AxiosBase;
-  }
+  private constructor() {}
 
   public static getInstance(): ChargesPaymentService {
     if (!ChargesPaymentService.instance) {
@@ -33,25 +30,20 @@ export class ChargesPaymentService {
     organisationId: string,
     filters?: PendingTransactionChargesFilters
   ): Promise<PendingTransactionChargesResponse> {
-    try {
-      const params = new URLSearchParams();
+    const params = new URLSearchParams();
 
-      if (filters) {
-        Object.entries(filters).forEach(([key, value]) => {
-          if (value !== undefined && value !== null && value !== "") {
-            params.append(key, value.toString());
-          }
-        });
-      }
-
-      const response = await this.axiosBase.get(
-        `/api/v1/chargespayments/organisations/${organisationId}/pending-charges?${params.toString()}`
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching pending transaction charges:", error);
-      throw error;
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+          params.append(key, value.toString());
+        }
+      });
     }
+
+    const response = await apiClient.get(
+      `/api/v1/chargespayments/organisations/${organisationId}/pending-charges?${params.toString()}`
+    );
+    return response.data;
   }
 
   /**
@@ -60,15 +52,10 @@ export class ChargesPaymentService {
   async getPendingChargesStats(
     organisationId: string
   ): Promise<ChargesPaymentStatsResponse> {
-    try {
-      const response = await this.axiosBase.get(
-        `/api/v1/chargespayments/organisations/${organisationId}/pending-charges-stats`
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching pending charges stats:", error);
-      throw error;
-    }
+    const response = await apiClient.get(
+      `/api/v1/chargespayments/organisations/${organisationId}/pending-charges-stats`
+    );
+    return response.data;
   }
 
   /**
@@ -77,15 +64,10 @@ export class ChargesPaymentService {
   async getChargePaymentsStats(
     organisationId: string
   ): Promise<ChargesPaymentStatsResponse> {
-    try {
-      const response = await this.axiosBase.get(
-        `/api/v1/chargespayments/organisations/${organisationId}/charge-payments-stats`
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching charge payments stats:", error);
-      throw error;
-    }
+    const response = await apiClient.get(
+      `/api/v1/chargespayments/organisations/${organisationId}/charge-payments-stats`
+    );
+    return response.data;
   }
 
   /**
@@ -95,16 +77,11 @@ export class ChargesPaymentService {
     organisationId: string,
     data: CreateChargesPaymentRequest
   ): Promise<ChargesPaymentResponse> {
-    try {
-      const response = await this.axiosBase.post(
-        `/api/v1/chargespayments/organisations/${organisationId}/charges-payments`,
-        data
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error creating charges payment:", error);
-      throw error;
-    }
+    const response = await apiClient.post(
+      `/api/v1/chargespayments/organisations/${organisationId}/charges-payments`,
+      data
+    );
+    return response.data;
   }
 
   /**
@@ -114,25 +91,20 @@ export class ChargesPaymentService {
     organisationId: string,
     filters?: ChargesPaymentFilters
   ): Promise<ChargesPaymentListResponse> {
-    try {
-      const params = new URLSearchParams();
+    const params = new URLSearchParams();
 
-      if (filters) {
-        Object.entries(filters).forEach(([key, value]) => {
-          if (value !== undefined && value !== null && value !== "") {
-            params.append(key, value.toString());
-          }
-        });
-      }
-
-      const response = await this.axiosBase.get(
-        `/api/v1/chargespayments/organisations/${organisationId}/charges-payments?${params.toString()}`
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching charges payments:", error);
-      throw error;
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+          params.append(key, value.toString());
+        }
+      });
     }
+
+    const response = await apiClient.get(
+      `/api/v1/chargespayments/organisations/${organisationId}/charges-payments?${params.toString()}`
+    );
+    return response.data;
   }
 
   /**
@@ -141,15 +113,10 @@ export class ChargesPaymentService {
   async getChargesPaymentById(
     paymentId: string
   ): Promise<ChargesPaymentResponse> {
-    try {
-      const response = await this.axiosBase.get(
-        `/api/v1/chargespayments/charges-payments/${paymentId}`
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching charges payment:", error);
-      throw error;
-    }
+    const response = await apiClient.get(
+      `/api/v1/chargespayments/charges-payments/${paymentId}`
+    );
+    return response.data;
   }
 
   /**
@@ -159,16 +126,11 @@ export class ChargesPaymentService {
     paymentId: string,
     data: ApproveChargesPaymentRequest
   ): Promise<ChargesPaymentResponse> {
-    try {
-      const response = await this.axiosBase.post(
-        `/api/v1/chargespayments/charges-payments/${paymentId}/approve`,
-        data
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error approving charges payment:", error);
-      throw error;
-    }
+    const response = await apiClient.post(
+      `/api/v1/chargespayments/charges-payments/${paymentId}/approve`,
+      data
+    );
+    return response.data;
   }
 
   /**
@@ -178,16 +140,11 @@ export class ChargesPaymentService {
     paymentId: string,
     data: ReverseChargesPaymentRequest
   ): Promise<ChargesPaymentResponse> {
-    try {
-      const response = await this.axiosBase.post(
-        `/api/v1/chargespayments/charges-payments/${paymentId}/reverse`,
-        data
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error reversing charges payment:", error);
-      throw error;
-    }
+    const response = await apiClient.post(
+      `/api/v1/chargespayments/charges-payments/${paymentId}/reverse`,
+      data
+    );
+    return response.data;
   }
 }
 

@@ -6,6 +6,7 @@ import type {
   ApproveExchangeRateRequest,
   ExchangeRateFilters,
 } from "../types/ExchangeRatesTypes";
+import { useToast } from "../contexts/ToastContext";
 
 export const exchangeRatesKeys = {
   all: ["exchangeRates"] as const,
@@ -42,20 +43,36 @@ export const useExchangeRateStats = () => {
 
 export const useCreateExchangeRate = () => {
   const queryClient = useQueryClient();
-
+  const { showSuccess, showError } = useToast();
   return useMutation({
     mutationFn: (data: CreateExchangeRateRequest) =>
       ExchangeRatesService.createExchangeRate(data),
-    onSuccess: () => {
+    onSuccess: (response) => {
+      showSuccess(
+        "Exchange Rate Created Successfully",
+        response.message || "The exchange rate has been created successfully."
+      );
       queryClient.invalidateQueries({ queryKey: exchangeRatesKeys.lists() });
       queryClient.invalidateQueries({ queryKey: exchangeRatesKeys.stats() });
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to create exchange rate";
+      showError("Exchange Rate Creation Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };
 
 export const useUpdateExchangeRate = () => {
   const queryClient = useQueryClient();
-
+  const { showSuccess, showError } = useToast();
   return useMutation({
     mutationFn: ({
       id,
@@ -64,30 +81,63 @@ export const useUpdateExchangeRate = () => {
       id: string;
       data: UpdateExchangeRateRequest;
     }) => ExchangeRatesService.updateExchangeRate(id, data),
-    onSuccess: (_, variables) => {
+    onSuccess: (response, variables) => {
+      showSuccess(
+        "Exchange Rate Updated Successfully",
+        response.message || "The exchange rate has been updated successfully."
+      );
       queryClient.invalidateQueries({ queryKey: exchangeRatesKeys.lists() });
       queryClient.invalidateQueries({
         queryKey: exchangeRatesKeys.detail(variables.id),
       });
       queryClient.invalidateQueries({ queryKey: exchangeRatesKeys.stats() });
     },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to update exchange rate";
+      showError("Exchange Rate Update Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
+    },
   });
 };
 
 export const useDeleteExchangeRate = () => {
   const queryClient = useQueryClient();
-
+  const { showSuccess, showError } = useToast();
   return useMutation({
     mutationFn: (id: string) => ExchangeRatesService.deleteExchangeRate(id),
-    onSuccess: () => {
+    onSuccess: (response) => {
+      showSuccess(
+        "Exchange Rate Deleted Successfully",
+        response.message || "The exchange rate has been deleted successfully."
+      );
       queryClient.invalidateQueries({ queryKey: exchangeRatesKeys.lists() });
       queryClient.invalidateQueries({ queryKey: exchangeRatesKeys.stats() });
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to delete exchange rate";
+      showError("Exchange Rate Deletion Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };
 
 export const useApproveExchangeRate = () => {
   const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
 
   return useMutation({
     mutationFn: ({
@@ -97,12 +147,28 @@ export const useApproveExchangeRate = () => {
       id: string;
       data: ApproveExchangeRateRequest;
     }) => ExchangeRatesService.approveExchangeRate(id, data),
-    onSuccess: (_, variables) => {
+    onSuccess: (response, variables) => {
+      showSuccess(
+        "Exchange Rate Approved Successfully",
+        response.message || "The exchange rate has been approved successfully."
+      );
       queryClient.invalidateQueries({ queryKey: exchangeRatesKeys.lists() });
       queryClient.invalidateQueries({
         queryKey: exchangeRatesKeys.detail(variables.id),
       });
       queryClient.invalidateQueries({ queryKey: exchangeRatesKeys.stats() });
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to approve exchange rate";
+      showError("Exchange Rate Approval Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };

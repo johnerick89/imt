@@ -15,5 +15,13 @@ router.patch(
   usersController.toggleUserStatus.bind(usersController)
 );
 router.delete("/:id", usersController.deleteUser.bind(usersController));
+router.patch(
+  "/:id/update-password",
+  usersController.updatePassword.bind(usersController)
+);
+router.patch(
+  "/:id/reset-password",
+  usersController.resetPassword.bind(usersController)
+);
 
 export default router;

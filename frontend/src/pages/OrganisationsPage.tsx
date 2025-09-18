@@ -181,12 +181,17 @@ const OrganisationsPage: React.FC = () => {
       cell: ({ row }) => {
         const org = row.original;
         return (
-          <div>
-            <div className="text-sm font-medium text-gray-900">{org.name}</div>
+          <button
+            onClick={() => navigate(`/organisations/${org.id}`)}
+            className="text-left w-full p-2 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <div className="text-sm font-medium text-blue-600 hover:text-blue-800">
+              {org.name}
+            </div>
             <div className="text-sm text-gray-500">
               {org.description || "No description"}
             </div>
-          </div>
+          </button>
         );
       },
     },

@@ -1,3 +1,5 @@
+import { RolePermission, Role, UserStatus } from "@prisma/client";
+import { IRole } from "../roles/roles.interfaces";
 export interface IUser {
   id: string;
   email: string;
@@ -6,13 +8,15 @@ export interface IUser {
   last_name: string | null;
   role: string | null;
   avatar: string | null;
-  status: "ACTIVE" | "INACTIVE" | "PENDING" | "BLOCKED";
+  status: UserStatus;
   phone: string | null;
   address: string | null;
   organisation_id: string | null;
   last_login: Date | null;
   created_at: Date;
   updated_at: Date;
+  user_role?: IRole | null;
+  role_id?: string | null;
 }
 
 export interface ILoginRequest {
@@ -31,6 +35,7 @@ export interface ILoginResponse {
     last_name: string;
     role: string;
     status: string;
+    user_role?: IRole | null;
   };
 }
 
@@ -62,4 +67,6 @@ export interface IAuthUser {
   phone: string | null;
   address: string | null;
   organisation_id: string | null;
+  user_role?: IRole | null;
+  role_id?: string;
 }

@@ -143,12 +143,15 @@ const UsersPage: React.FC = () => {
       cell: ({ row }) => {
         const user = row.original;
         return (
-          <div>
-            <div className="text-sm font-medium text-gray-900">
+          <button
+            onClick={() => navigate(`/users/${user.id}`)}
+            className="text-left w-full p-2 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <div className="text-sm font-medium text-blue-600 hover:text-blue-800">
               {user.first_name} {user.last_name}
             </div>
             <div className="text-sm text-gray-500">{user.email}</div>
-          </div>
+          </button>
         );
       },
     },
@@ -214,22 +217,32 @@ const UsersPage: React.FC = () => {
     {
       id: "actions",
       header: "Actions",
-      cell: ({ row }) => (
-        <ActionCell
-          onView={() => navigate(`/users/${row.original.id}`)}
-          onEdit={() => openEditModal(row.original.id)}
-          onToggleStatus={() =>
-            handleStatusToggle(row.original.id, row.original.status)
-          }
-          onDelete={() =>
-            openDeleteModal(
-              row.original.id,
-              `${row.original.first_name} ${row.original.last_name}`
-            )
-          }
-          status={row.original.status}
-        />
-      ),
+      cell: ({ row }) => {
+        const user = row.original;
+        const isCurrentUser = user.id === currentUser?.id;
+
+        return (
+          <ActionCell
+            onView={() => navigate(`/users/${row.original.id}`)}
+            onEdit={() => openEditModal(row.original.id)}
+            onToggleStatus={
+              !isCurrentUser
+                ? () => handleStatusToggle(row.original.id, row.original.status)
+                : undefined
+            }
+            onDelete={
+              !isCurrentUser
+                ? () =>
+                    openDeleteModal(
+                      row.original.id,
+                      `${row.original.first_name} ${row.original.last_name}`
+                    )
+                : undefined
+            }
+            status={row.original.status}
+          />
+        );
+      },
     },
   ];
 

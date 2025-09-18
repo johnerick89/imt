@@ -9,8 +9,6 @@ import type { GlAccount } from "../types/GlAccountsTypes";
 interface GlAccountsTableProps {
   data: GlAccount[];
   onView?: (glAccount: GlAccount) => void;
-  onEdit?: (glAccount: GlAccount) => void;
-  onDelete?: (glAccount: GlAccount) => void;
   onFreeze?: (glAccount: GlAccount) => void;
   onUnfreeze?: (glAccount: GlAccount) => void;
   isLoading?: boolean;
@@ -19,8 +17,6 @@ interface GlAccountsTableProps {
 const GlAccountsTable: React.FC<GlAccountsTableProps> = ({
   data,
   onView,
-  onEdit,
-  onDelete,
   onFreeze,
   onUnfreeze,
   isLoading = false,
@@ -31,10 +27,14 @@ const GlAccountsTable: React.FC<GlAccountsTableProps> = ({
         accessorKey: "name",
         header: "Account Details",
         cell: ({ row }) => (
-          <div>
+          <button
+            onClick={() => onView?.(row.original)}
+            className="text-left w-full p-2 rounded-lg hover:bg-gray-50 transition-colors"
+            title="View details"
+          >
             <div className="font-medium text-gray-900">{row.original.name}</div>
             <div className="text-sm text-gray-500">{row.original.type}</div>
-          </div>
+          </button>
         ),
       },
       {
@@ -165,15 +165,13 @@ const GlAccountsTable: React.FC<GlAccountsTableProps> = ({
           <GlAccountActionCell
             glAccount={row.original}
             onView={onView}
-            onEdit={onEdit}
-            onDelete={onDelete}
             onFreeze={onFreeze}
             onUnfreeze={onUnfreeze}
           />
         ),
       },
     ],
-    [onView, onEdit, onDelete, onFreeze, onUnfreeze]
+    [onView, onFreeze, onUnfreeze]
   );
 
   return (

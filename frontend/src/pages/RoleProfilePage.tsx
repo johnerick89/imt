@@ -49,6 +49,7 @@ const RoleProfilePage: React.FC = () => {
   }
 
   const role = roleData.data;
+  console.log("role", role);
 
   const formatDate = (date: string | Date) => {
     return new Date(date).toLocaleDateString("en-US", {
@@ -189,7 +190,9 @@ const RoleProfilePage: React.FC = () => {
                         <p className="text-sm font-medium text-green-600">
                           Users with this role
                         </p>
-                        <p className="text-2xl font-bold text-green-900">0</p>
+                        <p className="text-2xl font-bold text-green-900">
+                          {role?.users?.length || 0}
+                        </p>
                       </div>
                     </div>
                   </div>

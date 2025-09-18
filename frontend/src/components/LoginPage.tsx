@@ -32,6 +32,7 @@ const LoginPage: React.FC = () => {
 
     try {
       const response = await loginMutation.mutateAsync(formData);
+      console.log("response", response);
 
       if (response.success && response.token && response.user) {
         // Redirect to dashboard

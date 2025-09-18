@@ -1,4 +1,5 @@
-import type { Organisation } from "./UsersTypes";
+import type { Organisation } from "./OrganisationsTypes";
+import type { Role } from "./RolesTypes";
 
 export interface LoginRequest {
   email: string;
@@ -30,6 +31,8 @@ export interface User {
   last_login?: string;
   created_at: string;
   updated_at: string;
+  role_id?: string;
+  user_role?: Role;
 }
 
 export interface AuthResponse {

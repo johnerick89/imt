@@ -5,6 +5,7 @@ import type {
   ApproveTransactionRequest,
   ReverseTransactionRequest,
 } from "../types/TransactionsTypes";
+import { useToast } from "../contexts/ToastContext";
 
 const inboundTransactionService = InboundTransactionService.getInstance();
 
@@ -47,7 +48,7 @@ export const useInboundTransactionStats = (organisationId: string) => {
 // Hook to approve an inbound transaction
 export const useApproveInboundTransaction = () => {
   const queryClient = useQueryClient();
-
+  const { showSuccess, showError } = useToast();
   return useMutation({
     mutationFn: ({
       transactionId,
@@ -57,7 +58,12 @@ export const useApproveInboundTransaction = () => {
       data: ApproveTransactionRequest;
     }) =>
       inboundTransactionService.approveInboundTransaction(transactionId, data),
-    onSuccess: (data, variables) => {
+    onSuccess: (response, variables) => {
+      showSuccess(
+        "Inbound Transaction Approved Successfully",
+        response.message ||
+          "The inbound transaction has been approved successfully."
+      );
       // Invalidate and refetch inbound transactions
       queryClient.invalidateQueries({
         queryKey: ["inboundTransactions"],
@@ -66,8 +72,20 @@ export const useApproveInboundTransaction = () => {
       // Update the specific transaction in cache
       queryClient.setQueryData(
         ["inboundTransaction", variables.transactionId],
-        data
+        response.data
       );
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to approve inbound transaction";
+      showError("Inbound Transaction Approval Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };
@@ -75,7 +93,7 @@ export const useApproveInboundTransaction = () => {
 // Hook to reverse an inbound transaction
 export const useReverseInboundTransaction = () => {
   const queryClient = useQueryClient();
-
+  const { showSuccess, showError } = useToast();
   return useMutation({
     mutationFn: ({
       transactionId,
@@ -85,7 +103,12 @@ export const useReverseInboundTransaction = () => {
       data: ReverseTransactionRequest;
     }) =>
       inboundTransactionService.reverseInboundTransaction(transactionId, data),
-    onSuccess: (data, variables) => {
+    onSuccess: (response, variables) => {
+      showSuccess(
+        "Inbound Transaction Reversed Successfully",
+        response.message ||
+          "The inbound transaction has been reversed successfully."
+      );
       // Invalidate and refetch inbound transactions
       queryClient.invalidateQueries({
         queryKey: ["inboundTransactions"],
@@ -94,8 +117,20 @@ export const useReverseInboundTransaction = () => {
       // Update the specific transaction in cache
       queryClient.setQueryData(
         ["inboundTransaction", variables.transactionId],
-        data
+        response.data
       );
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to reverse inbound transaction";
+      showError("Inbound Transaction Reversal Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };

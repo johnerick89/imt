@@ -28,9 +28,14 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
       accessorKey: "transaction_no",
       header: "Transaction #",
       cell: ({ row }) => (
-        <div className="font-medium text-gray-900">
-          {row.original.transaction_no || "N/A"}
-        </div>
+        <button
+          onClick={() => onView?.(row.original)}
+          className="text-left w-full p-2 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          <div className="font-medium text-gray-900">
+            {row.original.transaction_no || "N/A"}
+          </div>
+        </button>
       ),
     },
     {

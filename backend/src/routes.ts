@@ -29,6 +29,7 @@ import dashboardRoutes from "./api/dashboard";
 import reportsRoutes from "./api/reports/reports.routes";
 import { authMiddleware } from "./middlewares/auth.middleware";
 import { auditMiddleware } from "./middlewares/audit.middleware";
+import seedRoutes from "./seed/seed.routes";
 
 const router = Router();
 
@@ -64,7 +65,7 @@ router.use("/api/v1/transactionchannels", transactionChannelRoutes);
 router.use("/api/v1/chargespayments", chargesPaymentRoutes);
 router.use("/api/v1/dashboard", dashboardRoutes);
 router.use("/api/v1/reports", reportsRoutes);
-
+router.use("/api/v1/seed", seedRoutes);
 // Default API route
 router.get("/api", (req, res) => {
   res.json({
@@ -98,6 +99,7 @@ router.get("/api", (req, res) => {
       transactionchannels: "/api/v1/transactionchannels",
       chargespayments: "/api/v1/chargespayments",
       reports: "/api/v1/reports",
+      seed: "/api/v1/seed",
     },
   });
 });

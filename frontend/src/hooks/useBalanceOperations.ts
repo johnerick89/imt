@@ -26,14 +26,31 @@ export const useOrgBalanceStats = (organisationId?: string) => {
 
 export const usePrefundOrganisation = () => {
   const queryClient = useQueryClient();
+  const { showError, showSuccess } = useToast();
 
   return useMutation({
     mutationFn: ({ orgId, data }: { orgId: string; data: PrefundRequest }) =>
       BalanceOperationsService.prefundOrganisation(orgId, data),
-    onSuccess: () => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ["orgBalances"] });
       queryClient.invalidateQueries({ queryKey: ["orgBalanceStats"] });
       queryClient.invalidateQueries({ queryKey: ["bankAccounts"] });
+      showSuccess(
+        "Organisation Prefunded Successfully",
+        response.message || "The organisation has been prefunded successfully."
+      );
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to prefund organisation";
+      showError("Prefund Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };
@@ -58,12 +75,15 @@ export const useTopupTill = () => {
         response.message || "The till has been topped up successfully."
       );
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Failed to top up till";
+        error instanceof Error ? error.message : "Failed to top up till";
       showError("Topup Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };
@@ -88,12 +108,15 @@ export const useTopupVault = () => {
         response.message || "The vault has been topped up successfully."
       );
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Failed to top up vault";
+        error instanceof Error ? error.message : "Failed to top up vault";
       showError("Topup Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };
@@ -119,12 +142,15 @@ export const useWithdrawTill = () => {
           "Amount has been withdrawn from the till successfully."
       );
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Failed to withdraw from till";
+        error instanceof Error ? error.message : "Failed to withdraw from till";
       showError("Withdrawal Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };
@@ -150,12 +176,17 @@ export const useWithdrawVault = () => {
           "Amount has been withdrawn from the vault successfully."
       );
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Failed to withdraw from vault";
+        error instanceof Error
+          ? error.message
+          : "Failed to withdraw from vault";
       showError("Withdrawal Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };
@@ -203,6 +234,7 @@ export const useVaultBalanceHistory = (
 // Opening Balance Hook
 export const useSetOpeningBalance = () => {
   const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
 
   return useMutation({
     mutationFn: ({
@@ -212,10 +244,26 @@ export const useSetOpeningBalance = () => {
       orgId: string;
       data: OpeningBalanceRequest;
     }) => BalanceOperationsService.setOpeningBalance(orgId, data),
-    onSuccess: () => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ["orgBalances"] });
       queryClient.invalidateQueries({ queryKey: ["orgBalanceStats"] });
       queryClient.invalidateQueries({ queryKey: ["organisations"] });
+      showSuccess(
+        "Opening Balance Set Successfully",
+        response.message || "The opening balance has been set successfully."
+      );
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to set opening balance";
+      showError("Opening Balance Set Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };

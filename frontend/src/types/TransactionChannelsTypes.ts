@@ -1,3 +1,5 @@
+import type { User } from "./UsersTypes";
+
 // Transaction Channel Types
 export interface TransactionChannel {
   id: string;
@@ -7,12 +9,7 @@ export interface TransactionChannel {
   created_at: string;
   created_by: string | null;
   updated_at: string;
-  created_by_user?: {
-    id: string;
-    first_name: string;
-    last_name: string;
-    email: string;
-  } | null;
+  created_by_user?: User | null;
 }
 
 export interface TransactionChannelFilters {

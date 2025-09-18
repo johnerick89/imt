@@ -4,6 +4,7 @@ import type {
   GlTransactionFilters,
   ReverseGlTransactionRequest,
 } from "../types/GlTransactionsTypes";
+import { useToast } from "../contexts/ToastContext";
 
 export const useGlTransactions = (
   organisationId: string,
@@ -39,7 +40,7 @@ export const useGlTransactionStats = (organisationId: string) => {
 
 export const useReverseGlTransaction = () => {
   const queryClient = useQueryClient();
-
+  const { showSuccess, showError } = useToast();
   return useMutation({
     mutationFn: ({
       organisationId,
@@ -55,13 +56,29 @@ export const useReverseGlTransaction = () => {
         transactionId,
         data
       ),
-    onSuccess: (_, variables) => {
+    onSuccess: (response, variables) => {
+      showSuccess(
+        "GL Transaction Reversed Successfully",
+        response.message || "The GL transaction has been reversed successfully."
+      );
       queryClient.invalidateQueries({
         queryKey: ["glTransactions", variables.organisationId],
       });
       queryClient.invalidateQueries({
         queryKey: ["glTransactionStats", variables.organisationId],
       });
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to reverse GL transaction";
+      showError("GL Transaction Reversal Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
     },
   });
 };
