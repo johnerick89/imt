@@ -143,18 +143,6 @@ const GlTransactionDetailsModal: React.FC<GlTransactionDetailsModalProps> = ({
                 </div>
               </div>
             )}
-            {transaction.transaction && (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-500">
-                    Transaction Reference
-                  </label>
-                  <p className="text-sm text-gray-900">
-                    {transaction.transaction.reference}
-                  </p>
-                </div>
-              </div>
-            )}
           </div>
         )}
 

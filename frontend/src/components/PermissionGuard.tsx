@@ -1,6 +1,6 @@
 import React from "react";
 import { useSession } from "../hooks";
-import { canAccessRoute, canPerformAction } from "../utils/acl";
+import { canPerformAction } from "../utils/acl";
 
 interface PermissionGuardProps {
   permissions?: string[];
