@@ -90,3 +90,14 @@ export interface UserStatsResponse {
   data?: UserStats;
   error?: string;
 }
+
+export interface UpdatePasswordRequest {
+  oldPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+export interface ResetPasswordRequest {
+  newPassword: string;
+  confirmPassword: string;
+}

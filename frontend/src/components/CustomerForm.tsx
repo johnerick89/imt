@@ -15,7 +15,7 @@ import { useAllCurrencies } from "../hooks/useCurrencies";
 import { useOccupations } from "../hooks/useOccupations";
 import { useIndustries } from "../hooks/useIndustries";
 import { useOrganisations } from "../hooks/useOrganisations";
-import { useBranches } from "../hooks/useBranches";
+// import { useBranches } from "../hooks/useBranches";
 import { useSession } from "../hooks/useSession";
 
 interface CustomerFormProps {
@@ -38,11 +38,11 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
   const { data: occupationsData } = useOccupations({ page: 1, limit: 100 });
   const { data: industriesData } = useIndustries({ page: 1, limit: 100 });
   const { data: organisationsData } = useOrganisations({ page: 1, limit: 100 });
-  const { data: branchesData } = useBranches({
-    page: 1,
-    limit: 100,
-    organisation_id: organisationId,
-  });
+  // const { data: branchesData } = useBranches({
+  //   page: 1,
+  //   limit: 100,
+  //   organisation_id: organisationId,
+  // });
 
   const userOrganisation = organisationsData?.data?.organisations?.find(
     (org) => org.id === organisationId
@@ -468,7 +468,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
           />
         </FormItem>
 
-        <FormItem
+        {/* <FormItem
           label="Branch"
           invalid={!!errors.branch_id}
           errorMessage={errors.branch_id?.message}
@@ -493,7 +493,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
               />
             )}
           />
-        </FormItem>
+        </FormItem> */}
 
         {isIndividualCustomer && (
           <FormItem

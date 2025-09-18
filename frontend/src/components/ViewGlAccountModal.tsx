@@ -153,12 +153,6 @@ const ViewGlAccountModal: React.FC<ViewGlAccountModalProps> = ({
               </h4>
               <div className="space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Account ID:</span>
-                  <span className="text-sm font-medium text-gray-900">
-                    {glAccount.id}
-                  </span>
-                </div>
-                <div className="flex justify-between">
                   <span className="text-sm text-gray-500">Type:</span>
                   <StatusBadge status={glAccount.type} type="gl-account-type" />
                 </div>
@@ -171,18 +165,6 @@ const ViewGlAccountModal: React.FC<ViewGlAccountModalProps> = ({
                     </span>
                   </div>
                 )}
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Created:</span>
-                  <span className="text-sm font-medium text-gray-900">
-                    {formatDateTime(glAccount.created_at)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Updated:</span>
-                  <span className="text-sm font-medium text-gray-900">
-                    {formatDateTime(glAccount.updated_at)}
-                  </span>
-                </div>
               </div>
             </div>
 

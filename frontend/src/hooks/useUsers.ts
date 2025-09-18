@@ -6,6 +6,8 @@ import type {
   UserFilters,
   CreateUserRequest,
   UpdateUserRequest,
+  UpdatePasswordRequest,
+  ResetPasswordRequest,
 } from "../types/UsersTypes";
 
 // Query keys
@@ -196,6 +198,93 @@ export const useDeleteUser = () => {
       const errorMessage =
         error instanceof Error ? error.message : "Failed to delete user";
       showError("User Deletion Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
+    },
+  });
+};
+
+export const useUpdatePassword = () => {
+  const queryClient = useQueryClient();
+  const { showError, showSuccess } = useToast();
+
+  return useMutation({
+    mutationFn: ({
+      userId,
+      userData,
+    }: {
+      userId: string;
+      userData: UpdatePasswordRequest;
+    }) =>
+      UsersService.updatePassword(
+        userId,
+        userData.oldPassword,
+        userData.newPassword,
+        userData.confirmPassword
+      ),
+    onSuccess: (response, variables) => {
+      // Update the user in the cache
+      queryClient.setQueryData(userKeys.detail(variables.userId), response);
+      // Invalidate and refetch users list
+      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
+
+      showSuccess(
+        "User Password Updated Successfully",
+        response.message || "The user password has been updated successfully."
+      );
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to update user password";
+      showError("User Password Update Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
+    },
+  });
+};
+
+export const useResetPassword = () => {
+  const queryClient = useQueryClient();
+  const { showError, showSuccess } = useToast();
+
+  return useMutation({
+    mutationFn: ({
+      userId,
+      userData,
+    }: {
+      userId: string;
+      userData: ResetPasswordRequest;
+    }) =>
+      UsersService.resetPassword(
+        userId,
+        userData.newPassword,
+        userData.confirmPassword
+      ),
+    onSuccess: (response, variables) => {
+      // Update the user in the cache
+      queryClient.setQueryData(userKeys.detail(variables.userId), response);
+      // Invalidate and refetch users list
+      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
+
+      showSuccess(
+        "User Password Reset Successfully",
+        response.message || "The user password has been reset successfully."
+      );
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to reset user password";
+      showError("User Password Reset Failed", errorMessage);
       return {
         success: false,
         message: errorMessage,

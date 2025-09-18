@@ -8,6 +8,8 @@ export interface Role {
   created_by?: string | null;
   created_by_user?: User | null;
   permissions?: Permission[];
+  role_permissions?: RolePermissions[];
+  users?: User[];
 }
 
 export interface Permission {
@@ -99,4 +101,13 @@ export interface RoleStatsResponse {
   message: string;
   data: RoleStats;
   error?: string;
+}
+
+export interface RolePermissions {
+  id: string;
+  permission: Permission;
+  permission_id: string;
+  role_id: string;
+  created_at: Date;
+  updated_at: Date;
 }

@@ -121,6 +121,7 @@ const CustomerProfilePage: React.FC = () => {
   };
 
   const formatDate = (date: string | Date) => {
+    if (!date) return "N/A";
     return new Date(date).toLocaleDateString();
   };
 
@@ -271,7 +272,7 @@ const CustomerProfilePage: React.FC = () => {
                             Nationality
                           </dt>
                           <dd className="mt-1 text-sm text-gray-900">
-                            {customer.nationality.name}
+                            {customer?.nationality?.name}
                           </dd>
                         </div>
                       )}
@@ -282,7 +283,7 @@ const CustomerProfilePage: React.FC = () => {
                             Residence Country
                           </dt>
                           <dd className="mt-1 text-sm text-gray-900">
-                            {customer.residence_country.name}
+                            {customer?.residence_country?.name}
                           </dd>
                         </div>
                       )}
@@ -308,7 +309,7 @@ const CustomerProfilePage: React.FC = () => {
                             Incorporation Country
                           </dt>
                           <dd className="mt-1 text-sm text-gray-900">
-                            {customer.incorporation_country.name}
+                            {customer?.incorporation_country?.name}
                           </dd>
                         </div>
                       )}
@@ -332,7 +333,7 @@ const CustomerProfilePage: React.FC = () => {
                         Industry
                       </dt>
                       <dd className="mt-1 text-sm text-gray-900">
-                        {customer.industry.name}
+                        {customer?.industry?.name}
                       </dd>
                     </div>
                   )}
@@ -343,7 +344,7 @@ const CustomerProfilePage: React.FC = () => {
                         Occupation
                       </dt>
                       <dd className="mt-1 text-sm text-gray-900">
-                        {customer.occupation.name}
+                        {customer?.occupation?.name}
                       </dd>
                     </div>
                   )}
@@ -442,7 +443,7 @@ const CustomerProfilePage: React.FC = () => {
                       Organisation
                     </dt>
                     <dd className="mt-1 text-sm text-gray-900">
-                      {customer.organisation.name}
+                      {customer?.organisation?.name}
                     </dd>
                   </div>
 
@@ -451,7 +452,7 @@ const CustomerProfilePage: React.FC = () => {
                       Branch
                     </dt>
                     <dd className="mt-1 text-sm text-gray-900">
-                      {customer.branch.name}
+                      {customer?.branch?.name}
                     </dd>
                   </div>
 

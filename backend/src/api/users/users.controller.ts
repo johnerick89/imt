@@ -5,6 +5,8 @@ import {
   updateUserSchema,
   userFiltersSchema,
   toggleUserStatusSchema,
+  updatePasswordSchema,
+  resetPasswordSchema,
 } from "./users.validation";
 import { IUserResponse, IUsersListResponse } from "./users.interfaces";
 import type CustomRequest from "../../types/CustomReq.type";
@@ -163,6 +165,67 @@ export class UsersController {
 
       if (!result.success) {
         throw new AppError(result.message || "Failed to get user stats", 400);
+      }
+
+      res.status(200).json(result);
+    }
+  );
+
+  updatePassword = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
+      const { id } = req.params;
+
+      if (!id) {
+        throw new AppError("User ID is required", 400);
+      }
+
+      const validationResult = updatePasswordSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        throw new AppError(
+          validationResult.error.issues[0]?.message || "Invalid input",
+          400
+        );
+      }
+
+      const result = await usersService.updatePassword(
+        id,
+        req.body.oldPassword,
+        req.body.newPassword,
+        req.body.confirmPassword
+      );
+
+      if (!result.success) {
+        throw new AppError(result.message || "Failed to reset password", 400);
+      }
+
+      res.status(200).json(result);
+    }
+  );
+
+  resetPassword = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
+      const { id } = req.params;
+
+      if (!id) {
+        throw new AppError("User ID is required", 400);
+      }
+
+      const validationResult = resetPasswordSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        throw new AppError(
+          validationResult.error.issues[0]?.message || "Invalid input",
+          400
+        );
+      }
+
+      const result = await usersService.resetPassword(
+        id,
+        req.body.newPassword,
+        req.body.confirmPassword
+      );
+
+      if (!result.success) {
+        throw new AppError(result.message || "Failed to reset password", 400);
       }
 
       res.status(200).json(result);

@@ -9,11 +9,11 @@ import { hashPassword } from "../api/auth/auth.utils";
 import occupations from "./occupations";
 import industries from "./industries";
 import organisations from "./organisations";
+import { prisma } from "../lib/prisma.lib";
 
 const DEFAULT_PASSWORD = "admin1234";
-const prisma = new PrismaClient();
 
-async function seedRoles() {
+export async function seedRoles() {
   const createdRoles = await Promise.all(
     roles.map(async (role) => {
       const createdRole = await prisma.role.findFirst({
@@ -34,7 +34,7 @@ async function seedRoles() {
   console.log("Roles created:", createdRoles.length);
 }
 
-async function seedUsers() {
+export async function seedUsers() {
   const email = "johndoe@example.com";
   const user = await prisma.user.findFirst({
     where: { email },
@@ -64,7 +64,7 @@ async function seedUsers() {
   console.log({ user1 });
 }
 
-async function seedOrganisations() {
+export async function seedOrganisations() {
   const createdOrganisations = await Promise.all(
     organisations.map(async (organisation) => {
       let createdOrganisation = await prisma.organisation.findFirst({
@@ -105,7 +105,7 @@ async function seedOrganisations() {
   console.log("Organisations created:", createdOrganisations.length);
 }
 
-async function seedAdminUser({
+export async function seedAdminUser({
   admin_name,
   contact_email,
   contact_phone,
@@ -143,7 +143,7 @@ async function seedAdminUser({
   });
 }
 
-async function seedPermissions() {
+export async function seedPermissions() {
   const createdPermissions = await Promise.all(
     permissions.map(async (permission) => {
       const createdPermission = await prisma.permission.findFirst({
@@ -167,7 +167,7 @@ async function seedPermissions() {
   console.log("Permissions created:", createdPermissions.length);
 }
 
-async function seedRolesPermissions() {
+export async function seedRolesPermissions() {
   const createdRoles = await prisma.role.findMany();
   const createdPermissions = await prisma.permission.findMany();
   const rolePermissions = await Promise.all([
@@ -197,7 +197,7 @@ async function seedRolesPermissions() {
   console.log("rolePermissions created:", rolePermissions.length);
 }
 
-async function seedCountries() {
+export async function seedCountries() {
   const createdCountries = await Promise.all(
     countries.map(async (country) => {
       const createdCountry = await prisma.country.findFirst({
@@ -219,7 +219,7 @@ async function seedCountries() {
   console.log("Countries created:", createdCountries.length);
 }
 
-async function seedCurrencies() {
+export async function seedCurrencies() {
   const currenciesCreated = await Promise.all(
     currencies.map(async (currency) => {
       const createdCurrency = await prisma.currency.findFirst({
@@ -247,7 +247,7 @@ async function seedCurrencies() {
   console.log("Currencies created:", currenciesCreated.length);
 }
 
-async function seedBranches() {
+export async function seedBranches() {
   const organisations = await prisma.organisation.findMany();
   const createdBranches = await Promise.all(
     organisations.flatMap(async (organisation) =>
@@ -281,7 +281,7 @@ async function seedBranches() {
   console.log("branches created: ", createdBranches.length);
 }
 
-async function seedTransactionChannels() {
+export async function seedTransactionChannels() {
   const seededtransactionChannels = await Promise.all(
     transactionChannels.map(async (transactionChannel) => {
       const createdTransactionChannel =
@@ -309,7 +309,7 @@ async function seedTransactionChannels() {
   );
 }
 
-async function seedOccupations() {
+export async function seedOccupations() {
   const createdOccupations = await Promise.all(
     occupations.map(async (occupation) => {
       const createdOccupation = await prisma.occupation.findFirst({
@@ -331,7 +331,7 @@ async function seedOccupations() {
   console.log("occupations created: ", createdOccupations.length);
 }
 
-async function seedIndustries() {
+export async function seedIndustries() {
   const createdIndustries = await Promise.all(
     industries.map(async (industry) => {
       const createdIndustry = await prisma.industry.findFirst({
@@ -351,6 +351,70 @@ async function seedIndustries() {
     })
   );
   console.log("industries created: ", createdIndustries.length);
+}
+
+interface SeedResponse {
+  success: boolean;
+  message: string;
+  data?: { seeded: string[] };
+}
+
+const seedFunctions: { [key: string]: () => Promise<void> } = {
+  roles: seedRoles,
+  users: seedUsers,
+  organisations: seedOrganisations,
+  permissions: seedPermissions,
+  branches: seedBranches,
+  countries: seedCountries,
+  currencies: seedCurrencies,
+  rolesPermissions: seedRolesPermissions,
+  transactionChannels: seedTransactionChannels,
+  occupations: seedOccupations,
+  industries: seedIndustries,
+};
+
+export async function seedDatabase(
+  seeds: string[] = []
+): Promise<SeedResponse> {
+  // Normalize seeds: remove "--" and empty strings
+  const normalizedSeeds = seeds
+    .map((seed) => seed.replace(/^--/, "").trim())
+    .filter((seed) => seed !== "");
+
+  const seeded: string[] = [];
+
+  try {
+    if (normalizedSeeds.length === 0) {
+      console.log("No specific seed provided. Seeding all items...");
+      for (const key in seedFunctions) {
+        await seedFunctions[key]();
+        seeded.push(key);
+      }
+    } else {
+      for (const seed of normalizedSeeds) {
+        const seedFunction = seedFunctions[seed];
+        if (seedFunction) {
+          await seedFunction();
+          seeded.push(seed);
+        } else {
+          console.log(`No seed function found for "${seed}"`);
+        }
+      }
+    }
+
+    return {
+      success: true,
+      message: `Successfully seeded: ${seeded.join(", ") || "none"}`,
+      data: { seeded },
+    };
+  } catch (error) {
+    console.error("Seeding error:", error);
+    throw new Error(
+      `Failed to seed: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
+  }
 }
 
 async function main() {

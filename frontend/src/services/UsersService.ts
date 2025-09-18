@@ -58,6 +58,35 @@ class UsersService {
     const response = await apiClient.get("/api/v1/users/stats");
     return response.data;
   }
+
+  async updatePassword(
+    userId: string,
+    oldPassword: string,
+    newPassword: string,
+    confirmPassword: string
+  ): Promise<UserResponse> {
+    const response = await apiClient.patch(
+      `/api/v1/users/${userId}/update-password`,
+      {
+        oldPassword,
+        newPassword,
+        confirmPassword,
+      }
+    );
+    return response.data;
+  }
+
+  async resetPassword(
+    userId: string,
+    newPassword: string,
+    confirmPassword: string
+  ): Promise<UserResponse> {
+    const response = await apiClient.patch(
+      `/api/v1/users/${userId}/reset-password`,
+      { newPassword, confirmPassword }
+    );
+    return response.data;
+  }
 }
 
 export default new UsersService();

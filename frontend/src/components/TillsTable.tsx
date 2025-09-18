@@ -39,14 +39,19 @@ const TillsTable: React.FC<TillsTableProps> = ({
         accessorKey: "name",
         header: "Till Name",
         cell: ({ row }) => (
-          <div>
-            <div className="font-medium text-gray-900">{row.original.name}</div>
+          <button
+            onClick={() => onView(row.original)}
+            className="text-left w-full p-2 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <div className="font-medium text-blue-600 hover:text-blue-800">
+              {row.original.name}
+            </div>
             {row.original.description && (
               <div className="text-sm text-gray-500">
                 {row.original.description}
               </div>
             )}
-          </div>
+          </button>
         ),
       },
       {

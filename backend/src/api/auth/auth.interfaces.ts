@@ -16,6 +16,7 @@ export interface IUser {
   created_at: Date;
   updated_at: Date;
   user_role?: IRole | null;
+  role_id?: string | null;
 }
 
 export interface ILoginRequest {
@@ -67,4 +68,5 @@ export interface IAuthUser {
   address: string | null;
   organisation_id: string | null;
   user_role?: IRole | null;
+  role_id?: string;
 }

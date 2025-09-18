@@ -9,7 +9,7 @@ import {
   IUserResponse,
   IUsersListResponse,
 } from "./users.interfaces";
-import { hashPassword } from "../auth/auth.utils";
+import { comparePassword, hashPassword } from "../auth/auth.utils";
 import {
   AppError,
   InsufficientFundsError,
@@ -300,6 +300,85 @@ export class UsersService {
         administrators,
         branches,
       },
+    };
+  }
+
+  async updatePassword(
+    userId: string,
+    oldPassword: string,
+    newPassword: string,
+    confirmPassword: string
+  ): Promise<IUserResponse> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundError("User not found");
+    }
+
+    if (newPassword !== confirmPassword) {
+      throw new AppError("Passwords do not match", 400);
+    }
+
+    if (newPassword === oldPassword) {
+      throw new AppError(
+        "New password cannot be the same as the old password",
+        400
+      );
+    }
+
+    const isPasswordValid = await comparePassword(oldPassword, user.password);
+    if (!isPasswordValid) {
+      throw new AppError("Invalid old password", 400);
+    }
+
+    const hashedPassword = await hashPassword(newPassword);
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+
+    const updatedUser = await this.getUserById(userId);
+
+    return {
+      success: true,
+      message: "Password reset successfully",
+      data: updatedUser as unknown as IUser,
+    };
+  }
+
+  async resetPassword(
+    userId: string,
+    newPassword: string,
+    confirmPassword: string
+  ): Promise<IUserResponse> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundError("User not found");
+    }
+
+    if (newPassword !== confirmPassword) {
+      throw new AppError("Passwords do not match", 400);
+    }
+
+    const hashedPassword = await hashPassword(newPassword);
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+
+    const updatedUser = await this.getUserById(userId);
+
+    return {
+      success: true,
+      message: "Password reset successfully",
+      data: updatedUser as unknown as IUser,
     };
   }
 }

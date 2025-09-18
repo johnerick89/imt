@@ -30,12 +30,7 @@ import type {
 
 const GlAccountsPage: React.FC = () => {
   const { user } = useSession();
-  const {
-    canCreateGlAccounts,
-    canEditGlAccounts,
-    canDeleteGlAccounts,
-    canGenerateGlAccounts,
-  } = usePermissions();
+  const { canCreateGlAccounts, canGenerateGlAccounts } = usePermissions();
 
   // Filter state
   const [filters, setFilters] = useState<GlAccountFilters>({
@@ -138,16 +133,6 @@ const GlAccountsPage: React.FC = () => {
     setShowViewModal(true);
   };
 
-  const openEditModal = (glAccount: GlAccount) => {
-    setSelectedGlAccount(glAccount);
-    setShowEditModal(true);
-  };
-
-  const openDeleteModal = (glAccount: GlAccount) => {
-    setSelectedGlAccount(glAccount);
-    setShowDeleteModal(true);
-  };
-
   const accountTypes = [
     { value: "", label: "All Types" },
     { value: "ASSET", label: "Asset" },
@@ -186,7 +171,7 @@ const GlAccountsPage: React.FC = () => {
           {canCreateGlAccounts() && (
             <Button
               onClick={() => setShowCreateModal(true)}
-              className="flex items-center space-x-2"
+              className="flex items-center space-x-2 hidden"
             >
               <FiPlus className="h-4 w-4" />
               <span>Add GL Account</span>
@@ -425,8 +410,6 @@ const GlAccountsPage: React.FC = () => {
         <GlAccountsTable
           data={glAccounts}
           onView={openViewModal}
-          onEdit={canEditGlAccounts() ? openEditModal : undefined}
-          onDelete={canDeleteGlAccounts() ? openDeleteModal : undefined}
           isLoading={glAccountsLoading}
         />
       </div>

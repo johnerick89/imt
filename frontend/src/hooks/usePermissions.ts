@@ -78,6 +78,12 @@ export const usePermissions = () => {
     canEditTransactions: () => hasPermission(user, "admin.transactions.edit"),
     canDeleteTransactions: () =>
       hasPermission(user, "admin.transactions.delete"),
+    canApproveTransactions: () =>
+      hasPermission(user, "admin.transactions.approve"),
+    canCancelTransactions: () =>
+      hasPermission(user, "admin.transactions.cancel"),
+    canReverseTransactions: () =>
+      hasPermission(user, "admin.transactions.reverse"),
 
     canViewCustomers: () => hasPermission(user, "admin.customers.view"),
     canCreateCustomers: () => hasPermission(user, "admin.customers.create"),
@@ -117,6 +123,29 @@ export const usePermissions = () => {
     canEditIntegrations: () => hasPermission(user, "admin.integrations.edit"),
     canDeleteIntegrations: () =>
       hasPermission(user, "admin.integrations.delete"),
+
+    // Charges Payment Management
+    canViewChargesPayments: () =>
+      hasPermission(user, "admin.chargesPayments.view"),
+    canCreateChargesPayments: () =>
+      hasPermission(user, "admin.chargesPayments.create"),
+    canApproveChargesPayments: () =>
+      hasPermission(user, "admin.chargesPayments.approve"),
+
+    // Organisation Balance Management
+    canViewOrgBalances: () => hasPermission(user, "admin.orgBalances.view"),
+    canCreateOrgBalances: () => hasPermission(user, "admin.orgBalances.create"),
+
+    // Bank Account Management
+    canViewBankAccounts: () => hasPermission(user, "admin.bankAccounts.view"),
+    canCreateBankAccounts: () =>
+      hasPermission(user, "admin.bankAccounts.create"),
+    canEditBankAccounts: () => hasPermission(user, "admin.bankAccounts.edit"),
+    canDeleteBankAccounts: () =>
+      hasPermission(user, "admin.bankAccounts.delete"),
+
+    // Reports Management
+    canViewReports: () => hasPermission(user, "admin.reports.view"),
 
     // User context
     user,

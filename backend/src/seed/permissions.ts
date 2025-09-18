@@ -207,6 +207,58 @@ const permissions = [
     permission_name: "admin.transactions.create",
     permission_description: "Add Transactions",
   },
+  {
+    permission_name: "admin.transactions.approve",
+    permission_description: "Approve Transactions",
+  },
+  {
+    permission_name: "admin.transactions.cancel",
+    permission_description: "Cancel Transactions",
+  },
+  {
+    permission_name: "admin.transactions.reverse",
+    permission_description: "Reverse Transactions",
+  },
+  {
+    permission_name: "admin.chargesPayments.view",
+    permission_description: "View Charges Payments",
+  },
+  {
+    permission_name: "admin.chargesPayments.create",
+    permission_description: "Create charges payments",
+  },
+  {
+    permission_name: "admin.chargesPayments.approve",
+    permission_description: "Approve charges payments",
+  },
+  {
+    permission_name: "admin.orgBalances.view",
+    permission_description: "View Org Balances",
+  },
+  {
+    permission_name: "admin.orgBalances.create",
+    permission_description: "Create org balances",
+  },
+  {
+    permission_name: "admin.bankAccounts.view",
+    permission_description: "View Bank Accounts",
+  },
+  {
+    permission_name: "admin.bankAccounts.create",
+    permission_description: "Create bank accounts",
+  },
+  {
+    permission_name: "admin.bankAccounts.edit",
+    permission_description: "Edit bank accounts",
+  },
+  {
+    permission_name: "admin.bankAccounts.delete",
+    permission_description: "Delete bank accounts",
+  },
+  {
+    permission_name: "admin.reports.view",
+    permission_description: "View reports",
+  },
 ];
 
 export default permissions;

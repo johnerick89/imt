@@ -1,6 +1,6 @@
 import React from "react";
 import type { User } from "../types/AuthTypes";
-import type { Permission } from "../types/RolesTypes";
+import type { RolePermissions } from "../types/RolesTypes";
 
 /**
  * Frontend ACL (Access Control List) Utility
@@ -86,6 +86,27 @@ export const PERMISSIONS = {
   CREATE_TRANSACTIONS: "admin.transactions.create",
   EDIT_TRANSACTIONS: "admin.transactions.edit",
   DELETE_TRANSACTIONS: "admin.transactions.delete",
+  APPROVE_TRANSACTIONS: "admin.transactions.approve",
+  CANCEL_TRANSACTIONS: "admin.transactions.cancel",
+  REVERSE_TRANSACTIONS: "admin.transactions.reverse",
+
+  // Charges Payment Management
+  VIEW_CHARGES_PAYMENTS: "admin.chargesPayments.view",
+  CREATE_CHARGES_PAYMENTS: "admin.chargesPayments.create",
+  APPROVE_CHARGES_PAYMENTS: "admin.chargesPayments.approve",
+
+  // Organisation Balance Management
+  VIEW_ORG_BALANCES: "admin.orgBalances.view",
+  CREATE_ORG_BALANCES: "admin.orgBalances.create",
+
+  // Bank Account Management
+  VIEW_BANK_ACCOUNTS: "admin.bankAccounts.view",
+  CREATE_BANK_ACCOUNTS: "admin.bankAccounts.create",
+  EDIT_BANK_ACCOUNTS: "admin.bankAccounts.edit",
+  DELETE_BANK_ACCOUNTS: "admin.bankAccounts.delete",
+
+  // Reports Management
+  VIEW_REPORTS: "admin.reports.view",
 } as const;
 
 export type PermissionName = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -94,12 +115,12 @@ export type PermissionName = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
  * Extract user permissions from user object
  */
 export const getUserPermissions = (user: User | null): string[] => {
-  if (!user?.user_role?.permissions) {
+  if (!user?.user_role?.role_permissions) {
     return [];
   }
 
-  return user.user_role.permissions.map(
-    (permission: Permission) => permission.name
+  return user.user_role.role_permissions.map(
+    (rolePermission: RolePermissions) => rolePermission.permission.name
   );
 };
 
@@ -113,7 +134,6 @@ export const hasPermission = (
   if (!user) return false;
 
   const userPermissions = getUserPermissions(user);
-  console.log("userPermissions", userPermissions);
   return userPermissions.includes(permission);
 };
 
@@ -319,7 +339,26 @@ export const PERMISSION_GROUPS = {
     PERMISSIONS.CREATE_TRANSACTIONS,
     PERMISSIONS.EDIT_TRANSACTIONS,
     PERMISSIONS.DELETE_TRANSACTIONS,
+    PERMISSIONS.APPROVE_TRANSACTIONS,
+    PERMISSIONS.CANCEL_TRANSACTIONS,
+    PERMISSIONS.REVERSE_TRANSACTIONS,
   ],
+  CHARGES_PAYMENT_MANAGEMENT: [
+    PERMISSIONS.VIEW_CHARGES_PAYMENTS,
+    PERMISSIONS.CREATE_CHARGES_PAYMENTS,
+    PERMISSIONS.APPROVE_CHARGES_PAYMENTS,
+  ],
+  BALANCE_MANAGEMENT: [
+    PERMISSIONS.VIEW_ORG_BALANCES,
+    PERMISSIONS.CREATE_ORG_BALANCES,
+  ],
+  BANK_ACCOUNT_MANAGEMENT: [
+    PERMISSIONS.VIEW_BANK_ACCOUNTS,
+    PERMISSIONS.CREATE_BANK_ACCOUNTS,
+    PERMISSIONS.EDIT_BANK_ACCOUNTS,
+    PERMISSIONS.DELETE_BANK_ACCOUNTS,
+  ],
+  REPORTING: [PERMISSIONS.VIEW_REPORTS],
   CUSTOMER_MANAGEMENT: [
     PERMISSIONS.VIEW_CUSTOMERS,
     PERMISSIONS.CREATE_CUSTOMERS,

@@ -6,12 +6,25 @@ import {
   useToggleUserStatus,
   useDeleteUser,
   useUserAuditHistory,
+  useUpdatePassword,
+  useResetPassword,
 } from "../hooks";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { DataTable } from "../components/ui/DataTable";
 import { ConfirmModal } from "../components/ConfirmModal";
+import { Modal } from "../components/ui/Modal";
+import { Button } from "../components/ui/Button";
+import UserForm from "../components/UserForm";
+import UpdatePasswordModal from "../components/UpdatePasswordModal";
+import ResetPasswordModal from "../components/ResetPasswordModal";
+import { usePermissions } from "../hooks/usePermissions";
+import { FiEdit, FiTrash2, FiLock, FiKey } from "react-icons/fi";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { UserActivity } from "../types/UserActivityTypes";
+import type {
+  UpdatePasswordRequest,
+  ResetPasswordRequest,
+} from "../types/UsersTypes";
 import { useSession } from "../hooks";
 
 const UserProfilePage: React.FC = () => {
@@ -19,6 +32,9 @@ const UserProfilePage: React.FC = () => {
   const { user: currentUser, isInitialized } = useSession();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Permission checks
+  const { canEditUsers, canDeleteUsers } = usePermissions();
 
   // Determine if this is "My Profile" or "View User"
   const isMyProfile = location.pathname === "/my-account";
@@ -73,6 +89,8 @@ const UserProfilePage: React.FC = () => {
   const userError = isMyProfile ? currentUserError : viewUserError;
   const toggleUserStatusMutation = useToggleUserStatus();
   const deleteUserMutation = useDeleteUser();
+  const updatePasswordMutation = useUpdatePassword();
+  const resetPasswordMutation = useResetPassword();
 
   // User activities
   const activityFilters = {
@@ -82,6 +100,50 @@ const UserProfilePage: React.FC = () => {
 
   // Delete confirmation modal state
   const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    userId: string | null;
+    userName: string;
+  }>({
+    isOpen: false,
+    userId: null,
+    userName: "",
+  });
+
+  // Edit modal state
+  const [editModal, setEditModal] = useState<{
+    isOpen: boolean;
+    userId: string | null;
+  }>({
+    isOpen: false,
+    userId: null,
+  });
+
+  // Status toggle modal state
+  const [statusModal, setStatusModal] = useState<{
+    isOpen: boolean;
+    userId: string | null;
+    currentStatus: string;
+    userName: string;
+  }>({
+    isOpen: false,
+    userId: null,
+    currentStatus: "",
+    userName: "",
+  });
+
+  // Update password modal state (for current user)
+  const [updatePasswordModal, setUpdatePasswordModal] = useState<{
+    isOpen: boolean;
+    userId: string | null;
+    userName: string;
+  }>({
+    isOpen: false,
+    userId: null,
+    userName: "",
+  });
+
+  // Reset password modal state (for other users)
+  const [resetPasswordModal, setResetPasswordModal] = useState<{
     isOpen: boolean;
     userId: string | null;
     userName: string;
@@ -113,24 +175,29 @@ const UserProfilePage: React.FC = () => {
     : null;
 
   const handleStatusToggle = async () => {
-    if (!user) return;
+    if (!statusModal.userId) return;
 
     try {
-      const newStatus = user.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+      const newStatus =
+        statusModal.currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE";
       await toggleUserStatusMutation.mutateAsync({
-        userId: user.id,
-        status: newStatus,
+        userId: statusModal.userId,
+        status: newStatus as "ACTIVE" | "INACTIVE",
+      });
+      setStatusModal({
+        isOpen: false,
+        userId: null,
+        currentStatus: "",
+        userName: "",
       });
     } catch (error) {
       console.error("Error toggling user status:", error);
     }
   };
 
-  const handleDeleteUser = async () => {
-    if (!user) return;
-
+  const handleDeleteUser = async (userId: string) => {
     try {
-      await deleteUserMutation.mutateAsync(user.id);
+      await deleteUserMutation.mutateAsync(userId);
       setDeleteModal({ isOpen: false, userId: null, userName: "" });
       navigate("/users");
     } catch (error) {
@@ -149,6 +216,93 @@ const UserProfilePage: React.FC = () => {
 
   const closeDeleteModal = () => {
     setDeleteModal({ isOpen: false, userId: null, userName: "" });
+  };
+
+  const openStatusModal = () => {
+    if (!user) return;
+    setStatusModal({
+      isOpen: true,
+      userId: user.id,
+      currentStatus: user.status,
+      userName: `${user.first_name} ${user.last_name}`,
+    });
+  };
+
+  const closeStatusModal = () => {
+    setStatusModal({
+      isOpen: false,
+      userId: null,
+      currentStatus: "",
+      userName: "",
+    });
+  };
+
+  // Edit handlers
+  const openEditModal = () => {
+    if (!user) return;
+    setEditModal({ isOpen: true, userId: user.id });
+  };
+
+  const closeEditModal = () => {
+    setEditModal({ isOpen: false, userId: null });
+  };
+
+  const handleEditSuccess = () => {
+    closeEditModal();
+    // The mutation will automatically invalidate and refetch the data
+  };
+
+  // Password handlers
+  const handleUpdatePassword = async (data: UpdatePasswordRequest) => {
+    if (!user) return;
+    try {
+      await updatePasswordMutation.mutateAsync({
+        userId: user.id,
+        userData: data,
+      });
+      setUpdatePasswordModal({ isOpen: false, userId: null, userName: "" });
+    } catch (error) {
+      console.error("Error updating password:", error);
+    }
+  };
+
+  const handleResetPassword = async (data: ResetPasswordRequest) => {
+    if (!resetPasswordModal.userId) return;
+    try {
+      await resetPasswordMutation.mutateAsync({
+        userId: resetPasswordModal.userId,
+        userData: data,
+      });
+      setResetPasswordModal({ isOpen: false, userId: null, userName: "" });
+    } catch (error) {
+      console.error("Error resetting password:", error);
+    }
+  };
+
+  const openUpdatePasswordModal = () => {
+    if (!user) return;
+    setUpdatePasswordModal({
+      isOpen: true,
+      userId: user.id,
+      userName: `${user.first_name} ${user.last_name}`,
+    });
+  };
+
+  const openResetPasswordModal = () => {
+    if (!user) return;
+    setResetPasswordModal({
+      isOpen: true,
+      userId: user.id,
+      userName: `${user.first_name} ${user.last_name}`,
+    });
+  };
+
+  const closeUpdatePasswordModal = () => {
+    setUpdatePasswordModal({ isOpen: false, userId: null, userName: "" });
+  };
+
+  const closeResetPasswordModal = () => {
+    setResetPasswordModal({ isOpen: false, userId: null, userName: "" });
   };
 
   const formatDate = (dateString: string) => {
@@ -284,37 +438,6 @@ const UserProfilePage: React.FC = () => {
               </p>
             </div>
           </div>
-          {!isMyProfile && (
-            <div className="flex space-x-3">
-              <button
-                onClick={() => navigate(`/users/${user.id}/edit`)}
-                className="px-4 py-2 text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 flex items-center"
-              >
-                <span className="mr-2">✏️</span>
-                Edit User
-              </button>
-              <button
-                onClick={handleStatusToggle}
-                className={`px-4 py-2 rounded-lg flex items-center ${
-                  user.status === "ACTIVE"
-                    ? "text-red-600 bg-red-50 border border-red-200 hover:bg-red-100"
-                    : "text-green-600 bg-green-50 border border-green-200 hover:bg-green-100"
-                }`}
-              >
-                <span className="mr-2">
-                  {user.status === "ACTIVE" ? "❌" : "✅"}
-                </span>
-                {user.status === "ACTIVE" ? "Deactivate" : "Activate"}
-              </button>
-              <button
-                onClick={openDeleteModal}
-                className="px-4 py-2 text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 flex items-center"
-              >
-                <span className="mr-2">🗑️</span>
-                Delete User
-              </button>
-            </div>
-          )}
         </div>
       </div>
 
@@ -338,7 +461,7 @@ const UserProfilePage: React.FC = () => {
                 )}
               </div>
             </div>
-            <div className="ml-6">
+            <div className="ml-6 flex-1">
               <h2 className="text-2xl font-bold text-white">
                 {user.first_name} {user.last_name}
               </h2>
@@ -347,6 +470,61 @@ const UserProfilePage: React.FC = () => {
                 <StatusBadge status={user.role || ""} type="role" />
                 <StatusBadge status={user.status || ""} type="status" />
               </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-start space-x-3">
+              {/* Edit Button - Always available if user has permission */}
+              {canEditUsers() && (
+                <Button
+                  onClick={openEditModal}
+                  variant="outline"
+                  className="bg-white bg-opacity-20 border-white border-opacity-30 text-white hover:bg-opacity-30"
+                >
+                  <FiEdit className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+              )}
+
+              {/* Change Password Button - Only for current user */}
+              {(isMyProfile || user.id === currentUser?.id) && (
+                <Button
+                  onClick={openUpdatePasswordModal}
+                  variant="outline"
+                  className="bg-white bg-opacity-20 border-white border-opacity-30 text-white hover:bg-opacity-30"
+                >
+                  <FiKey className="h-4 w-4 mr-2" />
+                  Change Password
+                </Button>
+              )}
+
+              {/* Status Toggle Button - Only if not current user and has permission */}
+              {!isMyProfile &&
+                user.id !== currentUser?.id &&
+                canEditUsers() && (
+                  <Button
+                    onClick={openStatusModal}
+                    variant="outline"
+                    className="bg-white bg-opacity-20 border-white border-opacity-30 text-white hover:bg-opacity-30"
+                  >
+                    <FiLock className="h-4 w-4 mr-2" />
+                    {user.status === "ACTIVE" ? "Deactivate" : "Activate"}
+                  </Button>
+                )}
+
+              {/* Delete Button - Only if not current user and has permission */}
+              {!isMyProfile &&
+                user.id !== currentUser?.id &&
+                canDeleteUsers() && (
+                  <Button
+                    onClick={openDeleteModal}
+                    variant="outline"
+                    className="bg-red-500 bg-opacity-80 border-red-400 text-white hover:bg-red-600"
+                  >
+                    <FiTrash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
+                )}
             </div>
           </div>
         </div>
@@ -390,16 +568,6 @@ const UserProfilePage: React.FC = () => {
                     {user.address || "Not provided"}
                   </p>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-500">
-                    Avatar
-                  </label>
-                  <p className="mt-1 text-sm text-gray-900">
-                    {user.avatar
-                      ? "Custom avatar uploaded"
-                      : "No avatar uploaded"}
-                  </p>
-                </div>
               </div>
             </div>
 
@@ -411,17 +579,12 @@ const UserProfilePage: React.FC = () => {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-500">
-                    User ID
-                  </label>
-                  <p className="mt-1 text-sm text-gray-900 font-mono">
-                    {user.id}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-500">
                     Role
                   </label>
-                  <StatusBadge status={user.role || ""} type="role" />
+                  <StatusBadge
+                    status={user.user_role?.name || ""}
+                    type="role"
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-500">
@@ -434,8 +597,7 @@ const UserProfilePage: React.FC = () => {
                     Organisation
                   </label>
                   <p className="mt-1 text-sm text-gray-900">
-                    {user.organisation?.name || "No organisation assigned"} //
-                    TODO: Fix this
+                    {user.organisation?.name || "No organisation assigned"}
                   </p>
                 </div>
               </div>
@@ -483,18 +645,27 @@ const UserProfilePage: React.FC = () => {
               Quick Actions
             </h3>
             <div className="flex flex-wrap gap-3">
-              <button className="px-4 py-2 text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 flex items-center">
-                <span className="mr-2">🔑</span>
-                Reset Password
-              </button>
-              <button className="px-4 py-2 text-yellow-600 bg-yellow-50 border border-yellow-200 rounded-lg hover:bg-yellow-100 flex items-center">
+              {/* Reset Password - Only if not current user and has permission */}
+              {!isMyProfile &&
+                user.id !== currentUser?.id &&
+                canEditUsers() && (
+                  <button
+                    onClick={openResetPasswordModal}
+                    className="px-4 py-2 text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 flex items-center"
+                  >
+                    <FiKey className="h-4 w-4 mr-2" />
+                    Reset Password
+                  </button>
+                )}
+
+              {/* <button className="px-4 py-2 text-yellow-600 bg-yellow-50 border border-yellow-200 rounded-lg hover:bg-yellow-100 flex items-center">
                 <span className="mr-2">📧</span>
                 Send Welcome Email
-              </button>
-              <button className="px-4 py-2 text-purple-600 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 flex items-center">
+              </button> */}
+              {/* <button className="px-4 py-2 text-purple-600 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 flex items-center">
                 <span className="mr-2">📊</span>
                 View Activity Log
-              </button>
+              </button> */}
             </div>
           </div>
         </div>
@@ -525,11 +696,62 @@ const UserProfilePage: React.FC = () => {
         </div>
       </div>
 
+      {/* Edit User Modal */}
+      <Modal
+        isOpen={editModal.isOpen}
+        onClose={closeEditModal}
+        title="Edit User"
+        size="lg"
+      >
+        <UserForm
+          mode="edit"
+          userId={editModal.userId || undefined}
+          onSuccess={handleEditSuccess}
+        />
+      </Modal>
+
+      {/* Status Toggle Confirmation Modal */}
+      <ConfirmModal
+        isOpen={statusModal.isOpen}
+        onClose={closeStatusModal}
+        onConfirm={handleStatusToggle}
+        title={`${
+          statusModal.currentStatus === "ACTIVE" ? "Deactivate" : "Activate"
+        } User`}
+        message={`Are you sure you want to ${
+          statusModal.currentStatus === "ACTIVE" ? "deactivate" : "activate"
+        } "${statusModal.userName}"?`}
+        confirmText={
+          statusModal.currentStatus === "ACTIVE" ? "Deactivate" : "Activate"
+        }
+        cancelText="Cancel"
+        variant={statusModal.currentStatus === "ACTIVE" ? "warning" : "info"}
+        isLoading={toggleUserStatusMutation.isPending}
+      />
+
+      {/* Update Password Modal (for current user) */}
+      <UpdatePasswordModal
+        isOpen={updatePasswordModal.isOpen}
+        onClose={closeUpdatePasswordModal}
+        onSubmit={handleUpdatePassword}
+        isLoading={updatePasswordMutation.isPending}
+        userName={updatePasswordModal.userName}
+      />
+
+      {/* Reset Password Modal (for other users) */}
+      <ResetPasswordModal
+        isOpen={resetPasswordModal.isOpen}
+        onClose={closeResetPasswordModal}
+        onSubmit={handleResetPassword}
+        isLoading={resetPasswordMutation.isPending}
+        userName={resetPasswordModal.userName}
+      />
+
       {/* Delete Confirmation Modal */}
       <ConfirmModal
         isOpen={deleteModal.isOpen}
         onClose={closeDeleteModal}
-        onConfirm={handleDeleteUser}
+        onConfirm={() => handleDeleteUser(deleteModal.userId!)}
         title="Delete User"
         message={`Are you sure you want to delete "${deleteModal.userName}"? This action cannot be undone.`}
         confirmText="Delete User"

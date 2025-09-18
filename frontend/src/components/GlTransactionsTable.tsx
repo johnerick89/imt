@@ -24,14 +24,17 @@ const GlTransactionsTable: React.FC<GlTransactionsTableProps> = ({
         accessorKey: "transaction_type",
         header: "Transaction Type",
         cell: ({ row }) => (
-          <div>
+          <button
+            onClick={() => onView?.(row.original)}
+            className="text-left w-full p-2 rounded-lg hover:bg-gray-50 transition-colors"
+          >
             <div className="font-medium text-gray-900">
               {row.original.transaction_type.replace(/_/g, " ")}
             </div>
             <div className="text-sm text-gray-500">
               {row.original.description}
             </div>
-          </div>
+          </button>
         ),
       },
       {
@@ -92,16 +95,7 @@ const GlTransactionsTable: React.FC<GlTransactionsTableProps> = ({
               </div>
             );
           }
-          if (transaction.transaction) {
-            return (
-              <div>
-                <div className="font-medium text-gray-900">Transaction</div>
-                <div className="text-sm text-gray-500">
-                  {transaction.transaction.reference}
-                </div>
-              </div>
-            );
-          }
+
           return <span className="text-gray-400">-</span>;
         },
       },

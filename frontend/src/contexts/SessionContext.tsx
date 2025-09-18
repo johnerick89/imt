@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import type { User } from "../types/AuthTypes";
 import { InactivityWarningModal } from "../components/InactivityWarningModal";
+import { useRole } from "../hooks/useRoles";
 
 type SessionContextType = {
   sessionJwt: string | null;
@@ -39,6 +40,20 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({
   const inactivityTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const warningTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigate = useNavigate();
+
+  // Fetch user role data if user is authenticated and role_id exists but user_role is missing
+  const shouldFetchRole = isAuthenticated && user?.role_id && !user?.user_role;
+  console.log(
+    "shouldFetchRole",
+    shouldFetchRole,
+    "user",
+    user,
+    "isAuthenticated",
+    isAuthenticated
+  );
+  const { data: roleData, isLoading: roleLoading } = useRole(
+    shouldFetchRole ? user.role_id || "" : ""
+  );
 
   // Clear all timers
   const clearTimers = useCallback(() => {
@@ -251,13 +266,24 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({
   ]);
 
   // Update user details
-  const updateUserDetails = (newDetails: Partial<User>) => {
-    if (user) {
-      const updatedDetails = { ...user, ...newDetails };
-      setUser(updatedDetails);
-      sessionStorage.setItem("user", JSON.stringify(updatedDetails));
+  const updateUserDetails = useCallback(
+    (newDetails: Partial<User>) => {
+      if (user) {
+        const updatedDetails = { ...user, ...newDetails };
+        setUser(updatedDetails);
+        sessionStorage.setItem("user", JSON.stringify(updatedDetails));
+      }
+    },
+    [user]
+  );
+
+  // Update user with role data when role fetch completes
+  useEffect(() => {
+    if (roleData?.data && user && !user.user_role && !roleLoading) {
+      console.log("Updating user with role data:", roleData.data);
+      updateUserDetails({ user_role: roleData.data });
     }
-  };
+  }, [roleData, user, roleLoading, updateUserDetails]);
 
   // Refresh authentication state
   const refreshAuthState = () => {
