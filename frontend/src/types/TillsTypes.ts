@@ -89,6 +89,7 @@ export interface CreateUserTillRequest {
   closing_balance?: number;
   date?: string;
   status?: UserTillStatus;
+  organisation_id?: string;
 }
 
 export interface UpdateUserTillRequest {
@@ -98,6 +99,7 @@ export interface UpdateUserTillRequest {
   closing_balance?: number;
   date?: string;
   status?: UserTillStatus;
+  organisation_id?: string;
 }
 
 export interface TillFilters {
@@ -107,6 +109,10 @@ export interface TillFilters {
   status?: TillStatus;
   vault_id?: string;
   currency_id?: string;
+  organisation_id?: string;
+}
+
+export interface TillStatsFilters {
   organisation_id?: string;
 }
 

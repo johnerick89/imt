@@ -18,13 +18,11 @@ export const createOrganisationSchema = z.object({
   integration_mode: z.nativeEnum(IntegrationMethod).optional(),
   contact_person: z
     .string()
-    .max(100, "Contact person must be less than 100 characters")
-    .optional(),
+    .max(100, "Contact person must be less than 100 characters"),
   contact_email: z
     .string()
     .email("Invalid email format")
-    .max(100, "Email must be less than 100 characters")
-    .optional(),
+    .max(100, "Email must be less than 100 characters"),
   contact_phone: z
     .string()
     .max(20, "Phone must be less than 20 characters")
@@ -73,13 +71,11 @@ export const updateOrganisationSchema = z.object({
   integration_mode: z.nativeEnum(IntegrationMethod).optional(),
   contact_person: z
     .string()
-    .max(100, "Contact person must be less than 100 characters")
-    .optional(),
+    .max(100, "Contact person must be less than 100 characters"),
   contact_email: z
     .string()
     .email("Invalid email format")
-    .max(100, "Email must be less than 100 characters")
-    .optional(),
+    .max(100, "Email must be less than 100 characters"),
   contact_phone: z
     .string()
     .max(20, "Phone must be less than 20 characters")

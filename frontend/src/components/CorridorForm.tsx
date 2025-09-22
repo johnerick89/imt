@@ -5,7 +5,11 @@ import { Input } from "./ui/Input";
 import { Select } from "./ui/Select";
 import { Textarea } from "./ui/Textarea";
 import { SearchableSelect } from "./ui/SearchableSelect";
-import { useAllCountries, useAllCurrencies } from "../hooks";
+import {
+  useAllCountries,
+  useAllCurrencies,
+  useAllOrganisations,
+} from "../hooks";
 import type {
   CreateCorridorRequest,
   UpdateCorridorRequest,
@@ -32,7 +36,18 @@ const CorridorForm: React.FC<CorridorFormProps> = ({
   const currentUserOrganisationId = user?.organisation_id;
   const { data: countriesData } = useAllCountries();
   const { data: currenciesData } = useAllCurrencies();
-
+  const { data: organisationsData } = useAllOrganisations();
+  const userOrganisation = organisationsData?.data?.organisations?.find(
+    (org) => org.id === currentUserOrganisationId
+  );
+  console.log(
+    "userOrganisation",
+    userOrganisation,
+    "organisationsData",
+    organisationsData,
+    "currentUserOrganisationId",
+    currentUserOrganisationId
+  );
   const {
     control,
     handleSubmit,
@@ -42,7 +57,8 @@ const CorridorForm: React.FC<CorridorFormProps> = ({
       ? {
           name: initialData.name,
           description: initialData.description,
-          base_country_id: initialData.base_country?.id || "",
+          base_country_id:
+            initialData.base_country?.id || userOrganisation?.country_id || "",
           destination_country_id: initialData.destination_country?.id || "",
           base_currency_id: initialData.base_currency?.id || "",
           organisation_id: initialData.organisation_id,
@@ -52,7 +68,7 @@ const CorridorForm: React.FC<CorridorFormProps> = ({
       : {
           name: "",
           description: "",
-          base_country_id: "",
+          base_country_id: userOrganisation?.country_id || "",
           destination_country_id: "",
           base_currency_id: "",
           organisation_id: "",
@@ -62,7 +78,12 @@ const CorridorForm: React.FC<CorridorFormProps> = ({
   });
 
   const handleFormSubmit = (data: CreateCorridorRequest) => {
-    onSubmit(data);
+    console.log("data", data);
+    const { base_country_id, ...rest } = data;
+    onSubmit({
+      base_country_id: base_country_id || userOrganisation?.country_id || "",
+      ...rest,
+    });
   };
   console.log("countriesData", countriesData);
 
@@ -111,7 +132,7 @@ const CorridorForm: React.FC<CorridorFormProps> = ({
           />
         </FormItem>
 
-        <FormItem
+        {/* <FormItem
           label="Base Country"
           required
           invalid={!!errors.base_country_id}
@@ -138,7 +159,7 @@ const CorridorForm: React.FC<CorridorFormProps> = ({
               />
             )}
           />
-        </FormItem>
+        </FormItem> */}
 
         <FormItem
           label="Destination Country"
@@ -170,7 +191,7 @@ const CorridorForm: React.FC<CorridorFormProps> = ({
         </FormItem>
 
         <FormItem
-          label="Base Currency"
+          label="Destination Currency"
           required
           invalid={!!errors.base_currency_id}
           errorMessage={errors.base_currency_id?.message}

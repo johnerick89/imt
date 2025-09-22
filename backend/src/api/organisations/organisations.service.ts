@@ -9,7 +9,10 @@ import {
   IOrganisationStatsResponse,
   IOrganisation,
 } from "./organisations.interfaces";
+import { UsersService } from "../users/users.services";
+import { createContactPerson } from "./organisations.utils";
 
+const usersService = new UsersService();
 export class OrganisationsService {
   async createOrganisation(
     organisationData: ICreateOrganisationRequest,
@@ -21,7 +24,7 @@ export class OrganisationsService {
         data: {
           ...organisationData,
           created_by: createdBy,
-          status: OrganisationStatus.PENDING,
+          status: OrganisationStatus.ACTIVE,
         },
         include: {
           base_currency: {
@@ -50,6 +53,11 @@ export class OrganisationsService {
         },
       });
 
+      const contactPerson = await createContactPerson(
+        organisationData,
+        organisation.id
+      );
+      console.log(contactPerson);
       return {
         success: true,
         message: "Organisation created successfully",

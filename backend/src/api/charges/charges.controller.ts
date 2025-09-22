@@ -6,6 +6,8 @@ import {
   chargeFiltersSchema,
 } from "./charges.validation";
 import type CustomRequest from "../../types/CustomReq.type";
+import { AppError } from "../../utils/AppError";
+import { asyncHandler } from "../../middlewares/error.middleware";
 
 export class ChargeController {
   private chargeService: ChargeService;
@@ -14,14 +16,11 @@ export class ChargeController {
     this.chargeService = new ChargeService();
   }
 
-  async createCharge(req: CustomRequest, res: Response) {
-    try {
+  createCharge = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const userId = req.user?.id;
       if (!userId) {
-        return res.status(401).json({
-          success: false,
-          message: "User not authenticated",
-        });
+        throw new AppError("User not authenticated", 401);
       }
       console.log("req.body", req.body);
       const validatedData = createChargeSchema.parse(req.body);
@@ -30,107 +29,47 @@ export class ChargeController {
         validatedData,
         userId
       );
-      return res.status(201).json(result);
-    } catch (error) {
-      if (error instanceof Error) {
-        return res.status(400).json({
-          success: false,
-          message: error.message,
-        });
-      }
-      return res.status(500).json({
-        success: false,
-        message: "Internal server error",
-      });
+      res.status(201).json(result);
     }
-  }
+  );
 
-  async getCharges(req: Request, res: Response) {
-    try {
+  getCharges = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const validatedFilters = chargeFiltersSchema.parse(req.query);
       const result = await this.chargeService.getCharges(validatedFilters);
-      return res.status(200).json(result);
-    } catch (error) {
-      if (error instanceof Error) {
-        return res.status(400).json({
-          success: false,
-          message: error.message,
-        });
-      }
-      return res.status(500).json({
-        success: false,
-        message: "Internal server error",
-      });
+      res.status(200).json(result);
     }
-  }
+  );
 
-  async getChargeById(req: Request, res: Response) {
-    try {
+  getChargeById = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { id } = req.params;
       const result = await this.chargeService.getChargeById(id);
-      return res.status(200).json(result);
-    } catch (error) {
-      if (error instanceof Error) {
-        return res.status(404).json({
-          success: false,
-          message: error.message,
-        });
-      }
-      return res.status(500).json({
-        success: false,
-        message: "Internal server error",
-      });
+      res.status(200).json(result);
     }
-  }
+  );
 
-  async updateCharge(req: Request, res: Response) {
-    try {
+  updateCharge = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { id } = req.params;
       const validatedData = updateChargeSchema.parse(req.body);
       const result = await this.chargeService.updateCharge(id, validatedData);
-      return res.status(200).json(result);
-    } catch (error) {
-      if (error instanceof Error) {
-        return res.status(400).json({
-          success: false,
-          message: error.message,
-        });
-      }
-      return res.status(500).json({
-        success: false,
-        message: "Internal server error",
-      });
+      res.status(200).json(result);
     }
-  }
+  );
 
-  async deleteCharge(req: Request, res: Response) {
-    try {
+  deleteCharge = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { id } = req.params;
       const result = await this.chargeService.deleteCharge(id);
-      return res.status(200).json(result);
-    } catch (error) {
-      if (error instanceof Error) {
-        return res.status(400).json({
-          success: false,
-          message: error.message,
-        });
-      }
-      return res.status(500).json({
-        success: false,
-        message: "Internal server error",
-      });
+      res.status(200).json(result);
     }
-  }
+  );
 
-  async getChargeStats(req: Request, res: Response) {
-    try {
+  getChargeStats = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const result = await this.chargeService.getChargeStats();
-      return res.status(200).json(result);
-    } catch (error) {
-      return res.status(500).json({
-        success: false,
-        message: "Internal server error",
-      });
+      res.status(200).json(result);
     }
-  }
+  );
 }

@@ -35,6 +35,7 @@ import type { TillTopupRequest } from "../types/BalanceOperationsTypes";
 const TillsPage: React.FC = () => {
   const navigate = useNavigate();
   const { user: currentUser } = useSession();
+  const organisationId = currentUser?.organisation_id;
 
   // Filter state
   const [filters, setFilters] = useState<TillFilters>({
@@ -44,8 +45,10 @@ const TillsPage: React.FC = () => {
     status: "" as TillStatus,
     vault_id: "",
     currency_id: "",
-    organisation_id: currentUser?.organisation_id || "",
+    organisation_id: organisationId || "",
   });
+
+  console.log("filters", filters);
 
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -57,10 +60,10 @@ const TillsPage: React.FC = () => {
 
   // Data fetching
   const { data: tillsData, isLoading } = useTills(filters);
-  const { data: statsData } = useTillStats(filters);
+  const { data: statsData } = useTillStats({ organisation_id: organisationId });
   const { data: vaultsData } = useVaults({
     limit: 100,
-    organisation_id: currentUser?.organisation_id || "",
+    organisation_id: organisationId || "",
   });
   const { data: currenciesData } = useCurrencies({ limit: 1000 });
 

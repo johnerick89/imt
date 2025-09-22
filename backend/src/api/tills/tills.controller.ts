@@ -6,250 +6,164 @@ import {
   tillFiltersSchema,
 } from "./tills.validation";
 import type CustomRequest from "../../types/CustomReq.type";
+import { AppError } from "../../utils/AppError";
+import { asyncHandler } from "../../middlewares/error.middleware";
 
 const tillService = new TillService();
 
 export class TillController {
-  async createTill(req: CustomRequest, res: Response) {
-    try {
+  createTill = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const validation = createTillSchema.safeParse(req.body);
-
+      console.log(
+        "validation.data",
+        validation.data,
+        "req.body",
+        req.body,
+        "req.user",
+        req.user
+      );
       if (!validation.success) {
-        return res.status(400).json({
-          success: false,
-          message: "Validation failed",
-          errors: validation.error.issues,
-        });
+        throw new AppError(
+          validation.error.issues[0]?.message || "Invalid input",
+          400
+        );
       }
 
       const result = await tillService.createTill({
         data: validation.data,
         userId: req.user?.id,
       });
-      return res.status(201).json(result);
-    } catch (error: any) {
-      console.error("Error in createTill:", error);
-      return res.status(500).json({
-        success: false,
-        message: error.message || "Internal server error",
-      });
+      res.status(201).json(result);
     }
-  }
+  );
 
-  async getTills(req: CustomRequest, res: Response): Promise<void> {
-    try {
+  getTills = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const validation = tillFiltersSchema.safeParse(req.query);
 
       if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: "Validation failed",
-          errors: validation.error.issues,
-        });
-        return;
+        throw new AppError(
+          validation.error.issues[0]?.message || "Invalid input",
+          400
+        );
       }
+      console.log("req.query", req.query);
+      console.log("validation.data", validation.data);
 
       const result = await tillService.getTills(validation.data);
       res.json(result);
-    } catch (error: any) {
-      console.error("Error in getTills:", error);
-      res.status(500).json({
-        success: false,
-        message: error.message || "Internal server error",
-      });
     }
-  }
+  );
 
-  async getTillById(req: CustomRequest, res: Response): Promise<void> {
-    try {
+  getTillById = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { id } = req.params;
 
       if (!id) {
-        res.status(400).json({
-          success: false,
-          message: "Till ID is required",
-        });
-        return;
+        throw new AppError("Till ID is required", 400);
       }
 
       const result = await tillService.getTillById(id);
       res.json(result);
-    } catch (error: any) {
-      console.error("Error in getTillById:", error);
-      res.status(500).json({
-        success: false,
-        message: error.message || "Internal server error",
-      });
     }
-  }
+  );
 
-  async updateTill(req: CustomRequest, res: Response): Promise<void> {
-    try {
+  updateTill = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { id } = req.params;
       const validation = updateTillSchema.safeParse(req.body);
 
       if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: "Validation failed",
-          errors: validation.error.issues,
-        });
-        return;
+        throw new AppError(
+          validation.error.issues[0]?.message || "Invalid input",
+          400
+        );
       }
 
       if (!id) {
-        res.status(400).json({
-          success: false,
-          message: "Till ID is required",
-        });
-        return;
+        throw new AppError("Till ID is required", 400);
       }
 
       const result = await tillService.updateTill(id, validation.data);
       res.json(result);
-    } catch (error: any) {
-      console.error("Error in updateTill:", error);
-      res.status(500).json({
-        success: false,
-        message: error.message || "Internal server error",
-      });
     }
-  }
+  );
 
-  async deleteTill(req: CustomRequest, res: Response): Promise<void> {
-    try {
+  deleteTill = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { id } = req.params;
 
       if (!id) {
-        res.status(400).json({
-          success: false,
-          message: "Till ID is required",
-        });
-        return;
+        throw new AppError("Till ID is required", 400);
       }
 
       const result = await tillService.deleteTill(id);
       res.json(result);
-    } catch (error: any) {
-      console.error("Error in deleteTill:", error);
-      res.status(500).json({
-        success: false,
-        message: error.message || "Internal server error",
-      });
     }
-  }
+  );
 
-  async getTillStats(req: CustomRequest, res: Response): Promise<void> {
-    try {
+  getTillStats = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const result = await tillService.getTillStats();
       res.json(result);
-    } catch (error: any) {
-      console.error("Error in getTillStats:", error);
-      res.status(500).json({
-        success: false,
-        message: error.message || "Internal server error",
-      });
     }
-  }
+  );
 
-  async openTill(req: CustomRequest, res: Response): Promise<void> {
-    try {
+  openTill = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { id } = req.params;
       const userId = req.user?.id;
 
       if (!id) {
-        res.status(400).json({
-          success: false,
-          message: "Till ID is required",
-        });
-        return;
+        throw new AppError("Till ID is required", 400);
       }
 
       if (!userId) {
-        res.status(401).json({
-          success: false,
-          message: "User not authenticated",
-        });
-        return;
+        throw new AppError("User not authenticated", 401);
       }
 
       const result = await tillService.openTill(id, userId);
       res.json(result);
-    } catch (error: any) {
-      console.error("Error in openTill:", error);
-      res.status(500).json({
-        success: false,
-        message: error.message || "Internal server error",
-      });
     }
-  }
+  );
 
-  async closeTill(req: CustomRequest, res: Response): Promise<void> {
-    try {
+  closeTill = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { id } = req.params;
 
       if (!id) {
-        res.status(400).json({
-          success: false,
-          message: "Till ID is required",
-        });
-        return;
+        throw new AppError("Till ID is required", 400);
       }
 
       const result = await tillService.closeTill(id);
       res.json(result);
-    } catch (error: any) {
-      console.error("Error in closeTill:", error);
-      res.status(500).json({
-        success: false,
-        message: error.message || "Internal server error",
-      });
     }
-  }
+  );
 
-  async blockTill(req: CustomRequest, res: Response): Promise<void> {
-    try {
+  blockTill = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { id } = req.params;
 
       if (!id) {
-        res.status(400).json({
-          success: false,
-          message: "Till ID is required",
-        });
-        return;
+        throw new AppError("Till ID is required", 400);
       }
 
       const result = await tillService.blockTill(id);
       res.json(result);
-    } catch (error: any) {
-      console.error("Error in blockTill:", error);
-      res.status(500).json({
-        success: false,
-        message: error.message || "Internal server error",
-      });
     }
-  }
+  );
 
-  async deactivateTill(req: CustomRequest, res: Response): Promise<void> {
-    try {
+  deactivateTill = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { id } = req.params;
 
       if (!id) {
-        res.status(400).json({
-          success: false,
-          message: "Till ID is required",
-        });
-        return;
+        throw new AppError("Till ID is required", 400);
       }
 
       const result = await tillService.deactivateTill(id);
       res.json(result);
-    } catch (error: any) {
-      console.error("Error in deactivateTill:", error);
-      res.status(500).json({
-        success: false,
-        message: error.message || "Internal server error",
-      });
     }
-  }
+  );
 }

@@ -4,7 +4,7 @@ import { Input } from "./ui/Input";
 import { Select } from "./ui/Select";
 import { Textarea } from "./ui/Textarea";
 import { SearchableSelect } from "./ui/SearchableSelect";
-import { useAllCurrencies, useAllOrganisations } from "../hooks";
+import { useAllCurrencies, useAllOrganisations, useSession } from "../hooks";
 import type {
   CreateChargeRequest,
   UpdateChargeRequest,
@@ -28,9 +28,18 @@ export default function ChargeForm({
   isEdit = false,
   currentOrganisationId,
 }: ChargeFormProps) {
+  const { user } = useSession();
+  const userOrganisationId = user?.organisation_id;
   const { data: currenciesData } = useAllCurrencies();
   const { data: organisationsData } = useAllOrganisations();
-  console.log("organisationsData", organisationsData);
+  console.log(
+    "organisationsData",
+    organisationsData,
+    "currentOrganisationId",
+    currentOrganisationId,
+    "userOrganisationId",
+    userOrganisationId
+  );
 
   const {
     control,
@@ -46,9 +55,12 @@ export default function ChargeForm({
           currency_id: initialData.currency_id || "",
           type: initialData.type,
           rate: initialData.rate,
-          origin_organisation_id: initialData.origin_organisation_id || "",
+          origin_organisation_id:
+            initialData.origin_organisation_id || userOrganisationId || "",
           destination_organisation_id:
-            initialData.destination_organisation_id || "",
+            initialData.destination_organisation_id ||
+            currentOrganisationId ||
+            "",
           is_reversible: initialData.is_reversible,
           direction: initialData.direction,
           origin_share_percentage:
@@ -66,8 +78,8 @@ export default function ChargeForm({
           currency_id: "",
           type: "TAX",
           rate: 0,
-          origin_organisation_id: "",
-          destination_organisation_id: "",
+          origin_organisation_id: userOrganisationId || "",
+          destination_organisation_id: currentOrganisationId || "",
           is_reversible: false,
           direction: "OUTBOUND",
           origin_share_percentage: undefined,
@@ -93,7 +105,23 @@ export default function ChargeForm({
   }, [organisationsData, setValue, currentOrganisationId]);
 
   const handleFormSubmit = (data: CreateChargeRequest) => {
-    onSubmit(data);
+    const { origin_organisation_id, destination_organisation_id, ...rest } =
+      data;
+    console.log(
+      "data",
+      data,
+      "origin_organisation_id",
+      origin_organisation_id,
+      "destination_organisation_id",
+      destination_organisation_id
+    );
+    onSubmit({
+      origin_organisation_id:
+        origin_organisation_id || userOrganisationId || "",
+      destination_organisation_id:
+        destination_organisation_id || currentOrganisationId || "",
+      ...rest,
+    });
   };
 
   return (

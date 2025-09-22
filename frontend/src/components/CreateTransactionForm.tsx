@@ -70,9 +70,6 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
   const { data: exchangeRatesData } = useExchangeRates({
     organisation_id: organisationId,
   });
-  const { data: chargesData } = useCharges({
-    origin_organisation_id: organisationId,
-  });
 
   const customers = useMemo(
     () => customersData?.data?.customers || [],
@@ -91,10 +88,7 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
     () => exchangeRatesData?.data?.exchangeRates || [],
     [exchangeRatesData]
   );
-  const charges = useMemo(
-    () => chargesData?.data?.charges || [],
-    [chargesData]
-  );
+
   const currentOrganisation = organisationsData?.data?.organisations.find(
     (org) => org.id === organisationId
   );
@@ -171,6 +165,16 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
   );
 
   console.log("corridors", corridors);
+
+  const { data: chargesData } = useCharges({
+    origin_organisation_id: organisationId,
+    destination_organisation_id: watchedOrganisationId,
+  });
+
+  const charges = useMemo(
+    () => chargesData?.data?.charges || [],
+    [chargesData]
+  );
 
   // Watch for corridor changes to auto-populate exchange rates
   useEffect(() => {
@@ -403,7 +407,7 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
                 <SearchableSelect
                   options={customers.map((customer) => ({
                     value: customer.id,
-                    label: `${customer.full_name} (${customer.email})`,
+                    label: `${customer.full_name} `,
                   }))}
                   value={field.value}
                   onChange={(value) => {
@@ -432,7 +436,7 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
                 <SearchableSelect
                   options={beneficiaries.map((beneficiary) => ({
                     value: beneficiary.id,
-                    label: `${beneficiary.name} (${beneficiary?.bank_name})`,
+                    label: `${beneficiary.name} `,
                   }))}
                   value={field.value}
                   onChange={(value) => {

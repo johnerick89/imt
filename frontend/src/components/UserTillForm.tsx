@@ -3,7 +3,7 @@ import { useForm, Controller } from "react-hook-form";
 import { FormItem } from "./ui/FormItem";
 import { Input } from "./ui/Input";
 import { SearchableSelect } from "./ui/SearchableSelect";
-import { useUsers } from "../hooks";
+import { useSession, useTill } from "../hooks";
 import { UserTillStatus } from "../types/TillsTypes";
 import type {
   CreateUserTillRequest,
@@ -25,27 +25,25 @@ const UserTillForm: React.FC<UserTillFormProps> = ({
   isLoading = false,
 }) => {
   const isEdit = !!initialData;
-
+  const { user } = useSession();
+  const organisationId = user?.organisation_id;
+  const { data: tillData } = useTill(tillId || initialData?.till_id || "");
+  const till = tillData?.data;
   const {
     control,
     handleSubmit,
     formState: { errors },
   } = useForm<CreateUserTillRequest>({
     defaultValues: {
-      user_id: initialData?.user_id || "",
+      user_id: initialData?.user_id || user?.id || "",
       till_id: tillId || initialData?.till_id || "",
-      date: initialData?.date
-        ? new Date(initialData.date).toISOString().split("T")[0]
-        : new Date().toISOString().split("T")[0],
-      opening_balance: initialData?.opening_balance || 0,
-      closing_balance: initialData?.closing_balance || undefined,
-      status: initialData?.status || UserTillStatus.OPEN,
+      date: new Date().toISOString().split("T")[0],
+      opening_balance: till?.balance || 0,
+      closing_balance: undefined,
+      status: UserTillStatus.OPEN,
+      organisation_id: organisationId || "",
     },
   });
-
-  // Data for dropdowns
-  const { data: usersData } = useUsers({ limit: 1000 });
-  const users = usersData?.data?.users || [];
 
   const statusOptions = [
     { value: UserTillStatus.OPEN, label: "Open" },
@@ -79,7 +77,7 @@ const UserTillForm: React.FC<UserTillFormProps> = ({
           User Till Information
         </h3>
         <div className="grid grid-cols-1 gap-6">
-          <FormItem
+          {/* <FormItem
             label="User"
             invalid={!!errors.user_id}
             errorMessage={errors.user_id?.message}
@@ -102,7 +100,7 @@ const UserTillForm: React.FC<UserTillFormProps> = ({
                 />
               )}
             />
-          </FormItem>
+          </FormItem> */}
 
           <FormItem
             label="Date"
@@ -118,7 +116,7 @@ const UserTillForm: React.FC<UserTillFormProps> = ({
                 <Input
                   {...field}
                   type="date"
-                  disabled={isLoading}
+                  disabled={true}
                   invalid={!!errors.date}
                 />
               )}
@@ -144,14 +142,14 @@ const UserTillForm: React.FC<UserTillFormProps> = ({
                   type="number"
                   step="0.01"
                   placeholder="0.00"
-                  disabled={isLoading}
+                  disabled={true}
                   invalid={!!errors.opening_balance}
                 />
               )}
             />
           </FormItem>
 
-          <FormItem
+          {/* <FormItem
             label="Closing Balance"
             invalid={!!errors.closing_balance}
             errorMessage={errors.closing_balance?.message}
@@ -173,7 +171,7 @@ const UserTillForm: React.FC<UserTillFormProps> = ({
                 />
               )}
             />
-          </FormItem>
+          </FormItem> */}
 
           <FormItem
             label="Status"
@@ -186,9 +184,11 @@ const UserTillForm: React.FC<UserTillFormProps> = ({
               render={({ field }) => (
                 <SearchableSelect
                   {...field}
+                  value={"OPEN"}
+                  onChange={field.onChange}
                   options={statusOptions}
                   placeholder="Select status"
-                  disabled={isLoading}
+                  disabled={true}
                   invalid={!!errors.status}
                 />
               )}

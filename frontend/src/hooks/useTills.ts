@@ -8,6 +8,7 @@ import type {
   UpdateUserTillRequest,
   TillFilters,
   UserTillFilters,
+  TillStatsFilters,
 } from "../types/TillsTypes";
 import { useToast } from "../contexts/ToastContext";
 
@@ -45,7 +46,7 @@ export const useTill = (id: string) => {
   });
 };
 
-export const useTillStats = (filters: TillFilters = {}) => {
+export const useTillStats = (filters: TillStatsFilters = {}) => {
   return useQuery({
     queryKey: tillsKeys.stats(),
     queryFn: () => TillsService.getTillStats(filters),

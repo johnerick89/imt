@@ -10,7 +10,8 @@ const apiClient = axios.create({
     Accept: "application/json",
   },
   withCredentials: true,
-  validateStatus: (status) => status < 500, // Allow 4xx statuses to reach interceptor
+  // validateStatus: (status) => status < 500, // Allow 4xx statuses to reach interceptor
+  timeout: 60000,
 });
 
 // Request interceptor: attach token
