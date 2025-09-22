@@ -31,8 +31,8 @@ export const createCustomerSchema = z.object({
   id_type: z.enum(IndividualIDType).optional(),
   id_number: z.string().optional(),
   address: z.string().optional(),
-  email: z.string().email("Invalid email format").optional(),
-  phone_number: z.string().optional(),
+  email: z.string().email("Invalid email format"),
+  phone_number: z.string(),
   occupation_id: z
     .string()
     .uuid("Occupation ID must be a valid UUID")
@@ -62,7 +62,7 @@ export const createCustomerSchema = z.object({
   current_age: z.number().min(0).max(150).optional(),
   first_name: z.string().optional(),
   last_name: z.string().optional(),
-  currency_id: z.string().uuid("Currency ID must be a valid UUID").optional(),
+  currency_id: z.string().uuid("Currency ID must be a valid UUID"),
   industry_id: z.string().uuid("Industry ID must be a valid UUID").optional(),
   legacy_customer_id: z.string().optional(),
   has_adverse_media: z.boolean().default(false),
@@ -95,8 +95,8 @@ export const updateCustomerSchema = z.object({
   id_type: z.enum(IndividualIDType).optional(),
   id_number: z.string().optional(),
   address: z.string().optional(),
-  email: z.string().email("Invalid email format").optional(),
-  phone_number: z.string().optional(),
+  email: z.string().email("Invalid email format"),
+  phone_number: z.string(),
   occupation_id: z
     .string()
     .uuid("Occupation ID must be a valid UUID")
@@ -125,7 +125,7 @@ export const updateCustomerSchema = z.object({
   current_age: z.number().min(0).max(150).optional(),
   first_name: z.string().optional(),
   last_name: z.string().optional(),
-  currency_id: z.string().uuid("Currency ID must be a valid UUID").optional(),
+  currency_id: z.string().uuid("Currency ID must be a valid UUID"),
   industry_id: z.string().uuid("Industry ID must be a valid UUID").optional(),
   legacy_customer_id: z.string().optional(),
   has_adverse_media: z.boolean().optional(),

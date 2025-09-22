@@ -6,24 +6,39 @@ import {
   useCreateBeneficiary,
   useUpdateBeneficiary,
   useDeleteBeneficiary,
+  useUpdateCustomer,
+  useDeleteCustomer,
 } from "../hooks";
 
 import { Modal } from "../components/ui/Modal";
 import { ConfirmModal } from "../components/ConfirmModal";
 import BeneficiaryForm from "../components/BeneficiaryForm";
 import BeneficiariesTable from "../components/BeneficiariesTable";
+import CustomerForm from "../components/CustomerForm";
 import type {
   Beneficiary,
   CreateBeneficiaryRequest,
   UpdateBeneficiaryRequest,
 } from "../types/BeneficiariesTypes";
-import { FiArrowLeft, FiPlus } from "react-icons/fi";
+import type {
+  Customer,
+  CreateCustomerRequest,
+  UpdateCustomerRequest,
+} from "../types/CustomersTypes";
+import { FiArrowLeft, FiPlus, FiEdit, FiTrash2 } from "react-icons/fi";
 import { StatusBadge } from "../components/ui/StatusBadge";
 
 const CustomerProfilePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("beneficiaries");
+
+  // Customer state
+  const [showEditCustomerModal, setShowEditCustomerModal] = useState(false);
+  const [showDeleteCustomerModal, setShowDeleteCustomerModal] = useState(false);
+  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(
+    null
+  );
 
   // Beneficiary state
   const [showCreateBeneficiaryModal, setShowCreateBeneficiaryModal] =
@@ -45,6 +60,11 @@ const CustomerProfilePage: React.FC = () => {
   const { data: beneficiariesData, isLoading: beneficiariesLoading } =
     useBeneficiaries({ customer_id: id || "" });
 
+  // Customer hooks
+  const updateCustomerMutation = useUpdateCustomer();
+  const deleteCustomerMutation = useDeleteCustomer();
+
+  // Beneficiary hooks
   const createBeneficiaryMutation = useCreateBeneficiary();
   const updateBeneficiaryMutation = useUpdateBeneficiary();
   const deleteBeneficiaryMutation = useDeleteBeneficiary();
@@ -118,6 +138,45 @@ const CustomerProfilePage: React.FC = () => {
         status: beneficiary.status === "ACTIVE" ? "INACTIVE" : "ACTIVE",
       } as UpdateBeneficiaryRequest,
     });
+  };
+
+  // Customer handlers
+  const handleEditCustomer = (
+    data: CreateCustomerRequest | UpdateCustomerRequest
+  ) => {
+    if (!customer) return;
+
+    updateCustomerMutation.mutate(
+      { id: customer.id, data: data as UpdateCustomerRequest },
+      {
+        onSuccess: () => {
+          setShowEditCustomerModal(false);
+        },
+      }
+    );
+  };
+
+  const handleDeleteCustomer = () => {
+    if (!customerToDelete) return;
+
+    deleteCustomerMutation.mutate(customerToDelete.id, {
+      onSuccess: () => {
+        setShowDeleteCustomerModal(false);
+        setCustomerToDelete(null);
+        navigate("/customers");
+      },
+    });
+  };
+
+  const openEditCustomerModal = () => {
+    setShowEditCustomerModal(true);
+  };
+
+  const openDeleteCustomerModal = () => {
+    if (customer) {
+      setCustomerToDelete(customer);
+      setShowDeleteCustomerModal(true);
+    }
   };
 
   const formatDate = (date: string | Date) => {
@@ -205,6 +264,22 @@ const CustomerProfilePage: React.FC = () => {
               View and manage customer details
             </p>
           </div>
+        </div>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={openEditCustomerModal}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <FiEdit className="w-4 h-4 mr-2" />
+            Edit Customer
+          </button>
+          <button
+            onClick={openDeleteCustomerModal}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+          >
+            <FiTrash2 className="w-4 h-4 mr-2" />
+            Delete Customer
+          </button>
         </div>
       </div>
 
@@ -641,6 +716,33 @@ const CustomerProfilePage: React.FC = () => {
         title="Delete Beneficiary"
         message={`Are you sure you want to delete "${beneficiaryToDelete?.name}"? This action cannot be undone.`}
         isLoading={deleteBeneficiaryMutation.isPending}
+      />
+
+      {/* Customer Edit Modal */}
+      <Modal
+        isOpen={showEditCustomerModal}
+        onClose={() => setShowEditCustomerModal(false)}
+        title="Edit Customer"
+      >
+        <CustomerForm
+          initialData={customer}
+          onSubmit={handleEditCustomer}
+          isLoading={updateCustomerMutation.isPending}
+          isEdit={true}
+        />
+      </Modal>
+
+      {/* Customer Delete Modal */}
+      <ConfirmModal
+        isOpen={showDeleteCustomerModal}
+        onClose={() => {
+          setShowDeleteCustomerModal(false);
+          setCustomerToDelete(null);
+        }}
+        onConfirm={handleDeleteCustomer}
+        title="Delete Customer"
+        message={`Are you sure you want to delete "${customerToDelete?.full_name}"? This action cannot be undone and will also delete all associated beneficiaries.`}
+        isLoading={deleteCustomerMutation.isPending}
       />
     </div>
   );

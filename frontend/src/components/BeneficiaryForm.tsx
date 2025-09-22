@@ -93,7 +93,7 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-8">
       {/* Basic Information */}
       <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2">
           Basic Information
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -143,11 +143,13 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
             label="Email"
             invalid={!!errors.email}
             errorMessage={errors.email?.message}
+            required
           >
             <Controller
               name="email"
               control={control}
               rules={{
+                required: "Email is required",
                 pattern: {
                   value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
                   message: "Invalid email address",
@@ -169,10 +171,12 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
             label="Phone Number"
             invalid={!!errors.phone}
             errorMessage={errors.phone?.message}
+            required
           >
             <Controller
               name="phone"
               control={control}
+              rules={{ required: "Phone number is required" }}
               render={({ field }) => (
                 <Input
                   {...field}
@@ -187,7 +191,7 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
           {/* Individual-specific fields */}
           {watchedType === "INDIVIDUAL" && (
             <>
-              <FormItem
+              {/* <FormItem
                 label="Date of Birth"
                 invalid={!!errors.date_of_birth}
                 errorMessage={errors.date_of_birth?.message}
@@ -204,16 +208,18 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
                     />
                   )}
                 />
-              </FormItem>
+              </FormItem> */}
 
               <FormItem
                 label="Nationality"
                 invalid={!!errors.nationality_id}
                 errorMessage={errors.nationality_id?.message}
+                required
               >
                 <Controller
                   name="nationality_id"
                   control={control}
+                  rules={{ required: "Nationality is required" }}
                   render={({ field }) => (
                     <SearchableSelect
                       value={field.value || ""}
@@ -237,10 +243,12 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
                 label="Residence Country"
                 invalid={!!errors.residence_country_id}
                 errorMessage={errors.residence_country_id?.message}
+                required
               >
                 <Controller
                   name="residence_country_id"
                   control={control}
+                  rules={{ required: "Residence country is required" }}
                   render={({ field }) => (
                     <SearchableSelect
                       value={field.value || ""}
@@ -259,17 +267,153 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
                   )}
                 />
               </FormItem>
+            </>
+          )}
 
+          {/* Corporate-specific fields */}
+          {(watchedType === "CORPORATE" || watchedType === "BUSINESS") && (
+            <>
+              <FormItem
+                label="Incorporation Country"
+                invalid={!!errors.incorporation_country_id}
+                errorMessage={errors.incorporation_country_id?.message}
+                required
+              >
+                <Controller
+                  name="incorporation_country_id"
+                  control={control}
+                  rules={{ required: "Incorporation country is required" }}
+                  render={({ field }) => (
+                    <SearchableSelect
+                      value={field.value || ""}
+                      onChange={field.onChange}
+                      options={
+                        countriesData?.data?.countries?.map((country) => ({
+                          value: country.id,
+                          label: country.name,
+                        })) || []
+                      }
+                      placeholder="Select incorporation country"
+                      searchPlaceholder="Search countries..."
+                      disabled={isLoading}
+                      invalid={!!errors.incorporation_country_id}
+                    />
+                  )}
+                />
+              </FormItem>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Other Information */}
+      <div>
+        <h3 className="text-lg font-medium text-gray-900 mb-4">
+          Other Information
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {watchedType === "INDIVIDUAL" && (
+            <FormItem
+              label="ID Type"
+              invalid={!!errors.id_type}
+              errorMessage={errors.id_type?.message}
+            >
+              <Controller
+                name="id_type"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    {...field}
+                    disabled={isLoading}
+                    invalid={!!errors.id_type}
+                  >
+                    <option value="">Select ID type</option>
+                    <option value="PASSPORT">Passport</option>
+                    <option value="NATIONAL_ID">National ID</option>
+                    <option value="DRIVERS_LICENSE">Driver's License</option>
+                    <option value="ALIEN_CARD">Alien Card</option>
+                    <option value="KRA_PIN">KRA PIN</option>
+                    <option value="OTHER">Other</option>
+                  </Select>
+                )}
+              />
+            </FormItem>
+          )}
+
+          {watchedType === "INDIVIDUAL" && (
+            <FormItem
+              label="ID Number"
+              invalid={!!errors.id_number}
+              errorMessage={errors.id_number?.message}
+            >
+              <Controller
+                name="id_number"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    placeholder="Enter ID number"
+                    disabled={isLoading}
+                    invalid={!!errors.id_number}
+                  />
+                )}
+              />
+            </FormItem>
+          )}
+
+          <FormItem
+            label="Tax Number Type"
+            invalid={!!errors.tax_number_type}
+            errorMessage={errors.tax_number_type?.message}
+          >
+            <Controller
+              name="tax_number_type"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  {...field}
+                  disabled={isLoading}
+                  invalid={!!errors.tax_number_type}
+                >
+                  <option value="">Select tax number type</option>
+                  <option value="PIN">PIN</option>
+                  <option value="TIN">TIN</option>
+                  <option value="SSN">SSN</option>
+                  <option value="KRA_PIN">KRA PIN</option>
+                  <option value="OTHER">Other</option>
+                </Select>
+              )}
+            />
+          </FormItem>
+
+          <FormItem
+            label="Tax Number"
+            invalid={!!errors.tax_number}
+            errorMessage={errors.tax_number?.message}
+          >
+            <Controller
+              name="tax_number"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  placeholder="Enter tax number"
+                  disabled={isLoading}
+                  invalid={!!errors.tax_number}
+                />
+              )}
+            />
+          </FormItem>
+          {watchedType === "INDIVIDUAL" && (
+            <>
               <FormItem
                 label="Occupation"
                 invalid={!!errors.occupation_id}
                 errorMessage={errors.occupation_id?.message}
-                required
               >
                 <Controller
                   name="occupation_id"
                   control={control}
-                  rules={{ required: "Occupation is required" }}
                   render={({ field }) => (
                     <SearchableSelect
                       value={field.value || ""}
@@ -292,220 +436,73 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
               </FormItem>
             </>
           )}
-
-          {/* Corporate-specific fields */}
-          {(watchedType === "CORPORATE" || watchedType === "BUSINESS") && (
-            <>
-              <FormItem
-                label="Incorporation Country"
-                invalid={!!errors.incorporation_country_id}
-                errorMessage={errors.incorporation_country_id?.message}
-              >
-                <Controller
-                  name="incorporation_country_id"
-                  control={control}
-                  render={({ field }) => (
-                    <SearchableSelect
-                      value={field.value || ""}
-                      onChange={field.onChange}
-                      options={
-                        countriesData?.data?.countries?.map((country) => ({
-                          value: country.id,
-                          label: country.name,
-                        })) || []
-                      }
-                      placeholder="Select incorporation country"
-                      searchPlaceholder="Search countries..."
-                      disabled={isLoading}
-                      invalid={!!errors.incorporation_country_id}
-                    />
-                  )}
-                />
-              </FormItem>
-
-              <FormItem
-                label="Registration Number"
-                invalid={!!errors.reg_number}
-                errorMessage={errors.reg_number?.message}
-                required
-              >
-                <Controller
-                  name="reg_number"
-                  control={control}
-                  rules={{ required: "Registration number is required" }}
-                  render={({ field }) => (
-                    <Input
-                      {...field}
-                      placeholder="Enter registration number"
-                      disabled={isLoading}
-                      invalid={!!errors.reg_number}
-                    />
-                  )}
-                />
-              </FormItem>
-
-              <FormItem
-                label="Industry"
-                invalid={!!errors.industry_id}
-                errorMessage={errors.industry_id?.message}
-                required
-              >
-                <Controller
-                  name="industry_id"
-                  control={control}
-                  rules={{ required: "Industry is required" }}
-                  render={({ field }) => (
-                    <SearchableSelect
-                      value={field.value || ""}
-                      onChange={field.onChange}
-                      options={
-                        industriesData?.data?.industries?.map((industry) => ({
-                          value: industry.id,
-                          label: industry.name,
-                        })) || []
-                      }
-                      placeholder="Select industry"
-                      searchPlaceholder="Search industries..."
-                      disabled={isLoading}
-                      invalid={!!errors.industry_id}
-                    />
-                  )}
-                />
-              </FormItem>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Identification Information */}
-      <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
-          Identification Information
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormItem
-            label="ID Type"
-            invalid={!!errors.id_type}
-            errorMessage={errors.id_type?.message}
-            required
-          >
-            <Controller
-              name="id_type"
-              control={control}
-              rules={{ required: "ID type is required" }}
-              render={({ field }) => (
-                <Select
-                  {...field}
-                  disabled={isLoading}
-                  invalid={!!errors.id_type}
-                >
-                  <option value="">Select ID type</option>
-                  <option value="PASSPORT">Passport</option>
-                  <option value="NATIONAL_ID">National ID</option>
-                  <option value="DRIVERS_LICENSE">Driver's License</option>
-                  <option value="ALIEN_CARD">Alien Card</option>
-                  <option value="KRA_PIN">KRA PIN</option>
-                  <option value="OTHER">Other</option>
-                </Select>
-              )}
-            />
-          </FormItem>
-
-          <FormItem
-            label="ID Number"
-            invalid={!!errors.id_number}
-            errorMessage={errors.id_number?.message}
-            required
-          >
-            <Controller
-              name="id_number"
-              control={control}
-              rules={{ required: "ID number is required" }}
-              render={({ field }) => (
-                <Input
-                  {...field}
-                  placeholder="Enter ID number"
-                  disabled={isLoading}
-                  invalid={!!errors.id_number}
-                />
-              )}
-            />
-          </FormItem>
-
-          <FormItem
-            label="Tax Number Type"
-            invalid={!!errors.tax_number_type}
-            errorMessage={errors.tax_number_type?.message}
-            required
-          >
-            <Controller
-              name="tax_number_type"
-              control={control}
-              rules={{ required: "Tax number type is required" }}
-              render={({ field }) => (
-                <Select
-                  {...field}
-                  disabled={isLoading}
-                  invalid={!!errors.tax_number_type}
-                >
-                  <option value="">Select tax number type</option>
-                  <option value="PIN">PIN</option>
-                  <option value="TIN">TIN</option>
-                  <option value="SSN">SSN</option>
-                  <option value="KRA_PIN">KRA PIN</option>
-                  <option value="OTHER">Other</option>
-                </Select>
-              )}
-            />
-          </FormItem>
-
-          <FormItem
-            label="Tax Number"
-            invalid={!!errors.tax_number}
-            errorMessage={errors.tax_number?.message}
-            required
-          >
-            <Controller
-              name="tax_number"
-              control={control}
-              rules={{ required: "Tax number is required" }}
-              render={({ field }) => (
-                <Input
-                  {...field}
-                  placeholder="Enter tax number"
-                  disabled={isLoading}
-                  invalid={!!errors.tax_number}
-                />
-              )}
-            />
-          </FormItem>
-        </div>
-      </div>
-
-      {/* Address Information */}
-      <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
-          Address Information
-        </h3>
-        <FormItem
-          label="Address"
-          invalid={!!errors.address}
-          errorMessage={errors.address?.message}
-        >
-          <Controller
-            name="address"
-            control={control}
-            render={({ field }) => (
-              <Textarea
-                {...field}
-                placeholder="Enter address"
-                disabled={isLoading}
-                invalid={!!errors.address}
-                rows={3}
+          {watchedType !== "INDIVIDUAL" && (
+            <FormItem
+              label="Registration Number"
+              invalid={!!errors.reg_number}
+              errorMessage={errors.reg_number?.message}
+            >
+              <Controller
+                name="reg_number"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    placeholder="Enter registration number"
+                    disabled={isLoading}
+                    invalid={!!errors.reg_number}
+                  />
+                )}
               />
-            )}
-          />
-        </FormItem>
+            </FormItem>
+          )}
+
+          <FormItem
+            label="Industry"
+            invalid={!!errors.industry_id}
+            errorMessage={errors.industry_id?.message}
+          >
+            <Controller
+              name="industry_id"
+              control={control}
+              render={({ field }) => (
+                <SearchableSelect
+                  value={field.value || ""}
+                  onChange={field.onChange}
+                  options={
+                    industriesData?.data?.industries?.map((industry) => ({
+                      value: industry.id,
+                      label: industry.name,
+                    })) || []
+                  }
+                  placeholder="Select industry"
+                  searchPlaceholder="Search industries..."
+                  disabled={isLoading}
+                  invalid={!!errors.industry_id}
+                />
+              )}
+            />
+          </FormItem>
+          <FormItem
+            label="Address"
+            invalid={!!errors.address}
+            errorMessage={errors.address?.message}
+          >
+            <Controller
+              name="address"
+              control={control}
+              render={({ field }) => (
+                <Textarea
+                  {...field}
+                  placeholder="Enter address"
+                  disabled={isLoading}
+                  invalid={!!errors.address}
+                  rows={3}
+                />
+              )}
+            />
+          </FormItem>
+        </div>
       </div>
 
       {/* Bank Details */}

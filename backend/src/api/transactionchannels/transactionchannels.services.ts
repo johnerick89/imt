@@ -6,6 +6,8 @@ import type {
   TransactionChannelResponse,
   TransactionChannelStats,
   TransactionChannelStatsResponse,
+  CreateTransactionChannelRequest,
+  UpdateTransactionChannelRequest,
 } from "./transactionchannels.interfaces";
 
 export class TransactionChannelService {
@@ -52,6 +54,24 @@ export class TransactionChannelService {
               first_name: true,
               last_name: true,
               email: true,
+            },
+          },
+          origin_transactions: {
+            select: {
+              id: true,
+              transaction_no: true,
+              origin_amount: true,
+              created_at: true,
+              status: true,
+            },
+          },
+          destination_transactions: {
+            select: {
+              id: true,
+              transaction_no: true,
+              origin_amount: true,
+              created_at: true,
+              status: true,
             },
           },
         },
@@ -109,6 +129,8 @@ export class TransactionChannelService {
               email: true,
             },
           },
+          origin_transactions: true,
+          destination_transactions: true,
         },
       });
 
@@ -176,6 +198,193 @@ export class TransactionChannelService {
           totalChannels: 0,
           byDirection: [],
         },
+      };
+    }
+  }
+
+  // Create Transaction Channel
+  async createTransactionChannel(
+    data: CreateTransactionChannelRequest,
+    userId: string
+  ): Promise<TransactionChannelResponse> {
+    try {
+      // Check if channel with same name already exists
+      const existingChannel = await prisma.transactionChannel.findFirst({
+        where: { name: data.name },
+      });
+
+      if (existingChannel) {
+        return {
+          success: false,
+          message: "Transaction channel with this name already exists",
+          data: {} as ITransactionChannel,
+        };
+      }
+
+      const channel = await prisma.transactionChannel.create({
+        data: {
+          name: data.name,
+          description: data.description,
+          direction: data.direction,
+          created_by: userId,
+        },
+        include: {
+          created_by_user: {
+            select: {
+              id: true,
+              first_name: true,
+              last_name: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      return {
+        success: true,
+        message: "Transaction channel created successfully",
+        data: {
+          ...channel,
+          created_at: channel.created_at.toISOString(),
+          updated_at: channel.updated_at.toISOString(),
+        } as ITransactionChannel,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || "Failed to create transaction channel",
+        data: {} as ITransactionChannel,
+      };
+    }
+  }
+
+  // Update Transaction Channel
+  async updateTransactionChannel(
+    id: string,
+    data: UpdateTransactionChannelRequest
+  ): Promise<TransactionChannelResponse> {
+    try {
+      // Check if channel exists
+      const existingChannel = await prisma.transactionChannel.findUnique({
+        where: { id },
+      });
+
+      if (!existingChannel) {
+        return {
+          success: false,
+          message: "Transaction channel not found",
+          data: {} as ITransactionChannel,
+        };
+      }
+
+      // Check if name is being updated and if it conflicts
+      if (data.name && data.name !== existingChannel.name) {
+        const nameConflict = await prisma.transactionChannel.findFirst({
+          where: {
+            name: data.name,
+            id: { not: id },
+          },
+        });
+
+        if (nameConflict) {
+          return {
+            success: false,
+            message: "Transaction channel with this name already exists",
+            data: {} as ITransactionChannel,
+          };
+        }
+      }
+
+      const channel = await prisma.transactionChannel.update({
+        where: { id },
+        data: {
+          ...(data.name && { name: data.name }),
+          ...(data.description && { description: data.description }),
+          ...(data.direction && { direction: data.direction }),
+        },
+        include: {
+          created_by_user: {
+            select: {
+              id: true,
+              first_name: true,
+              last_name: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      return {
+        success: true,
+        message: "Transaction channel updated successfully",
+        data: {
+          ...channel,
+          created_at: channel.created_at.toISOString(),
+          updated_at: channel.updated_at.toISOString(),
+        } as ITransactionChannel,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || "Failed to update transaction channel",
+        data: {} as ITransactionChannel,
+      };
+    }
+  }
+
+  // Delete Transaction Channel
+  async deleteTransactionChannel(
+    id: string
+  ): Promise<TransactionChannelResponse> {
+    try {
+      // Check if channel exists
+      const existingChannel = await prisma.transactionChannel.findUnique({
+        where: { id },
+        include: {
+          origin_transactions: { take: 1 },
+          destination_transactions: { take: 1 },
+        },
+      });
+
+      if (!existingChannel) {
+        return {
+          success: false,
+          message: "Transaction channel not found",
+          data: {} as ITransactionChannel,
+        };
+      }
+
+      // Check if channel is being used in transactions
+      if (
+        existingChannel.origin_transactions.length > 0 ||
+        existingChannel.destination_transactions.length > 0
+      ) {
+        return {
+          success: false,
+          message:
+            "Cannot delete transaction channel that is being used in transactions",
+          data: {} as ITransactionChannel,
+        };
+      }
+
+      const channel = await prisma.transactionChannel.delete({
+        where: { id },
+      });
+
+      return {
+        success: true,
+        message: "Transaction channel deleted successfully",
+        data: {
+          ...channel,
+          created_at: channel.created_at.toISOString(),
+          updated_at: channel.updated_at.toISOString(),
+        } as ITransactionChannel,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || "Failed to delete transaction channel",
+        data: {} as ITransactionChannel,
       };
     }
   }

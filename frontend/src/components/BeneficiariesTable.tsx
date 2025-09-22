@@ -35,42 +35,42 @@ const BeneficiariesTable: React.FC<BeneficiariesTableProps> = ({
         </div>
       ),
     },
-    {
-      accessorKey: "id_type",
-      header: "ID Type",
-      cell: ({ row }) => (
-        <div>
-          <div className="text-sm text-gray-900">{row.original.id_type}</div>
-          <div className="text-sm text-gray-500">{row.original.id_number}</div>
-        </div>
-      ),
-    },
+    // {
+    //   accessorKey: "id_type",
+    //   header: "ID Type",
+    //   cell: ({ row }) => (
+    //     <div>
+    //       <div className="text-sm text-gray-900">{row.original.id_type}</div>
+    //       <div className="text-sm text-gray-500">{row.original.id_number}</div>
+    //     </div>
+    //   ),
+    // },
     {
       accessorKey: "phone",
       header: "Phone",
       cell: ({ row }) => row.original.phone || "N/A",
     },
-    {
-      accessorKey: "bank_details",
-      header: "Bank Details",
-      cell: ({ row }) => (
-        <div>
-          {row.original.bank_name && (
-            <div className="text-sm text-gray-900">
-              {row.original.bank_name}
-            </div>
-          )}
-          {row.original.bank_account_number && (
-            <div className="text-xs text-gray-500">
-              {row.original.bank_account_number}
-            </div>
-          )}
-          {!row.original.bank_name && !row.original.bank_account_number && (
-            <div className="text-sm text-gray-400">N/A</div>
-          )}
-        </div>
-      ),
-    },
+    // {
+    //   accessorKey: "bank_details",
+    //   header: "Bank Details",
+    //   cell: ({ row }) => (
+    //     <div>
+    //       {row.original.bank_name && (
+    //         <div className="text-sm text-gray-900">
+    //           {row.original.bank_name}
+    //         </div>
+    //       )}
+    //       {row.original.bank_account_number && (
+    //         <div className="text-xs text-gray-500">
+    //           {row.original.bank_account_number}
+    //         </div>
+    //       )}
+    //       {!row.original.bank_name && !row.original.bank_account_number && (
+    //         <div className="text-sm text-gray-400">N/A</div>
+    //       )}
+    //     </div>
+    //   ),
+    // },
     {
       accessorKey: "nationality",
       header: "Nationality",

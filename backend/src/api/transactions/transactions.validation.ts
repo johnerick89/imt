@@ -7,6 +7,13 @@ import {
   ChargeType,
 } from "@prisma/client";
 
+export const transactionChargeCalculationSchema = z.object({
+  charge_id: z.string().uuid("Invalid charge ID"),
+  type: z.enum(Object.values(ChargeType) as [ChargeType, ...ChargeType[]]),
+  original_rate: z.number().positive("Original rate must be positive"),
+  negotiated_rate: z.number().positive("Negotiated rate must be positive"),
+});
+
 // Create Outbound Transaction Schema
 export const createOutboundTransactionSchema = z.object({
   corridor_id: z.string().uuid("Invalid corridor ID"),
@@ -56,6 +63,15 @@ export const createOutboundTransactionSchema = z.object({
     .string()
     .uuid("Invalid destination country ID")
     .optional(),
+  amount_to_send_base_currency: z
+    .number()
+    .positive("Amount to send base currency must be positive")
+    .optional(),
+  amount_to_send_destination_currency: z
+    .number()
+    .positive("Amount to send destination currency must be positive")
+    .optional(),
+  transaction_charges: z.array(transactionChargeCalculationSchema).optional(),
 });
 
 // Create Inbound Transaction Schema
@@ -261,17 +277,4 @@ export const reverseTransactionSchema = z.object({
     .string()
     .max(500, "Remarks must be less than 500 characters")
     .optional(),
-});
-
-// Transaction Charge Calculation Schema
-export const transactionChargeCalculationSchema = z.object({
-  origin_amount: z.number().positive("Origin amount must be positive"),
-  origin_currency_id: z.string().uuid("Invalid origin currency ID"),
-  dest_currency_id: z.string().uuid("Invalid destination currency ID"),
-  origin_organisation_id: z.string().uuid("Invalid origin organisation ID"),
-  destination_organisation_id: z
-    .string()
-    .uuid("Invalid destination organisation ID")
-    .optional(),
-  corridor_id: z.string().uuid("Invalid corridor ID"),
 });

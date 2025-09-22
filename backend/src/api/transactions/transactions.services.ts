@@ -13,9 +13,12 @@ import type {
   ReverseTransactionRequest,
   TransactionChargeCalculation,
   OutboundTransactionResult,
+  ITransactionChargeInItem,
+  ChargeWithNegotiatedRate,
 } from "./transactions.interfaces";
 import { prisma } from "../../lib/prisma.lib";
 import { AppError } from "../../utils/AppError";
+import { Charge, Direction } from "@prisma/client";
 
 const glTransactionService = new GlTransactionService();
 const balanceOperationService = new BalanceOperationService();
@@ -222,12 +225,17 @@ export class TransactionService {
       }
 
       // 8. Calculate transaction charges
-      const chargeCalculation = await this.calculateTransactionCharges(
-        data.origin_amount,
-        data.origin_currency_id,
-        organisationId,
-        data.destination_organisation_id
-      );
+      const chargeCalculation = await this.calculateTransactionCharges({
+        originAmount: data.origin_amount,
+        originCurrencyId: data.origin_currency_id,
+        originOrganisationId: organisationId,
+        destinationOrganisationId: data.destination_organisation_id,
+        transactionCharges: data.transaction_charges,
+      });
+
+      const totalAllCharges = chargeCalculation.totalCharges;
+      const totalCommissions = chargeCalculation.totalCommissions;
+      const totalTaxes = chargeCalculation.totalTaxes;
 
       // 9. Generate transaction number
       const transactionNo = await this.generateTransactionNumber(
@@ -264,11 +272,13 @@ export class TransactionService {
           destination_organisation_id: data.destination_organisation_id,
           origin_country_id: data.origin_country_id,
           destination_country_id: data.destination_country_id,
-          amount_payable: data.origin_amount,
-          amount_receivable: data.dest_amount,
+          amount_payable: data.origin_amount + totalAllCharges,
           status: "PENDING_APPROVAL",
           remittance_status: "PENDING",
           request_status: "UNDER_REVIEW",
+          total_all_charges: totalAllCharges,
+          commissions: totalCommissions,
+          total_taxes: totalTaxes,
         },
       });
 
@@ -1101,10 +1111,8 @@ export class TransactionService {
     organisationId: string
   ): Promise<TransactionStatsResponse> {
     const where = {
-      OR: [
-        { origin_organisation_id: organisationId },
-        { destination_organisation_id: organisationId },
-      ],
+      origin_organisation_id: organisationId,
+      direction: "OUTBOUND" as Direction,
     };
 
     const [
@@ -1220,14 +1228,22 @@ export class TransactionService {
   // Helper Methods
 
   // Calculate Transaction Charges
-  private async calculateTransactionCharges(
-    originAmount: number,
-    originCurrencyId: string,
-    originOrganisationId: string,
-    destinationOrganisationId?: string
-  ): Promise<TransactionChargeCalculation> {
+  private async calculateTransactionCharges({
+    originAmount,
+    originCurrencyId,
+    originOrganisationId,
+    destinationOrganisationId,
+    transactionCharges,
+  }: {
+    originAmount: number;
+    originCurrencyId: string;
+    originOrganisationId: string;
+    destinationOrganisationId?: string;
+    transactionCharges?: ITransactionChargeInItem[];
+  }): Promise<TransactionChargeCalculation> {
     // Get applicable charges
-    const charges = await prisma.charge.findMany({
+
+    const charges: Charge[] = await prisma.charge.findMany({
       where: {
         status: "ACTIVE",
         direction: { in: ["OUTBOUND", "BOTH"] },
@@ -1243,21 +1259,46 @@ export class TransactionService {
       ],
     });
 
+    let chargesWithNegotiatedRates: ChargeWithNegotiatedRate[] = charges.map(
+      (charge) => {
+        const negotiatedRate = transactionCharges?.find(
+          (tc) => tc.charge_id === charge.id
+        )?.negotiated_rate;
+        return {
+          ...charge,
+          negotiated_rate: negotiatedRate || null,
+        } as ChargeWithNegotiatedRate;
+      }
+    );
+
     const calculatedCharges = [];
     let nonTaxChargesTotal = 0;
     let totalCharges = 0;
 
     // Process charges in two passes: non-TAX first, then TAX
-    const nonTaxCharges = charges.filter((charge) => charge.type !== "TAX");
-    const taxCharges = charges.filter((charge) => charge.type === "TAX");
+    const nonTaxCharges = chargesWithNegotiatedRates.filter(
+      (charge) => charge.type !== "TAX"
+    );
+    const taxCharges = chargesWithNegotiatedRates.filter(
+      (charge) => charge.type === "TAX"
+    );
 
     for (const charge of nonTaxCharges) {
       let amount = 0;
 
       if (charge.application_method === "PERCENTAGE") {
-        amount = (originAmount * charge.rate) / 100;
+        const rate =
+          charge.negotiated_rate !== null &&
+          charge.negotiated_rate !== undefined
+            ? charge.negotiated_rate
+            : charge.rate;
+        amount = (originAmount * rate) / 100;
       } else {
-        amount = charge.rate;
+        amount =
+          charge.negotiated_rate !== null &&
+          charge.negotiated_rate !== undefined
+            ? charge.negotiated_rate
+            : charge.rate;
       }
 
       // Apply min/max limits
@@ -1272,7 +1313,8 @@ export class TransactionService {
         charge_id: charge.id,
         type: charge.type,
         amount,
-        rate: charge.application_method === "PERCENTAGE" ? charge.rate : null,
+        rate: charge.rate,
+        negotiated_rate: charge.negotiated_rate,
         description: `${charge.name}: ${charge.description}`,
         is_reversible: charge.is_reversible,
         internal_amount: charge.origin_share_percentage
@@ -1297,9 +1339,18 @@ export class TransactionService {
       let amount = 0;
 
       if (charge.application_method === "PERCENTAGE") {
-        amount = (nonTaxChargesTotal * charge.rate) / 100; // Tax on non-tax total
+        const rate =
+          charge.negotiated_rate !== null &&
+          charge.negotiated_rate !== undefined
+            ? charge.negotiated_rate
+            : charge.rate;
+        amount = (nonTaxChargesTotal * rate) / 100; // Tax on non-tax total
       } else {
-        amount = charge.rate;
+        amount =
+          charge.negotiated_rate !== null &&
+          charge.negotiated_rate !== undefined
+            ? charge.negotiated_rate
+            : charge.rate;
       }
 
       // Apply min/max limits
@@ -1314,7 +1365,8 @@ export class TransactionService {
         charge_id: charge.id,
         type: charge.type,
         amount,
-        rate: charge.application_method === "PERCENTAGE" ? charge.rate : null,
+        rate: charge.rate,
+        negotiated_rate: charge.negotiated_rate,
         description: `${charge.name}: ${charge.description}`,
         is_reversible: charge.is_reversible,
         internal_amount: charge.origin_share_percentage
@@ -1337,8 +1389,10 @@ export class TransactionService {
 
     return {
       totalCharges,
-      netAmount: originAmount - totalCharges,
-      charges: calculatedCharges,
+      totalCommissions: nonTaxChargesTotal,
+      totalTaxes: totalCharges - nonTaxChargesTotal,
+      netAmount: originAmount + totalCharges,
+      charges: calculatedCharges as TransactionChargeCalculation["charges"],
     };
   }
 

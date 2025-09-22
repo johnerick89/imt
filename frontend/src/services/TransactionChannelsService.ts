@@ -7,7 +7,7 @@ import type {
   UpdateTransactionChannelRequest,
 } from "../types/TransactionChannelsTypes";
 
-class TransactionChannelsService {
+export class TransactionChannelsService {
   // Get all transaction channels
   async getTransactionChannels(
     filters: TransactionChannelFilters = {}

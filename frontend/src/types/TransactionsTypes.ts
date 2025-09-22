@@ -201,6 +201,13 @@ export interface TransactionCharge {
 }
 
 // Create Outbound Transaction Request
+export interface ITransactionChargeInItem {
+  charge_id: string;
+  type: ChargeType;
+  original_rate: number;
+  negotiated_rate: number;
+}
+
 export interface CreateOutboundTransactionRequest {
   corridor_id: string;
   till_id: string;
@@ -225,6 +232,7 @@ export interface CreateOutboundTransactionRequest {
   destination_organisation_id?: string;
   origin_country_id?: string;
   destination_country_id?: string;
+  transaction_charges?: ITransactionChargeInItem[];
 }
 
 // Transaction Filters

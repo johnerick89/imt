@@ -29,10 +29,13 @@ import type {
   Status,
   RemittanceStatus,
 } from "../types/TransactionsTypes";
+import { siteCommonStrings } from "../config";
 
 const OutboundTransactions: React.FC = () => {
   const { id: organisationId } = useParams<{ id: string }>();
   const { user } = useSession();
+  const commonStrings = siteCommonStrings;
+  const outboundLabel = commonStrings?.outbound;
   const [selectedTransaction, setSelectedTransaction] =
     useState<Transaction | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -178,7 +181,7 @@ const OutboundTransactions: React.FC = () => {
       <div className="p-6">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            Outbound Transactions
+            {outboundLabel} Transactions
           </h1>
           <p className="text-gray-600">No organisation selected.</p>
         </div>
@@ -196,14 +199,15 @@ const OutboundTransactions: React.FC = () => {
         <div className="flex justify-between items-center mb-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Outbound Transactions
+              {outboundLabel} Transactions
             </h1>
             <p className="text-gray-600">
-              Manage outbound money transfer transactions for your organisation.
+              Manage {outboundLabel?.toLocaleLowerCase()} money transfer
+              transactions for your organisation.
             </p>
           </div>
           <Button onClick={() => setIsCreateModalOpen(true)}>
-            Create Transaction
+            Create {outboundLabel} Transaction
           </Button>
         </div>
 
@@ -229,7 +233,7 @@ const OutboundTransactions: React.FC = () => {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">
-                    Total Transactions
+                    Total {outboundLabel} Transactions
                   </p>
                   <p className="text-2xl font-bold text-gray-900">
                     {stats.totalTransactions}
@@ -257,7 +261,7 @@ const OutboundTransactions: React.FC = () => {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">
-                    Total Amount
+                    Total {outboundLabel} Amount
                   </p>
                   <p className="text-2xl font-bold text-gray-900">
                     {formatToCurrency(stats.totalAmount)}

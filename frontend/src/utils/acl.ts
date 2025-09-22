@@ -107,6 +107,18 @@ export const PERMISSIONS = {
 
   // Reports Management
   VIEW_REPORTS: "admin.reports.view",
+
+  // Parameters Management
+  VIEW_PARAMETERS: "admin.parameters.view",
+  CREATE_PARAMETERS: "admin.parameters.create",
+  EDIT_PARAMETERS: "admin.parameters.edit",
+  DELETE_PARAMETERS: "admin.parameters.delete",
+
+  // Transaction Channels Management
+  VIEW_TRANSACTION_CHANNELS: "admin.transactionChannels.view",
+  CREATE_TRANSACTION_CHANNELS: "admin.transactionChannels.create",
+  EDIT_TRANSACTION_CHANNELS: "admin.transactionChannels.edit",
+  DELETE_TRANSACTION_CHANNELS: "admin.transactionChannels.delete",
 } as const;
 
 export type PermissionName = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

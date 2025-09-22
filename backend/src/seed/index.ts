@@ -10,6 +10,7 @@ import occupations from "./occupations";
 import industries from "./industries";
 import organisations from "./organisations";
 import { prisma } from "../lib/prisma.lib";
+import parameters from "./parameters";
 
 const DEFAULT_PASSWORD = "admin1234";
 
@@ -363,6 +364,30 @@ export async function seedIndustries() {
   console.log("industries created: ", createdIndustries.length);
 }
 
+export async function seedParameters() {
+  const createdParameters = await Promise.all(
+    parameters.map(async (parameter) => {
+      const createdParameter = await prisma.parameter.findFirst({
+        where: { name: parameter.name },
+      });
+
+      if (createdParameter) {
+        return createdParameter;
+      }
+      return await prisma.parameter.create({
+        data: {
+          name: parameter.name,
+          value_2: parameter.value2,
+          value: String(parameter.value),
+          created_at: new Date(),
+        },
+      });
+    })
+  );
+
+  console.log("parameters created: ", createdParameters.length);
+}
+
 interface SeedResponse {
   success: boolean;
   message: string;
@@ -381,6 +406,7 @@ const seedFunctions: { [key: string]: () => Promise<void> } = {
   transactionChannels: seedTransactionChannels,
   occupations: seedOccupations,
   industries: seedIndustries,
+  parameters: seedParameters,
 };
 
 export async function seedDatabase(
@@ -447,10 +473,10 @@ async function main() {
     countries: seedCountries,
     currencies: seedCurrencies,
     rolesPermissions: seedRolesPermissions,
-
     transactionChannels: seedTransactionChannels,
     occupations: seedOccupations,
     industries: seedIndustries,
+    parameters: seedParameters,
   };
 
   if (args.length === 0) {

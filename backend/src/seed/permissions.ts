@@ -259,6 +259,38 @@ const permissions = [
     permission_name: "admin.reports.view",
     permission_description: "View reports",
   },
+  {
+    permission_name: "admin.transactionChannels.view",
+    permission_description: "View transaction channels",
+  },
+  {
+    permission_name: "admin.transactionChannels.create",
+    permission_description: "Create transaction channels",
+  },
+  {
+    permission_name: "admin.transactionChannels.edit",
+    permission_description: "Edit transaction channels",
+  },
+  {
+    permission_name: "admin.transactionChannels.delete",
+    permission_description: "Delete transaction channels",
+  },
+  {
+    permission_name: "admin.parameters.view",
+    permission_description: "View parameters",
+  },
+  {
+    permission_name: "admin.parameters.create",
+    permission_description: "Create parameters",
+  },
+  {
+    permission_name: "admin.parameters.edit",
+    permission_description: "Edit parameters",
+  },
+  {
+    permission_name: "admin.parameters.delete",
+    permission_description: "Delete parameters",
+  },
 ];
 
 export default permissions;

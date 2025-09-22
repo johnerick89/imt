@@ -18,6 +18,7 @@ import type {
   Transaction,
   InboundTransactionFilters,
 } from "../types/TransactionsTypes";
+import { siteCommonStrings } from "../config";
 
 const InboundTransactions: React.FC = () => {
   const { orgId } = useParams<{ orgId: string }>();
@@ -33,6 +34,8 @@ const InboundTransactions: React.FC = () => {
   const [showReverseModal, setShowReverseModal] = useState(false);
   const [reverseReason, setReverseReason] = useState("");
   const [reverseRemarks, setReverseRemarks] = useState("");
+  const commonStrings = siteCommonStrings;
+  const inboundLabel = commonStrings?.inbound;
 
   const {
     data: transactionsData,
@@ -126,10 +129,11 @@ const InboundTransactions: React.FC = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Inbound Transactions
+            {inboundLabel} Transactions
           </h1>
           <p className="text-gray-600">
-            Manage inbound money transfer transactions for your organisation.
+            Manage {inboundLabel?.toLocaleLowerCase()} money transfer
+            transactions for your organisation.
           </p>
         </div>
         <Button onClick={() => refetch()} variant="outline">
@@ -159,7 +163,7 @@ const InboundTransactions: React.FC = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">
-                  Total Transactions
+                  Total {inboundLabel} Transactions
                 </p>
                 <p className="text-2xl font-bold text-gray-900">
                   {stats.totalTransactions}
@@ -187,7 +191,7 @@ const InboundTransactions: React.FC = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">
-                  Total Amount
+                  Total {inboundLabel} Amount
                 </p>
                 <p className="text-2xl font-bold text-gray-900">
                   {formatToCurrency(stats.totalAmount)}
@@ -214,7 +218,9 @@ const InboundTransactions: React.FC = () => {
                 </svg>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Pending</p>
+                <p className="text-sm font-medium text-gray-600">
+                  {inboundLabel} Pending
+                </p>
                 <p className="text-2xl font-bold text-gray-900">
                   {stats.byStatus.find((s) => s.status === "PENDING_APPROVAL")
                     ?.count || 0}
