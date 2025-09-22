@@ -13,6 +13,7 @@ class CorridorsService {
   async getCorridors(
     filters: CorridorFilters = {}
   ): Promise<CorridorListResponse> {
+    console.log("filters", filters);
     const response = await apiClient.get("/api/v1/corridors", {
       params: filters,
     });

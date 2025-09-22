@@ -394,23 +394,27 @@ export async function seedDatabase(
   const seeded: string[] = [];
 
   try {
+    // Only seed if specific seeds are provided - no automatic seeding
     if (normalizedSeeds.length === 0) {
       console.log(
-        "No specific seed provided. Seeding all items, seeding fro API..."
+        "No specific seeds provided. Skipping automatic seeding to prevent unintended data creation."
       );
-      for (const key in seedFunctions) {
-        await seedFunctions[key]();
-        seeded.push(key);
-      }
-    } else {
-      for (const seed of normalizedSeeds) {
-        const seedFunction = seedFunctions[seed];
-        if (seedFunction) {
-          await seedFunction();
-          seeded.push(seed);
-        } else {
-          console.log(`No seed function found for "${seed}"`);
-        }
+      return {
+        success: true,
+        message: "No seeds specified - skipped automatic seeding",
+        data: { seeded: [] },
+      };
+    }
+
+    // Process only the specified seeds
+    for (const seed of normalizedSeeds) {
+      const seedFunction = seedFunctions[seed];
+      if (seedFunction) {
+        console.log(`Seeding: ${seed}`);
+        await seedFunction();
+        seeded.push(seed);
+      } else {
+        console.log(`No seed function found for "${seed}"`);
       }
     }
 
@@ -450,27 +454,33 @@ async function main() {
   };
 
   if (args.length === 0) {
-    console.log("No specific seed provided. Seeding all items...");
-    for (const key in seedFunctions) {
-      await seedFunctions[key]();
-    }
-  } else {
-    for (const arg of args) {
-      const seedFunction = seedFunctions[arg];
-      if (seedFunction) {
-        await seedFunction();
-      } else {
-        console.log(`No seed function found for "${arg}"`);
-      }
+    console.log(
+      "No specific seeds provided. Use --<seedName> to specify which seeds to run."
+    );
+    console.log("Available seeds:", Object.keys(seedFunctions).join(", "));
+    return;
+  }
+
+  for (const arg of args) {
+    const seedFunction = seedFunctions[arg];
+    if (seedFunction) {
+      console.log(`Running seed: ${arg}`);
+      await seedFunction();
+    } else {
+      console.log(`No seed function found for "${arg}"`);
+      console.log("Available seeds:", Object.keys(seedFunctions).join(", "));
     }
   }
 }
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    console.log("Seed operation completed successfully");
-  });
+// Only run main() when this file is executed directly (not when imported)
+if (require.main === module) {
+  main()
+    .catch((e) => {
+      console.error(e);
+      process.exit(1);
+    })
+    .finally(async () => {
+      console.log("Seed operation completed successfully");
+    });
+}

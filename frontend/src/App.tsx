@@ -9,8 +9,33 @@ import { AppRoutes } from "./routes";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
+      retry: (failureCount, error) => {
+        // Retry up to 3 times for network/CORS errors
+        if (
+          failureCount < 3 &&
+          (error.message.includes("Network error") ||
+            error.message.includes("CORS"))
+        ) {
+          return true;
+        }
+        return false;
+      },
       staleTime: 5 * 60 * 1000, // 5 minutes
-      retry: 1,
+      refetchOnWindowFocus: true, // Refetch when window is focused
+      refetchOnReconnect: true, // Refetch on network reconnect
+    },
+    mutations: {
+      retry: (failureCount, error) => {
+        // Retry mutations for network/CORS errors
+        if (
+          failureCount < 3 &&
+          (error.message.includes("Network error") ||
+            error.message.includes("CORS"))
+        ) {
+          return true;
+        }
+        return false;
+      },
     },
   },
 });

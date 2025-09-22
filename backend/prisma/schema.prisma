@@ -49,7 +49,7 @@ model User {
   created_exchange_rates  ExchangeRate[]       @relation("CreatedByUser")
   approved_exchange_rates ExchangeRate[]       @relation("ApprovedByUser")
   tills                   Till[]               @relation("CurrentTellerUser")
-  transactions            Transaction[]
+  transactions            Transaction[]        @relation("CreatedByUser")
   corridors               Corridor[]
   charges                 Charge[]
   beneficiaries           Beneficiary[]
@@ -69,6 +69,7 @@ model User {
   charges_payments        ChargesPayment[]
   vaults                  Vault[]
   transaction_audits      TransactionAudit[]
+  Transaction             Transaction[]        @relation("ApprovedByUser")
 
   @@index([email])
   @@index([id])
@@ -178,8 +179,8 @@ model Organisation {
   description                  String?
   type                         OrganisationType    @default(PARTNER)
   integration_mode             IntegrationMethod   @default(INTERNAL)
-  contact_person               String?
-  contact_email                String?
+  contact_person               String
+  contact_email                String
   contact_phone                String?
   contact_address              String?
   contact_city                 String?
@@ -806,6 +807,7 @@ model Till {
   created_by_user        User?            @relation("CreatedByUser", fields: [created_by], references: [id])
   gl_accounts            GlAccount[]
   balance_histories      BalanceHistory[]
+  deleted_at             DateTime?        @db.Timestamp(0)
 
   @@index([created_at])
   @@index([updated_at])
@@ -815,6 +817,7 @@ model Till {
   @@index([closed_at])
   @@index([vault_id])
   @@index([currency_id])
+  @@index([deleted_at])
   @@map("tills")
 }
 
@@ -878,6 +881,7 @@ enum RequestStatus {
   PENDING_OPERATIONS_APPROVAL
   PENDING_CUSTOMER_ACTION
   PENDING_VERIFICATION
+  APPROVED
 }
 
 model Transaction {
@@ -920,7 +924,7 @@ model Transaction {
   external_exchange_rate_id    String?             @db.Uuid
   external_exchange_rate       ExchangeRate?       @relation("ExternalExchangeRates", fields: [external_exchange_rate_id], references: [id])
   created_by                   String              @db.Uuid
-  created_by_user              User?               @relation(fields: [created_by], references: [id])
+  created_by_user              User?               @relation("CreatedByUser", fields: [created_by], references: [id])
   created_at                   DateTime?           @default(now())
   updated_at                   DateTime?           @updatedAt
   deleted_at                   DateTime?
@@ -951,6 +955,9 @@ model Transaction {
   receiver_trasaction_party_id String?             @db.Uuid
   receiver_trasaction_party    TransactionParty?   @relation("ReceiverTransactionParty", fields: [receiver_trasaction_party_id], references: [id])
   transaction_audits           TransactionAudit[]
+  approved_by                  String?             @db.Uuid
+  approved_by_user             User?               @relation("ApprovedByUser", fields: [approved_by], references: [id])
+  approved_at                  DateTime?           @db.Timestamp(0)
 
   @@index([corridor_id])
   @@index([till_id])

@@ -7,6 +7,7 @@ import type {
   TillListResponse,
   TillResponse,
   TillStatsResponse,
+  TillStatsFilters,
 } from "../types/TillsTypes";
 
 class TillsService {
@@ -19,6 +20,8 @@ class TillsService {
     if (filters.status) params.append("status", filters.status);
     if (filters.vault_id) params.append("vault_id", filters.vault_id);
     if (filters.currency_id) params.append("currency_id", filters.currency_id);
+    if (filters.organisation_id)
+      params.append("organisation_id", filters.organisation_id);
 
     const queryString = params.toString();
     const url = `/api/v1/tills${queryString ? `?${queryString}` : ""}`;
@@ -52,7 +55,9 @@ class TillsService {
     return response.data;
   }
 
-  async getTillStats(filters: TillFilters = {}): Promise<TillStatsResponse> {
+  async getTillStats(
+    filters: TillStatsFilters = {}
+  ): Promise<TillStatsResponse> {
     const params = new URLSearchParams();
 
     if (filters.organisation_id)

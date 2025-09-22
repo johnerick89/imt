@@ -35,10 +35,11 @@ export const createTillSchema = z.object({
     }
     return val;
   }, z.string().optional()),
-  opening_balance: z.preprocess(
-    (val) => (val === "" ? undefined : val),
-    z.number().optional()
-  ),
+  opening_balance: z.preprocess((val) => {
+    if (val === "" || val === null || val === undefined) return undefined;
+    if (typeof val === "string") return parseFloat(val);
+    return val;
+  }, z.number().nonnegative("Opening balance must be non-negative").optional()),
 });
 
 export const updateTillSchema = z.object({
@@ -76,10 +77,11 @@ export const updateTillSchema = z.object({
     }
     return val;
   }, z.string().optional()),
-  opening_balance: z.preprocess(
-    (val) => (val === "" ? undefined : val),
-    z.number().optional()
-  ),
+  opening_balance: z.preprocess((val) => {
+    if (val === "" || val === null || val === undefined) return undefined;
+    if (typeof val === "string") return parseFloat(val);
+    return val;
+  }, z.number().nonnegative("Opening balance must be non-negative").optional()),
 });
 
 export const tillFiltersSchema = z.object({

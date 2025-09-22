@@ -62,8 +62,8 @@ export interface ICreateOrganisationRequest {
   description?: string;
   type: OrganisationType;
   integration_mode?: IntegrationMethod;
-  contact_person?: string;
-  contact_email?: string;
+  contact_person: string;
+  contact_email: string;
   contact_phone?: string;
   contact_address?: string;
   contact_city?: string;
@@ -78,8 +78,8 @@ export interface IUpdateOrganisationRequest {
   description?: string;
   type?: OrganisationType;
   integration_mode?: IntegrationMethod;
-  contact_person?: string;
-  contact_email?: string;
+  contact_person: string;
+  contact_email: string;
   contact_phone?: string;
   contact_address?: string;
   contact_city?: string;

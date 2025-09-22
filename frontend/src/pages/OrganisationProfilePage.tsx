@@ -64,7 +64,7 @@ import { formatToCurrency } from "../utils/textUtils";
 const OrganisationProfilePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("integrations");
+  const [activeTab, setActiveTab] = useState("corridors");
   const { user } = useSession();
 
   // Balance-related state
@@ -136,9 +136,9 @@ const OrganisationProfilePage: React.FC = () => {
 
   // Corridor hooks
   const { data: corridorsData, isLoading: corridorsLoading } = useCorridors({
-    organisation_id: user?.organisation_id || "",
+    organisation_id: id,
     limit: 100,
-    origin_organisation_id: user?.organisation_id || "",
+    origin_organisation_id: user?.organisation_id,
   });
 
   const createCorridorMutation = useCreateCorridor();
@@ -291,7 +291,8 @@ const OrganisationProfilePage: React.FC = () => {
     try {
       await createChargeMutation.mutateAsync({
         ...(data as CreateChargeRequest),
-        origin_organisation_id: id || "",
+        destination_organisation_id: id || "",
+        origin_organisation_id: user?.organisation_id || "",
       });
       setShowCreateChargeModal(false);
     } catch (error) {
@@ -424,7 +425,9 @@ const OrganisationProfilePage: React.FC = () => {
   }
 
   const tabs = [
-    { id: "integrations", label: "Integrations", icon: "🔌" },
+    ...(organisation?.integration_mode === "EXTERNAL"
+      ? [{ id: "integrations", label: "Integrations", icon: "🔌" }]
+      : []),
     { id: "corridors", label: "Corridors", icon: "🌐" },
     { id: "charges", label: "Charges", icon: "💰" },
     { id: "balance", label: "Balance", icon: "💳" },

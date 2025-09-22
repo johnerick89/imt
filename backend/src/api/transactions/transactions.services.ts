@@ -61,12 +61,12 @@ export class TransactionService {
       }
 
       // 3. Validate till is the same as the one in the request
-      if (userTill.till_id !== data.till_id && data.till_id !== null) {
-        throw new AppError(
-          "Transaction till must match the user's open till",
-          400
-        );
-      }
+      // if (userTill.till_id !== data.till_id && data.till_id !== null) {
+      //   throw new AppError(
+      //     "Transaction till must match the user's open till",
+      //     400
+      //   );
+      // }
       if (data.till_id === null) {
         data.till_id = userTill.till_id;
       }
@@ -515,6 +515,10 @@ export class TransactionService {
         where: { id: transactionId },
         data: {
           status: "APPROVED",
+          approved_by: userId,
+          approved_at: new Date(),
+          remittance_status: "COMPLETED",
+          request_status: "APPROVED",
           remarks: data.remarks
             ? `${transaction.remarks || ""}\nApproved: ${data.remarks}`.trim()
             : transaction.remarks,

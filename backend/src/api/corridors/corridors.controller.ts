@@ -24,6 +24,8 @@ export class CorridorController {
         throw new AppError("User not authenticated", 401);
       }
 
+      console.log("req.body", req.body);
+
       const validatedData = createCorridorSchema.parse(req.body);
 
       const result = await this.corridorService.createCorridor(

@@ -45,7 +45,7 @@ export class UsersService {
         phone: userData.phone,
         address: userData.address,
         organisation_id: userData.organisation_id,
-        status: UserStatus.PENDING,
+        status: UserStatus.ACTIVE,
       },
     });
 
