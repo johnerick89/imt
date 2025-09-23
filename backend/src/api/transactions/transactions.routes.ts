@@ -51,6 +51,16 @@ router.post(
 );
 
 router.post(
+  "/transactions/:transactionId/ready",
+  transactionController.markAsReady.bind(transactionController)
+);
+
+router.put(
+  "/transactions/:transactionId",
+  transactionController.updateOutboundTransaction.bind(transactionController)
+);
+
+router.post(
   "/transactions/:transactionId/reverse",
   transactionController.reverseTransaction.bind(transactionController)
 );

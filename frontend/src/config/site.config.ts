@@ -20,3 +20,5 @@ export const siteConfigs = [
 const siteConfig = siteConfigs.find((site) => site.name === site_param);
 
 export default siteConfig;
+
+export { siteConfigs as allSiteConfigs, site_param };

@@ -8,6 +8,8 @@ import {
   useCancelTransaction,
   useReverseTransaction,
   useApproveTransaction,
+  useMarkAsReady,
+  useUpdateOutboundTransaction,
 } from "../hooks/useTransactions";
 import { useCurrencies } from "../hooks/useCurrencies";
 import { useOrganisations } from "../hooks/useOrganisations";
@@ -15,9 +17,10 @@ import { useCorridors } from "../hooks/useCorridors";
 import { useTills } from "../hooks/useTills";
 import { useCustomers } from "../hooks/useCustomers";
 import TransactionsTable from "../components/TransactionsTable";
-import CreateTransactionForm from "../components/CreateTransactionForm";
+import TransactionForm from "../components/CreateTransactionForm";
 import TransactionDetailsModal from "../components/TransactionDetailsModal";
 import ApproveTransactionModal from "../components/ApproveTransactionModal";
+import MarkAsReadyModal from "../components/MarkAsReadyModal";
 import { SearchableSelect } from "../components/ui/SearchableSelect";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
@@ -26,18 +29,25 @@ import type {
   Transaction,
   TransactionFilters,
   CreateOutboundTransactionRequest,
+  UpdateTransactionRequest,
+  MarkAsReadyRequest,
   Status,
   RemittanceStatus,
 } from "../types/TransactionsTypes";
+import { siteCommonStrings } from "../config";
 
 const OutboundTransactions: React.FC = () => {
   const { id: organisationId } = useParams<{ id: string }>();
   const { user } = useSession();
+  const commonStrings = siteCommonStrings;
+  const outboundLabel = commonStrings?.outbound;
   const [selectedTransaction, setSelectedTransaction] =
     useState<Transaction | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
+  const [isMarkAsReadyModalOpen, setIsMarkAsReadyModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Use the current user's organisation if no organisationId in URL
   const effectiveOrganisationId = organisationId || user?.organisation_id;
@@ -80,6 +90,8 @@ const OutboundTransactions: React.FC = () => {
   const cancelTransactionMutation = useCancelTransaction();
   const reverseTransactionMutation = useReverseTransaction();
   const approveTransactionMutation = useApproveTransaction();
+  const markAsReadyMutation = useMarkAsReady();
+  const updateTransactionMutation = useUpdateOutboundTransaction();
 
   // Handle filter changes
   const handleFilterChange = (
@@ -100,12 +112,12 @@ const OutboundTransactions: React.FC = () => {
 
   // Handle create transaction
   const handleCreateTransaction = async (
-    data: CreateOutboundTransactionRequest
+    data: CreateOutboundTransactionRequest | UpdateTransactionRequest
   ) => {
     try {
       await createTransactionMutation.mutateAsync({
         organisationId: effectiveOrganisationId || "",
-        data,
+        data: data as CreateOutboundTransactionRequest,
       });
       setIsCreateModalOpen(false);
     } catch (error) {
@@ -173,12 +185,58 @@ const OutboundTransactions: React.FC = () => {
     }
   };
 
+  // Handle update transaction
+  const handleUpdateTransaction = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setIsEditModalOpen(true);
+  };
+
+  // Handle mark as ready
+  const handleMarkAsReady = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setIsMarkAsReadyModalOpen(true);
+  };
+
+  // Handle mark as ready submission
+  const handleMarkAsReadySubmit = async (data: MarkAsReadyRequest) => {
+    if (selectedTransaction) {
+      try {
+        await markAsReadyMutation.mutateAsync({
+          transactionId: selectedTransaction.id,
+          data,
+        });
+        setIsMarkAsReadyModalOpen(false);
+        setSelectedTransaction(null);
+      } catch (error) {
+        console.error("Error marking transaction as ready:", error);
+      }
+    }
+  };
+
+  // Handle update transaction submission
+  const handleUpdateTransactionSubmit = async (
+    data: UpdateTransactionRequest
+  ) => {
+    if (selectedTransaction) {
+      try {
+        await updateTransactionMutation.mutateAsync({
+          transactionId: selectedTransaction.id,
+          data,
+        });
+        setIsEditModalOpen(false);
+        setSelectedTransaction(null);
+      } catch (error) {
+        console.error("Error updating transaction:", error);
+      }
+    }
+  };
+
   if (!effectiveOrganisationId) {
     return (
       <div className="p-6">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            Outbound Transactions
+            {outboundLabel} Transactions
           </h1>
           <p className="text-gray-600">No organisation selected.</p>
         </div>
@@ -196,14 +254,15 @@ const OutboundTransactions: React.FC = () => {
         <div className="flex justify-between items-center mb-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Outbound Transactions
+              {outboundLabel} Transactions
             </h1>
             <p className="text-gray-600">
-              Manage outbound money transfer transactions for your organisation.
+              Manage {outboundLabel?.toLocaleLowerCase()} money transfer
+              transactions for your organisation.
             </p>
           </div>
           <Button onClick={() => setIsCreateModalOpen(true)}>
-            Create Transaction
+            Create {outboundLabel} Transaction
           </Button>
         </div>
 
@@ -229,7 +288,7 @@ const OutboundTransactions: React.FC = () => {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">
-                    Total Transactions
+                    Total {outboundLabel} Transactions
                   </p>
                   <p className="text-2xl font-bold text-gray-900">
                     {stats.totalTransactions}
@@ -257,7 +316,7 @@ const OutboundTransactions: React.FC = () => {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">
-                    Total Amount
+                    Total {outboundLabel} Amount
                   </p>
                   <p className="text-2xl font-bold text-gray-900">
                     {formatToCurrency(stats.totalAmount)}
@@ -542,6 +601,8 @@ const OutboundTransactions: React.FC = () => {
           onCancel={handleCancelTransaction}
           onReverse={handleReverseTransaction}
           onApprove={handleApproveTransaction}
+          onUpdate={handleUpdateTransaction}
+          onMarkAsReady={handleMarkAsReady}
           isLoading={isLoadingTransactions || isLoadingStats}
         />
 
@@ -581,12 +642,37 @@ const OutboundTransactions: React.FC = () => {
       </div>
 
       {/* Modals */}
-      <CreateTransactionForm
+      <TransactionForm
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSubmit={handleCreateTransaction}
         isLoading={createTransactionMutation.isPending}
         organisationId={effectiveOrganisationId}
+        mode="create"
+      />
+
+      <TransactionForm
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedTransaction(null);
+        }}
+        onSubmit={handleUpdateTransactionSubmit}
+        isLoading={updateTransactionMutation.isPending}
+        organisationId={effectiveOrganisationId}
+        mode="edit"
+        transaction={selectedTransaction}
+      />
+
+      <MarkAsReadyModal
+        isOpen={isMarkAsReadyModalOpen}
+        onClose={() => {
+          setIsMarkAsReadyModalOpen(false);
+          setSelectedTransaction(null);
+        }}
+        onConfirm={handleMarkAsReadySubmit}
+        transaction={selectedTransaction}
+        isLoading={markAsReadyMutation.isPending}
       />
 
       <TransactionDetailsModal
@@ -596,10 +682,14 @@ const OutboundTransactions: React.FC = () => {
         onCancel={handleCancelTransaction}
         onReverse={handleReverseTransaction}
         onApprove={handleApproveTransaction}
+        onUpdate={handleUpdateTransaction}
+        onMarkAsReady={handleMarkAsReady}
         isLoading={
           cancelTransactionMutation.isPending ||
           reverseTransactionMutation.isPending ||
-          approveTransactionMutation.isPending
+          approveTransactionMutation.isPending ||
+          markAsReadyMutation.isPending ||
+          updateTransactionMutation.isPending
         }
       />
 

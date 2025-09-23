@@ -36,6 +36,8 @@ import ChargesPaymentDetailsPage from "../pages/ChargesPaymentDetailsPage";
 import TransactionsPage from "../pages/TransactionsPage";
 import ConnectionsPage from "../pages/ConnectionsPage";
 import FinancialSettingsPage from "../pages/FinancialSettingsPage";
+import CoreConfigurationsPage from "../pages/CoreConfigurationsPage";
+import TransactionChannelsPage from "../pages/TransactionChannelsPage";
 
 // Public Route Component (redirects to dashboard if already authenticated)
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -194,6 +196,16 @@ const AppRoutes: React.FC = () => {
         <Route path="users/:id" element={<UserProfilePage />} />
         <Route path="roles" element={<RolesPage />} />
         <Route path="roles/:id" element={<RoleProfilePage />} />
+
+        {/* Core Configurations */}
+        <Route
+          path="core-configurations"
+          element={<CoreConfigurationsPage />}
+        />
+        <Route
+          path="transaction-channels"
+          element={<TransactionChannelsPage />}
+        />
 
         {/* Account */}
         <Route path="my-account" element={<MyAccountPage />} />

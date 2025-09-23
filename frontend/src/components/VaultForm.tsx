@@ -3,7 +3,7 @@ import { useForm, Controller } from "react-hook-form";
 import { FormItem } from "./ui/FormItem";
 import { Input } from "./ui/Input";
 import { SearchableSelect } from "./ui/SearchableSelect";
-import { useOrganisations, useCurrencies } from "../hooks";
+import { useOrganisations, useCurrencies, useOrganisation } from "../hooks";
 import type {
   CreateVaultRequest,
   UpdateVaultRequest,
@@ -24,6 +24,8 @@ const VaultForm: React.FC<VaultFormProps> = ({
   const isEdit = !!initialData;
   const { user: currentUser } = useSession();
   const organisationId = currentUser?.organisation_id;
+  const { data: userOrganisationData } = useOrganisation(organisationId || "");
+  const userOrganisation = userOrganisationData?.data;
   const {
     control,
     handleSubmit,
@@ -31,8 +33,13 @@ const VaultForm: React.FC<VaultFormProps> = ({
   } = useForm<CreateVaultRequest>({
     defaultValues: {
       name: initialData?.name || "",
-      organisation_id: initialData?.organisation_id || organisationId,
-      currency_id: initialData?.currency_id || "",
+      organisation_id:
+        initialData?.organisation_id ||
+        organisationId ||
+        userOrganisation?.id ||
+        "",
+      currency_id:
+        initialData?.currency_id || userOrganisation?.base_currency_id || "",
       opening_balance: 0,
     },
   });
@@ -45,7 +52,7 @@ const VaultForm: React.FC<VaultFormProps> = ({
   const organisations = organisationsData?.data?.organisations || [];
   const currencies = currenciesData?.data?.currencies || [];
   const currentOrganisation = organisations.find(
-    (org) => org.id === organisationId
+    (org) => org.id === organisationId || userOrganisation?.id
   );
   const currentOrganisationName = currentOrganisation?.name;
 

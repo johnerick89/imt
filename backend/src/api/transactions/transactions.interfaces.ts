@@ -17,6 +17,7 @@ import {
   User,
   Charge,
   Country,
+  TransactionAudit,
 } from "@prisma/client";
 
 // Base Transaction Interface
@@ -83,6 +84,14 @@ export interface ITransaction {
   origin_country?: Country | null;
   destination_country?: Country | null;
   transaction_parties?: TransactionParty[];
+  transaction_audits?: TransactionAudit[];
+}
+
+export interface ITransactionChargeInItem {
+  charge_id: string;
+  type: ChargeType;
+  original_rate: number;
+  negotiated_rate: number;
 }
 
 // Transaction Charge Interface
@@ -129,6 +138,9 @@ export interface CreateOutboundTransactionRequest {
   destination_organisation_id?: string;
   origin_country_id?: string;
   destination_country_id?: string;
+  amount_to_send_base_currency?: number;
+  amount_to_send_destination_currency?: number;
+  transaction_charges?: ITransactionChargeInItem[];
 }
 
 // Update Transaction Request
@@ -246,6 +258,18 @@ export interface ApproveTransactionRequest {
   remarks?: string;
 }
 
+// Mark Transaction as Ready Request
+export interface MarkAsReadyRequest {
+  remarks?: string;
+  assigned_to?: string; // User ID to reassign to
+}
+
+// Reassign Transaction Request
+export interface ReassignTransactionRequest {
+  assigned_to: string; // User ID to reassign to
+  remarks: string;
+}
+
 // Reverse Transaction Request
 export interface ReverseTransactionRequest {
   reason: string;
@@ -256,6 +280,8 @@ export interface ReverseTransactionRequest {
 export interface TransactionChargeCalculation {
   totalCharges: number;
   netAmount: number;
+  totalCommissions: number;
+  totalTaxes: number;
   charges: Array<{
     charge_id: string;
     type: ChargeType;
@@ -267,6 +293,7 @@ export interface TransactionChargeCalculation {
     external_percentage: number | null;
     description: string;
     is_reversible: boolean;
+    negotiated_rate: number | null;
   }>;
 }
 
@@ -277,3 +304,7 @@ export interface OutboundTransactionResult {
   totalCharges: number;
   netAmount: number;
 }
+
+export type ChargeWithNegotiatedRate = Charge & {
+  negotiated_rate: number | null;
+};

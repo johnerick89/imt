@@ -147,6 +147,22 @@ export const usePermissions = () => {
     // Reports Management
     canViewReports: () => hasPermission(user, "admin.reports.view"),
 
+    // Parameters Management
+    canViewParameters: () => hasPermission(user, "admin.parameters.view"),
+    canCreateParameters: () => hasPermission(user, "admin.parameters.create"),
+    canEditParameters: () => hasPermission(user, "admin.parameters.edit"),
+    canDeleteParameters: () => hasPermission(user, "admin.parameters.delete"),
+
+    // Transaction Channels Management
+    canViewTransactionChannels: () =>
+      hasPermission(user, "admin.transactionChannels.view"),
+    canCreateTransactionChannels: () =>
+      hasPermission(user, "admin.transactionChannels.create"),
+    canEditTransactionChannels: () =>
+      hasPermission(user, "admin.transactionChannels.edit"),
+    canDeleteTransactionChannels: () =>
+      hasPermission(user, "admin.transactionChannels.delete"),
+
     // User context
     user,
   };

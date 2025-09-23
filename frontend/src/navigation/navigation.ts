@@ -157,6 +157,24 @@ export const navigationSections: NavigationSection[] = [
     ],
   },
   {
+    id: "core-setups",
+    label: "CORE SETUPS",
+    items: [
+      {
+        id: "core-configurations",
+        label: "Core Configurations",
+        path: "/core-configurations",
+        icon: "⚙️",
+      },
+      {
+        id: "transaction-channels",
+        label: "Transaction Channels",
+        path: "/transaction-channels",
+        icon: "🔗",
+      },
+    ],
+  },
+  {
     id: "user-management",
     label: "USER MANAGEMENT",
     items: [

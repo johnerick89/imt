@@ -6,6 +6,7 @@ import {
   useOrganisation,
   useAllCurrencies,
   useAllCountries,
+  useSession,
 } from "../hooks";
 import { FormItem } from "./ui/FormItem";
 import { Input } from "./ui/Input";
@@ -50,6 +51,8 @@ const OrganisationForm: React.FC<OrganisationFormProps> = ({
 }) => {
   const isEditMode = mode === "edit";
 
+  const { user } = useSession();
+
   // React Query hooks
   const { data: organisationData, isLoading: organisationLoading } =
     useOrganisation(organisationId || "");
@@ -59,6 +62,9 @@ const OrganisationForm: React.FC<OrganisationFormProps> = ({
     useAllCountries();
   const createOrganisationMutation = useCreateOrganisation();
   const updateOrganisationMutation = useUpdateOrganisation();
+  const { data: userOrganisationData, isLoading: userOrganisationLoading } =
+    useOrganisation(user?.organisation_id || "");
+  const userOrganisation = userOrganisationData?.data;
 
   console.log("countriesData", countriesData);
 
@@ -67,6 +73,8 @@ const OrganisationForm: React.FC<OrganisationFormProps> = ({
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
+    setValue,
+    watch,
   } = useForm<OrganisationFormData>({
     defaultValues: {
       name: "",
@@ -84,6 +92,16 @@ const OrganisationForm: React.FC<OrganisationFormProps> = ({
       country_id: "",
     },
   });
+
+  useEffect(() => {
+    if (userOrganisation) {
+      const base_currency_id = watch("base_currency_id");
+      setValue(
+        "base_currency_id",
+        base_currency_id || userOrganisation.base_currency_id || ""
+      );
+    }
+  }, [userOrganisation, reset, watch, setValue]);
 
   // Load organisation data for edit mode
   useEffect(() => {
@@ -144,7 +162,7 @@ const OrganisationForm: React.FC<OrganisationFormProps> = ({
     }
   };
 
-  if (isEditMode && organisationLoading) {
+  if (isEditMode && organisationLoading && userOrganisationLoading) {
     return (
       <div className="animate-pulse">
         <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>

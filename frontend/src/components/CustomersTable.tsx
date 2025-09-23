@@ -2,6 +2,7 @@ import React from "react";
 import { DataTable } from "./ui/DataTable";
 import type { Customer } from "../types/CustomersTypes";
 import CustomerActionCell from "./CustomerActionCell";
+import { StatusBadge } from "./ui/StatusBadge";
 
 interface CustomersTableProps {
   customers: Customer[];
@@ -30,8 +31,11 @@ const CustomersTable: React.FC<CustomersTableProps> = ({
           onClick={() => onView(row.original)}
           className="text-left w-full p-2 rounded-lg hover:bg-gray-50 transition-colors"
         >
-          <div className="font-medium text-blue-600 hover:text-blue-800">
-            {row.original.full_name}
+          <div className="flex flex-col items-left gap-2">
+            <div className="font-medium text-blue-600 hover:text-blue-800">
+              {row.original.full_name}
+            </div>
+            <div className="text-sm text-gray-500">{row.original.email}</div>
           </div>
         </button>
       ),
@@ -43,13 +47,6 @@ const CustomersTable: React.FC<CustomersTableProps> = ({
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
           {row.original.customer_type}
         </span>
-      ),
-    },
-    {
-      accessorKey: "email",
-      header: "Email",
-      cell: ({ row }: { row: { original: Customer } }) => (
-        <div className="text-gray-600">{row.original.email || "N/A"}</div>
       ),
     },
     {
@@ -68,11 +65,33 @@ const CustomersTable: React.FC<CustomersTableProps> = ({
         <div className="text-gray-900">{row.original?.organisation?.name}</div>
       ),
     },
+
     {
-      accessorKey: "branch.name",
-      header: "Branch",
+      accessorKey: "status",
+      header: "Status",
       cell: ({ row }: { row: { original: Customer } }) => (
-        <div className="text-gray-900">{row.original?.branch?.name}</div>
+        <StatusBadge
+          status={row.original.status ? "ACTIVE" : "INACTIVE"}
+          type="status"
+        />
+      ),
+    },
+    {
+      accessorKey: "nationality",
+      header: "Nationality",
+      cell: ({ row }: { row: { original: Customer } }) => (
+        <div className="text-gray-600">
+          {row.original.nationality?.name || "N/A"}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "residence_country",
+      header: "Residence Country",
+      cell: ({ row }: { row: { original: Customer } }) => (
+        <div className="text-gray-600">
+          {row.original.residence_country?.name || "N/A"}
+        </div>
       ),
     },
 

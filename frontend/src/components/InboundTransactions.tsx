@@ -5,6 +5,7 @@ import {
   useInboundTransactionStats,
   useApproveInboundTransaction,
   useReverseInboundTransaction,
+  useCancelInboundTransaction,
 } from "../hooks/useInboundTransactions";
 import { useSession } from "../hooks";
 import { Button } from "../components/ui/Button";
@@ -14,10 +15,12 @@ import { Textarea } from "../components/ui/Textarea";
 import { formatToCurrency } from "../utils/textUtils";
 import InboundTransactionsTable from "./InboundTransactionsTable";
 import ApproveTransactionModal from "./ApproveTransactionModal";
+import TransactionDetailsModal from "./TransactionDetailsModal";
 import type {
   Transaction,
   InboundTransactionFilters,
 } from "../types/TransactionsTypes";
+import { siteCommonStrings } from "../config";
 
 const InboundTransactions: React.FC = () => {
   const { orgId } = useParams<{ orgId: string }>();
@@ -31,8 +34,13 @@ const InboundTransactions: React.FC = () => {
     useState<Transaction | null>(null);
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showReverseModal, setShowReverseModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
   const [reverseReason, setReverseReason] = useState("");
   const [reverseRemarks, setReverseRemarks] = useState("");
+  const [cancelReason, setCancelReason] = useState("");
+  const commonStrings = siteCommonStrings;
+  const inboundLabel = commonStrings?.inbound;
 
   const {
     data: transactionsData,
@@ -47,6 +55,7 @@ const InboundTransactions: React.FC = () => {
 
   const approveMutation = useApproveInboundTransaction();
   const reverseMutation = useReverseInboundTransaction();
+  const cancelMutation = useCancelInboundTransaction();
 
   const transactions = useMemo(
     () => transactionsData?.data?.transactions || [],
@@ -92,7 +101,7 @@ const InboundTransactions: React.FC = () => {
   // Table handlers
   const handleViewTransaction = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
-    // You can add a view modal here if needed
+    setShowDetailsModal(true);
   };
 
   const handleApproveTransaction = (transaction: Transaction) => {
@@ -103,6 +112,27 @@ const InboundTransactions: React.FC = () => {
   const handleReverseTransaction = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
     setShowReverseModal(true);
+  };
+
+  const handleCancelTransaction = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setShowCancelModal(true);
+  };
+
+  const handleCancel = async () => {
+    if (!selectedTransaction || !cancelReason.trim()) return;
+
+    try {
+      await cancelMutation.mutateAsync({
+        transactionId: selectedTransaction.id,
+        data: { reason: cancelReason },
+      });
+      setShowCancelModal(false);
+      setCancelReason("");
+      setSelectedTransaction(null);
+    } catch (error) {
+      console.error("Error cancelling transaction:", error);
+    }
   };
 
   if (isLoading) {
@@ -126,10 +156,11 @@ const InboundTransactions: React.FC = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Inbound Transactions
+            {inboundLabel} Transactions
           </h1>
           <p className="text-gray-600">
-            Manage inbound money transfer transactions for your organisation.
+            Manage {inboundLabel?.toLocaleLowerCase()} money transfer
+            transactions for your organisation.
           </p>
         </div>
         <Button onClick={() => refetch()} variant="outline">
@@ -159,7 +190,7 @@ const InboundTransactions: React.FC = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">
-                  Total Transactions
+                  Total {inboundLabel} Transactions
                 </p>
                 <p className="text-2xl font-bold text-gray-900">
                   {stats.totalTransactions}
@@ -187,7 +218,7 @@ const InboundTransactions: React.FC = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">
-                  Total Amount
+                  Total {inboundLabel} Amount
                 </p>
                 <p className="text-2xl font-bold text-gray-900">
                   {formatToCurrency(stats.totalAmount)}
@@ -214,7 +245,9 @@ const InboundTransactions: React.FC = () => {
                 </svg>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Pending</p>
+                <p className="text-sm font-medium text-gray-600">
+                  {inboundLabel} Pending
+                </p>
                 <p className="text-2xl font-bold text-gray-900">
                   {stats.byStatus.find((s) => s.status === "PENDING_APPROVAL")
                     ?.count || 0}
@@ -305,6 +338,25 @@ const InboundTransactions: React.FC = () => {
         onView={handleViewTransaction}
         onApprove={handleApproveTransaction}
         onReverse={handleReverseTransaction}
+        onCancel={handleCancelTransaction}
+      />
+
+      {/* Transaction Details Modal */}
+      <TransactionDetailsModal
+        isOpen={showDetailsModal}
+        onClose={() => {
+          setShowDetailsModal(false);
+          setSelectedTransaction(null);
+        }}
+        transaction={selectedTransaction}
+        onApprove={handleApproveTransaction}
+        onReverse={handleReverseTransaction}
+        onCancel={handleCancelTransaction}
+        isLoading={
+          approveMutation.isPending ||
+          reverseMutation.isPending ||
+          cancelMutation.isPending
+        }
       />
 
       {/* Approve Modal */}
@@ -386,6 +438,71 @@ const InboundTransactions: React.FC = () => {
               disabled={reverseMutation.isPending || !reverseReason.trim()}
             >
               {reverseMutation.isPending ? "Reversing..." : "Reverse"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Cancel Modal */}
+      <Modal
+        isOpen={showCancelModal}
+        onClose={() => {
+          setShowCancelModal(false);
+          setCancelReason("");
+          setSelectedTransaction(null);
+        }}
+        title="Cancel Transaction"
+      >
+        <div className="space-y-4">
+          {selectedTransaction && (
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="text-sm font-medium text-gray-900 mb-2">
+                Transaction Details
+              </h3>
+              <p>
+                <strong>Transaction #:</strong>{" "}
+                {selectedTransaction.transaction_no}
+              </p>
+              <p>
+                <strong>Amount:</strong>{" "}
+                {formatToCurrency(selectedTransaction.origin_amount)}{" "}
+                {selectedTransaction.origin_currency?.currency_code}
+              </p>
+              <p>
+                <strong>Sender:</strong>{" "}
+                {selectedTransaction.customer?.full_name || "Unknown Sender"}
+              </p>
+              <p>
+                <strong>Receiver:</strong>{" "}
+                {selectedTransaction.beneficiary?.name || "Unknown Receiver"}
+              </p>
+            </div>
+          )}
+          <Input
+            placeholder="Reason for cancellation *"
+            value={cancelReason}
+            onChange={(e) => setCancelReason(e.target.value)}
+            required
+          />
+          <div className="flex justify-end space-x-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowCancelModal(false);
+                setCancelReason("");
+                setSelectedTransaction(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleCancel}
+              disabled={cancelMutation.isPending || !cancelReason.trim()}
+            >
+              {cancelMutation.isPending
+                ? "Cancelling..."
+                : "Cancel Transaction"}
             </Button>
           </div>
         </div>

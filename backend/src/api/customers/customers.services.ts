@@ -1,3 +1,4 @@
+import { CustomerStatus } from "@prisma/client";
 import { prisma } from "../../lib/prisma.lib";
 import type {
   ICustomer,
@@ -16,10 +17,22 @@ export class CustomerService {
     userId: string
   ): Promise<CustomerResponse> {
     try {
+      const names = data.full_name.split(" ");
+      const first_name = names[0];
+      const last_name = names[names.length - 1];
+      const dob = data.date_of_birth;
+      const currentAge =
+        dob !== undefined
+          ? new Date().getFullYear() - new Date(dob).getFullYear()
+          : undefined;
       const customer = await prisma.customer.create({
         data: {
           ...data,
           created_by: userId,
+          status: CustomerStatus.ACTIVE,
+          first_name,
+          last_name,
+          current_age: currentAge,
         },
         include: {
           nationality: {
@@ -327,9 +340,29 @@ export class CustomerService {
     data: UpdateCustomerRequest
   ): Promise<CustomerResponse> {
     try {
+      const existingCustomer = await prisma.customer.findUnique({
+        where: { id },
+      });
+      if (!existingCustomer) {
+        throw new Error("Customer not found");
+      }
+      const names = data?.full_name ? data?.full_name?.split(" ") : [];
+      const first_name = names[0] || existingCustomer.first_name;
+      const last_name = names[names.length - 1] || existingCustomer.last_name;
+      const dob = data?.date_of_birth || existingCustomer.date_of_birth;
+      const currentAge =
+        dob != null
+          ? new Date().getFullYear() -
+            new Date(dob as string | number | Date).getFullYear()
+          : existingCustomer.current_age;
       const customer = await prisma.customer.update({
         where: { id },
-        data,
+        data: {
+          ...data,
+          first_name,
+          last_name,
+          current_age: currentAge,
+        },
         include: {
           nationality: {
             select: {

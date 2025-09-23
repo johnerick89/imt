@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { Modal } from "./ui/Modal";
 import { FormItem } from "./ui/FormItem";
@@ -14,15 +14,26 @@ import { useOrganisations } from "../hooks/useOrganisations";
 import { useTransactionChannels } from "../hooks/useTransactionChannels";
 import { useExchangeRates } from "../hooks/useExchangeRates";
 import { useCharges } from "../hooks/useCharges";
-import type { CreateOutboundTransactionRequest } from "../types/TransactionsTypes";
+import type {
+  CreateOutboundTransactionRequest,
+  UpdateTransactionRequest,
+  Transaction,
+  ChargeType,
+} from "../types/TransactionsTypes";
 import type { UserTill } from "../types/TillsTypes";
+import { formatToCurrencyWithSymbol } from "../utils/textUtils";
+import { siteCommonStrings } from "../config";
 
-interface CreateTransactionFormProps {
+interface TransactionFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: CreateOutboundTransactionRequest) => void;
+  onSubmit: (
+    data: CreateOutboundTransactionRequest | UpdateTransactionRequest
+  ) => void;
   isLoading?: boolean;
   organisationId: string;
+  mode?: "create" | "edit";
+  transaction?: Transaction | null;
 }
 
 interface FormData {
@@ -49,14 +60,23 @@ interface FormData {
   destination_organisation_id?: string;
   origin_country_id?: string;
   destination_country_id?: string;
+  amount_payable?: string;
+  transaction_charges?: Array<{
+    charge_id: string;
+    type: ChargeType;
+    original_rate: number;
+    negotiated_rate: number;
+  }>;
 }
 
-export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
+export const TransactionForm: React.FC<TransactionFormProps> = ({
   isOpen,
   onClose,
   onSubmit,
   isLoading = false,
   organisationId,
+  mode = "create",
+  transaction,
 }) => {
   // Fetch data
   const { data: userTillsData } = useUserTills({
@@ -105,6 +125,9 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
     userTillsData
   );
 
+  const commonStrings = siteCommonStrings;
+  const outboundLabel = commonStrings?.outbound;
+
   const {
     control,
     handleSubmit,
@@ -114,31 +137,84 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
     formState: { errors },
   } = useForm<FormData>({
     defaultValues: {
-      corridor_id: "",
-      till_id: currentUserTill?.till_id || "",
-      customer_id: "",
-      origin_amount: "",
-      origin_channel_id: "",
-      origin_currency_id: currentOrganisation?.base_currency_id || "",
-      beneficiary_id: "",
-      dest_amount: "",
-      dest_channel_id: "",
-      dest_currency_id: "",
-      rate: "",
-      internal_exchange_rate: "",
-      inflation: "0",
-      markup: "0",
-      purpose: "",
-      funds_source: "",
-      relationship: "",
-      remarks: "",
-      exchange_rate_id: "",
-      external_exchange_rate_id: "",
-      destination_organisation_id: "",
+      corridor_id:
+        mode === "edit" && transaction ? transaction.corridor_id : "",
+      till_id:
+        mode === "edit" && transaction
+          ? transaction.till_id
+          : currentUserTill?.till_id || "",
+      customer_id:
+        mode === "edit" && transaction ? transaction.customer_id : "",
+      origin_amount:
+        mode === "edit" && transaction
+          ? transaction.origin_amount?.toString()
+          : "",
+      origin_channel_id:
+        mode === "edit" && transaction ? transaction.origin_channel_id : "",
+      origin_currency_id:
+        mode === "edit" && transaction
+          ? transaction.origin_currency_id
+          : currentOrganisation?.base_currency_id || "",
+      beneficiary_id:
+        mode === "edit" && transaction ? transaction.beneficiary_id : "",
+      dest_amount:
+        mode === "edit" && transaction
+          ? transaction.dest_amount?.toString()
+          : "",
+      dest_channel_id:
+        mode === "edit" && transaction ? transaction.dest_channel_id : "",
+      dest_currency_id:
+        mode === "edit" && transaction ? transaction.dest_currency_id : "",
+      rate: mode === "edit" && transaction ? transaction.rate?.toString() : "1",
+      internal_exchange_rate:
+        mode === "edit" && transaction
+          ? transaction.internal_exchange_rate?.toString()
+          : "1",
+      inflation:
+        mode === "edit" && transaction
+          ? transaction.inflation?.toString()
+          : "0",
+      markup:
+        mode === "edit" && transaction ? transaction.markup?.toString() : "0",
+      purpose: mode === "edit" && transaction ? transaction.purpose || "" : "",
+      funds_source:
+        mode === "edit" && transaction ? transaction.funds_source || "" : "",
+      relationship:
+        mode === "edit" && transaction ? transaction.relationship || "" : "",
+      remarks: mode === "edit" && transaction ? transaction.remarks || "" : "",
+      exchange_rate_id:
+        mode === "edit" && transaction
+          ? transaction.exchange_rate_id || ""
+          : "",
+      external_exchange_rate_id:
+        mode === "edit" && transaction
+          ? transaction.external_exchange_rate_id || ""
+          : "",
+      destination_organisation_id:
+        mode === "edit" && transaction
+          ? transaction.destination_organisation_id || ""
+          : "",
       origin_country_id: currentOrganisation?.country_id || "",
       destination_country_id: "",
+      amount_payable: "",
+      transaction_charges: [],
     },
   });
+
+  // State for charges with negotiated rates
+  const [chargesWithRates, setChargesWithRates] = useState<
+    Array<{
+      charge_id: string;
+      name: string;
+      type: string;
+      original_rate: number;
+      negotiated_rate: number;
+      amount: number;
+      application_method: string;
+      min_amount?: number | null;
+      max_amount?: number | null;
+    }>
+  >([]);
 
   // Watch for customer changes to fetch beneficiaries
   const watchedCustomerId = watch("customer_id");
@@ -212,170 +288,239 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
     setValue,
   ]);
 
-  // Calculate charges and destination amount
-  const calculateChargesAndDestinationAmount = () => {
+  // Initialize charges with negotiated rates when charges data changes
+  useEffect(() => {
+    if (charges.length > 0) {
+      const applicableCharges = charges
+        .filter(
+          (charge) =>
+            charge.status === "ACTIVE" &&
+            charge.direction === "OUTBOUND" &&
+            (charge.origin_organisation_id === organisationId ||
+              !charge.origin_organisation_id)
+        )
+        .map((charge) => ({
+          charge_id: charge.id,
+          name: charge.name,
+          type: charge.type,
+          original_rate: charge.rate,
+          negotiated_rate: charge.rate, // Start with original rate
+          amount: 0,
+          application_method: charge.application_method,
+          min_amount: charge.min_amount,
+          max_amount: charge.max_amount,
+        }));
+
+      setChargesWithRates(applicableCharges);
+    }
+  }, [charges, organisationId]);
+
+  // Calculate charges and amounts using negotiated rates
+  const calculateChargesAndAmounts = () => {
     if (
       !watchedOriginAmount ||
       !watchedOriginCurrencyId ||
       !watchedDestCurrencyId
     ) {
-      return { totalCharges: 0, destinationAmount: 0 };
+      return {
+        totalCharges: 0,
+        destinationAmount: 0,
+        amountPayable: 0,
+        chargesWithAmounts: [],
+      };
     }
 
     const originAmount = parseFloat(watchedOriginAmount);
-    if (isNaN(originAmount)) return { totalCharges: 0, destinationAmount: 0 };
+    if (isNaN(originAmount))
+      return {
+        totalCharges: 0,
+        destinationAmount: 0,
+        amountPayable: 0,
+        chargesWithAmounts: [],
+      };
 
-    // Get applicable charges and sort by type (non-TAX first, TAX last)
-    const applicableCharges = charges
-      .filter(
-        (charge) =>
-          charge.status === "ACTIVE" &&
-          charge.direction === "OUTBOUND" &&
-          (charge.origin_organisation_id === organisationId ||
-            !charge.origin_organisation_id)
-      )
-      .sort((a, b) => {
-        // Sort by type: non-TAX first, TAX last
-        if (a.type === "TAX" && b.type !== "TAX") return 1;
-        if (a.type !== "TAX" && b.type === "TAX") return -1;
-        return 0;
-      });
+    // Calculate charges using negotiated rates
+    const chargesWithAmounts = chargesWithRates.map((charge) => {
+      let chargeAmount = 0;
 
-    // Calculate charges in two passes: non-TAX first, then TAX
-    const nonTaxCharges = applicableCharges.filter(
+      if (charge.application_method === "PERCENTAGE") {
+        chargeAmount = (originAmount * charge.negotiated_rate) / 100;
+      } else {
+        chargeAmount = charge.negotiated_rate;
+      }
+
+      // Apply min/max limits if they exist
+      if (charge.min_amount && chargeAmount < charge.min_amount) {
+        chargeAmount = charge.min_amount;
+      }
+      if (charge.max_amount && chargeAmount > charge.max_amount) {
+        chargeAmount = charge.max_amount;
+      }
+
+      return {
+        ...charge,
+        amount: chargeAmount,
+      };
+    });
+
+    // Sort charges: non-TAX first, TAX last
+    const sortedCharges = chargesWithAmounts.sort((a, b) => {
+      if (a.type === "TAX" && b.type !== "TAX") return 1;
+      if (a.type !== "TAX" && b.type === "TAX") return -1;
+      return 0;
+    });
+
+    // Calculate total charges in two passes
+    const nonTaxCharges = sortedCharges.filter(
       (charge) => charge.type !== "TAX"
     );
-    const taxCharges = applicableCharges.filter(
-      (charge) => charge.type === "TAX"
-    );
+    const taxCharges = sortedCharges.filter((charge) => charge.type === "TAX");
 
     let nonTaxChargesTotal = 0;
     let totalCharges = 0;
 
-    // Debug logging (remove in production)
-    if (import.meta.env.DEV) {
-      console.log("Charge calculation debug:", {
-        originAmount,
-        nonTaxCharges: nonTaxCharges.map((c) => ({
-          name: c.name,
-          type: c.type,
-          rate: c.rate,
-          method: c.application_method,
-        })),
-        taxCharges: taxCharges.map((c) => ({
-          name: c.name,
-          type: c.type,
-          rate: c.rate,
-          method: c.application_method,
-        })),
-      });
-    }
-
     // First pass: Calculate non-TAX charges
     nonTaxCharges.forEach((charge) => {
-      let chargeAmount = 0;
-      if (charge.application_method === "PERCENTAGE") {
-        chargeAmount = (originAmount * charge.rate) / 100;
-      } else {
-        chargeAmount = charge.rate;
-      }
-
-      // Apply min/max limits if they exist
-      if (charge.min_amount && chargeAmount < charge.min_amount) {
-        chargeAmount = charge.min_amount;
-      }
-      if (charge.max_amount && chargeAmount > charge.max_amount) {
-        chargeAmount = charge.max_amount;
-      }
-
-      nonTaxChargesTotal += chargeAmount;
+      nonTaxChargesTotal += charge.amount;
     });
 
     // Second pass: Calculate TAX charges based on non-TAX charges total
     taxCharges.forEach((charge) => {
-      let chargeAmount = 0;
+      let taxAmount = 0;
       if (charge.application_method === "PERCENTAGE") {
-        chargeAmount = (nonTaxChargesTotal * charge.rate) / 100; // Tax on non-tax total
+        taxAmount = (nonTaxChargesTotal * charge.negotiated_rate) / 100;
       } else {
-        chargeAmount = charge.rate;
+        taxAmount = charge.negotiated_rate;
       }
 
-      // Apply min/max limits if they exist
-      if (charge.min_amount && chargeAmount < charge.min_amount) {
-        chargeAmount = charge.min_amount;
+      // Apply min/max limits for tax
+      if (charge.min_amount && taxAmount < charge.min_amount) {
+        taxAmount = charge.min_amount;
       }
-      if (charge.max_amount && chargeAmount > charge.max_amount) {
-        chargeAmount = charge.max_amount;
+      if (charge.max_amount && taxAmount > charge.max_amount) {
+        taxAmount = charge.max_amount;
       }
 
-      totalCharges += chargeAmount;
+      totalCharges += taxAmount;
     });
 
     // Add non-TAX charges to total
     totalCharges += nonTaxChargesTotal;
 
-    // Debug logging for calculation steps
-    if (import.meta.env.DEV) {
-      console.log("Charge calculation steps:", {
-        originAmount,
-        nonTaxChargesTotal,
-        taxChargesTotal: totalCharges - nonTaxChargesTotal,
-        totalCharges,
-        netAmount: originAmount - totalCharges,
-      });
-    }
+    // Calculate amounts according to new formula
+    // amount_payable = origin_amount + total_charges
+    const amountPayable = originAmount + totalCharges;
 
-    // Calculate net amount in origin currency
-    const netAmount = originAmount - totalCharges;
-
-    // Convert to destination currency using exchange rate
+    // dest_amount = origin_amount * exchange_rate (converted to beneficiary's currency)
     const rate = parseFloat(watchedRate) || 1;
-    const destinationAmount = netAmount * rate;
+    const destinationAmount = originAmount * rate;
 
-    return { totalCharges, destinationAmount };
+    return {
+      totalCharges,
+      destinationAmount,
+      amountPayable,
+      chargesWithAmounts: sortedCharges,
+    };
   };
 
-  const { totalCharges, destinationAmount } =
-    calculateChargesAndDestinationAmount();
+  const { totalCharges, destinationAmount, amountPayable, chargesWithAmounts } =
+    calculateChargesAndAmounts();
 
-  // Update destination amount when calculations change
+  // Update amounts when calculations change
   useEffect(() => {
     if (destinationAmount > 0) {
       setValue("dest_amount", destinationAmount.toFixed(2));
     }
-  }, [destinationAmount, setValue]);
+    if (amountPayable > 0) {
+      setValue("amount_payable", amountPayable.toFixed(2));
+    }
+    // Update transaction charges
+    setValue(
+      "transaction_charges",
+      chargesWithAmounts.map((charge) => ({
+        charge_id: charge.charge_id,
+        type: charge.type as ChargeType,
+        original_rate: charge.original_rate,
+        negotiated_rate: charge.negotiated_rate,
+      }))
+    );
+  }, [destinationAmount, amountPayable, chargesWithAmounts, setValue]);
+
+  // Handle negotiated rate changes
+  const handleRateChange = (chargeId: string, newRate: number) => {
+    setChargesWithRates((prevCharges) =>
+      prevCharges.map((charge) =>
+        charge.charge_id === chargeId
+          ? { ...charge, negotiated_rate: newRate }
+          : charge
+      )
+    );
+  };
 
   const handleFormSubmit = (data: FormData) => {
-    const submitData: CreateOutboundTransactionRequest = {
-      corridor_id: data.corridor_id,
-      till_id: data.till_id || currentUserTill?.till_id || "",
-      customer_id: data.customer_id,
-      origin_amount: parseFloat(data.origin_amount),
-      origin_channel_id: data.origin_channel_id,
-      origin_currency_id: data.origin_currency_id,
-      beneficiary_id: data.beneficiary_id,
-      dest_amount: parseFloat(data.dest_amount),
-      dest_channel_id: data.dest_channel_id,
-      dest_currency_id: data.dest_currency_id,
-      rate: parseFloat(data.rate),
-      internal_exchange_rate: data.internal_exchange_rate
-        ? parseFloat(data.internal_exchange_rate)
-        : undefined,
-      inflation: 0,
-      markup: 0,
-      purpose: data.purpose || undefined,
-      funds_source: data.funds_source || undefined,
-      relationship: data.relationship || undefined,
-      remarks: data.remarks || undefined,
-      exchange_rate_id: data.exchange_rate_id || undefined,
-      external_exchange_rate_id: data.external_exchange_rate_id || undefined,
-      destination_organisation_id:
-        data.destination_organisation_id || undefined,
-      origin_country_id: data.origin_country_id || undefined,
-      destination_country_id: data.destination_country_id || undefined,
-    };
-
-    onSubmit(submitData);
+    if (mode === "edit") {
+      const submitData: UpdateTransactionRequest = {
+        corridor_id: data.corridor_id,
+        till_id: data.till_id,
+        customer_id: data.customer_id,
+        origin_amount: parseFloat(data.origin_amount),
+        origin_channel_id: data.origin_channel_id,
+        origin_currency_id: data.origin_currency_id,
+        beneficiary_id: data.beneficiary_id,
+        dest_amount: parseFloat(data.dest_amount),
+        dest_channel_id: data.dest_channel_id,
+        dest_currency_id: data.dest_currency_id,
+        rate: parseFloat(data.rate),
+        internal_exchange_rate: data.internal_exchange_rate
+          ? parseFloat(data.internal_exchange_rate)
+          : undefined,
+        inflation: data.inflation ? parseFloat(data.inflation) : undefined,
+        markup: data.markup ? parseFloat(data.markup) : undefined,
+        purpose: data.purpose || undefined,
+        funds_source: data.funds_source || undefined,
+        relationship: data.relationship || undefined,
+        remarks: data.remarks || undefined,
+        exchange_rate_id: data.exchange_rate_id || undefined,
+        external_exchange_rate_id: data.external_exchange_rate_id || undefined,
+        destination_organisation_id:
+          data.destination_organisation_id || undefined,
+        origin_country_id: data.origin_country_id || undefined,
+        destination_country_id: data.destination_country_id || undefined,
+        transaction_charges: data.transaction_charges || undefined,
+      };
+      onSubmit(submitData);
+    } else {
+      const submitData: CreateOutboundTransactionRequest = {
+        corridor_id: data.corridor_id,
+        till_id: data.till_id || currentUserTill?.till_id || "",
+        customer_id: data.customer_id,
+        origin_amount: parseFloat(data.origin_amount),
+        origin_channel_id: data.origin_channel_id,
+        origin_currency_id: data.origin_currency_id,
+        beneficiary_id: data.beneficiary_id,
+        dest_amount: parseFloat(data.dest_amount),
+        dest_channel_id: data.dest_channel_id,
+        dest_currency_id: data.dest_currency_id,
+        rate: parseFloat(data.rate),
+        internal_exchange_rate: data.internal_exchange_rate
+          ? parseFloat(data.internal_exchange_rate)
+          : undefined,
+        inflation: 0,
+        markup: 0,
+        purpose: data.purpose || undefined,
+        funds_source: data.funds_source || undefined,
+        relationship: data.relationship || undefined,
+        remarks: data.remarks || undefined,
+        exchange_rate_id: data.exchange_rate_id || undefined,
+        external_exchange_rate_id: data.external_exchange_rate_id || undefined,
+        destination_organisation_id:
+          data.destination_organisation_id || undefined,
+        origin_country_id: data.origin_country_id || undefined,
+        destination_country_id: data.destination_country_id || undefined,
+        transaction_charges: data.transaction_charges || undefined,
+      };
+      onSubmit(submitData);
+    }
   };
 
   const handleClose = () => {
@@ -387,7 +532,11 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Create Outbound Transaction"
+      title={
+        mode === "edit"
+          ? `Edit ${outboundLabel} Transaction`
+          : `Create ${outboundLabel} Transaction`
+      }
       size="lg"
     >
       <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
@@ -564,7 +713,7 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
         {/* Amount Details */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormItem
-            label="Origin Amount"
+            label="Amount To Send"
             invalid={!!errors.origin_amount}
             errorMessage={errors.origin_amount?.message}
             required
@@ -573,7 +722,7 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
               name="origin_amount"
               control={control}
               rules={{
-                required: "Origin amount is required",
+                required: "Amount to send is required",
                 pattern: {
                   value: /^\d+(\.\d{1,2})?$/,
                   message: "Please enter a valid amount",
@@ -585,7 +734,7 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
                   step="0.01"
                   min="0"
                   {...field}
-                  placeholder="Enter amount..."
+                  placeholder="Enter amount to send..."
                 />
               )}
             />
@@ -614,36 +763,204 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
                   min="0"
                   {...field}
                   placeholder="Enter exchange rate..."
+                  disabled={true}
                 />
               )}
             />
           </FormItem>
+          <div className="hidden">
+            <FormItem
+              label="Destination Amount"
+              invalid={!!errors.dest_amount}
+              errorMessage={errors.dest_amount?.message}
+              required
+            >
+              <Controller
+                name="dest_amount"
+                control={control}
+                rules={{ required: "Destination amount is required" }}
+                render={({ field }) => (
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    {...field}
+                    placeholder="Calculated automatically..."
+                    readOnly
+                  />
+                )}
+              />
+            </FormItem>
+          </div>
 
-          <FormItem
-            label="Destination Amount"
-            invalid={!!errors.dest_amount}
-            errorMessage={errors.dest_amount?.message}
-            required
-          >
-            <Controller
-              name="dest_amount"
-              control={control}
-              rules={{ required: "Destination amount is required" }}
-              render={({ field }) => (
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  {...field}
-                  placeholder="Calculated automatically..."
-                  readOnly
-                />
-              )}
-            />
-          </FormItem>
+          {amountPayable > 0 && (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Amount Payable
+              </label>
+              <div className="p-3 bg-green-50 rounded-md border border-green-200">
+                <div className="text-lg font-semibold text-green-900">
+                  {formatToCurrencyWithSymbol(
+                    amountPayable.toFixed(2),
+                    currentOrganisation?.base_currency?.currency_code || "USD"
+                  )}{" "}
+                </div>
+                <div className="text-sm text-green-700">
+                  Origin Amount + Total Charges
+                </div>
+              </div>
+            </div>
+          )}
+          {destinationAmount > 0 && (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Net Destination Amount
+              </label>
+              <div className="p-4 bg-blue-50 rounded-md border border-blue-200">
+                <div className="text-lg font-semibold text-blue-900">
+                  {formatToCurrencyWithSymbol(
+                    destinationAmount.toFixed(2),
+                    watchedDestCurrencyId
+                      ? corridors.find((c) => c.id === watchedCorridorId)
+                          ?.base_currency?.currency_code || "USD"
+                      : "USD"
+                  )}{" "}
+                </div>
+                <div className="text-sm text-blue-700 mt-1">
+                  Amount To Send converted
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Channel Details */}
+
+        {/* Additional Details */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="hidden">
+            <FormItem
+              label="Internal Exchange Rate"
+              invalid={!!errors.internal_exchange_rate}
+              errorMessage={errors.internal_exchange_rate?.message}
+            >
+              <Controller
+                name="internal_exchange_rate"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    type="number"
+                    step="0.000001"
+                    min="0"
+                    {...field}
+                    placeholder="Auto-populated..."
+                    readOnly
+                  />
+                )}
+              />
+            </FormItem>
+          </div>
+        </div>
+
+        {/* Destination Amount Display */}
+
+        {/* Charges Table */}
+        {chargesWithAmounts.length > 0 && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-gray-900">
+              Applicable Charges
+            </h3>
+            <div className="overflow-hidden border border-gray-200 rounded-lg">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Charge Name
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Rate
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Amount
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {chargesWithAmounts.map((charge) => (
+                    <tr key={charge.charge_id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-sm text-gray-900">
+                        {charge.name}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            charge.type === "TAX"
+                              ? "bg-red-100 text-red-800"
+                              : charge.type === "COMMISSION"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {charge.type}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={charge.negotiated_rate}
+                            onChange={(e) =>
+                              handleRateChange(
+                                charge.charge_id,
+                                parseFloat(e.target.value) || 0
+                              )
+                            }
+                            className="w-20 px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                          <span className="text-xs text-gray-500">
+                            {charge.application_method === "PERCENTAGE"
+                              ? "%"
+                              : "Fixed"}
+                          </span>
+                        </div>
+                        {charge.negotiated_rate !== charge.original_rate && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            Original: {charge.original_rate}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                        {charge.amount.toFixed(2)}{" "}
+                        {currentOrganisation?.base_currency?.currency_code ||
+                          "USD"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot className="bg-gray-100">
+                  <tr>
+                    <td
+                      colSpan={3}
+                      className="px-4 py-3 text-sm font-medium text-gray-900 text-right"
+                    >
+                      Total Charges:
+                    </td>
+                    <td className="px-4 py-3 text-sm font-bold text-gray-900">
+                      {totalCharges.toFixed(2)}{" "}
+                      {currentOrganisation?.base_currency?.currency_code ||
+                        "USD"}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormItem
             label="Origin Channel"
@@ -694,88 +1011,6 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
           </FormItem>
         </div>
 
-        {/* Additional Details */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormItem
-            label="Internal Exchange Rate"
-            invalid={!!errors.internal_exchange_rate}
-            errorMessage={errors.internal_exchange_rate?.message}
-          >
-            <Controller
-              name="internal_exchange_rate"
-              control={control}
-              render={({ field }) => (
-                <Input
-                  type="number"
-                  step="0.000001"
-                  min="0"
-                  {...field}
-                  placeholder="Auto-populated..."
-                  readOnly
-                />
-              )}
-            />
-          </FormItem>
-
-          {/* Charges Display */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Total Charges
-            </label>
-            <div className="p-3 bg-gray-50 rounded-md">
-              <div className="text-sm text-gray-600">
-                {totalCharges > 0 ? (
-                  <>
-                    <span className="font-medium">
-                      {totalCharges.toFixed(2)}{" "}
-                      {currentOrganisation?.base_currency?.currency_code ||
-                        "USD"}
-                    </span>
-                    <span className="text-gray-500 ml-2">
-                      (
-                      {(
-                        (totalCharges /
-                          parseFloat(watchedOriginAmount || "1")) *
-                        100
-                      ).toFixed(2)}
-                      % of origin amount)
-                    </span>
-                    <div className="text-xs text-gray-500 mt-1">
-                      * Tax charges calculated on other charges total
-                    </div>
-                  </>
-                ) : (
-                  <span className="text-gray-500">No charges applicable</span>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Destination Amount Display */}
-        {destinationAmount > 0 && (
-          <div className="grid grid-cols-1 gap-6">
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Net Destination Amount
-              </label>
-              <div className="p-4 bg-blue-50 rounded-md border border-blue-200">
-                <div className="text-lg font-semibold text-blue-900">
-                  {destinationAmount.toFixed(2)}{" "}
-                  {watchedDestCurrencyId
-                    ? corridors.find((c) => c.id === watchedCorridorId)
-                        ?.base_currency?.currency_code || "USD"
-                    : "USD"}
-                </div>
-                <div className="text-sm text-blue-700 mt-1">
-                  After deducting charges of {totalCharges.toFixed(2)}{" "}
-                  {currentOrganisation?.base_currency?.currency_code || "USD"}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Purpose and Source */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormItem
@@ -823,30 +1058,31 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
               )}
             />
           </FormItem>
-
-          <FormItem
-            label="Exchange Rate Reference"
-            invalid={!!errors.exchange_rate_id}
-            errorMessage={errors.exchange_rate_id?.message}
-          >
-            <Controller
-              name="exchange_rate_id"
-              control={control}
-              render={({ field }) => (
-                <SearchableSelect
-                  options={exchangeRates.map((rate) => ({
-                    value: rate.id,
-                    label: `${rate.from_currency?.currency_code || "N/A"} → ${
-                      rate.to_currency?.currency_code || "N/A"
-                    } - ${rate.exchange_rate}`,
-                  }))}
-                  value={field.value}
-                  onChange={field.onChange}
-                  placeholder="Select exchange rate..."
-                />
-              )}
-            />
-          </FormItem>
+          <div className="hidden">
+            <FormItem
+              label="Exchange Rate Reference"
+              invalid={!!errors.exchange_rate_id}
+              errorMessage={errors.exchange_rate_id?.message}
+            >
+              <Controller
+                name="exchange_rate_id"
+                control={control}
+                render={({ field }) => (
+                  <SearchableSelect
+                    options={exchangeRates.map((rate) => ({
+                      value: rate.id,
+                      label: `${rate.from_currency?.currency_code || "N/A"} → ${
+                        rate.to_currency?.currency_code || "N/A"
+                      } - ${rate.exchange_rate}`,
+                    }))}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Select exchange rate..."
+                  />
+                )}
+              />
+            </FormItem>
+          </div>
         </div>
 
         <FormItem
@@ -878,7 +1114,13 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
             Cancel
           </Button>
           <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Creating..." : "Create Transaction"}
+            {isLoading
+              ? mode === "edit"
+                ? "Updating..."
+                : "Creating..."
+              : mode === "edit"
+              ? "Update Transaction"
+              : "Create Transaction"}
           </Button>
         </div>
       </form>
@@ -886,4 +1128,4 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
   );
 };
 
-export default CreateTransactionForm;
+export default TransactionForm;

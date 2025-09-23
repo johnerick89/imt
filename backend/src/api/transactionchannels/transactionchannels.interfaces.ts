@@ -61,3 +61,17 @@ export interface TransactionChannelStatsResponse {
   message: string;
   data: TransactionChannelStats;
 }
+
+// Create Transaction Channel Request
+export interface CreateTransactionChannelRequest {
+  name: string;
+  description: string;
+  direction: string[];
+}
+
+// Update Transaction Channel Request
+export interface UpdateTransactionChannelRequest {
+  name?: string;
+  description?: string;
+  direction?: string[];
+}

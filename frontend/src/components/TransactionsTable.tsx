@@ -3,8 +3,17 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "./ui/DataTable";
 import { StatusBadge } from "./ui/StatusBadge";
 import { Button } from "./ui/Button";
+import { Tooltip } from "./ui/Tooltip";
 import { formatToCurrency } from "../utils/textUtils";
 import type { Transaction } from "../types/TransactionsTypes";
+import {
+  FiEye,
+  FiEdit3,
+  FiCheckCircle,
+  FiXCircle,
+  FiRotateCcw,
+  FiClock,
+} from "react-icons/fi";
 
 interface TransactionsTableProps {
   transactions: Transaction[];
@@ -13,6 +22,8 @@ interface TransactionsTableProps {
   onCancel?: (transaction: Transaction) => void;
   onReverse?: (transaction: Transaction) => void;
   onApprove?: (transaction: Transaction) => void;
+  onUpdate?: (transaction: Transaction) => void;
+  onMarkAsReady?: (transaction: Transaction) => void;
 }
 
 export const TransactionsTable: React.FC<TransactionsTableProps> = ({
@@ -22,6 +33,8 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
   onCancel,
   onReverse,
   onApprove,
+  onUpdate,
+  onMarkAsReady,
 }) => {
   const columns: ColumnDef<Transaction>[] = [
     {
@@ -85,9 +98,10 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
         );
       },
     },
+
     {
       accessorKey: "origin_amount",
-      header: "Amount Paid",
+      header: "Amount to Transfer (Origin Currency)",
       cell: ({ row }) => (
         <div className="text-right">
           <div className="font-medium text-gray-900">
@@ -95,20 +109,6 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
           </div>
           <div className="text-sm text-gray-500">
             {row.original.origin_currency?.currency_code || ""}
-          </div>
-        </div>
-      ),
-    },
-    {
-      accessorKey: "dest_amount",
-      header: "Amount to Transfer",
-      cell: ({ row }) => (
-        <div className="text-right">
-          <div className="font-medium text-gray-900">
-            {formatToCurrency(row.original.dest_amount)}
-          </div>
-          <div className="text-sm text-gray-500">
-            {row.original.dest_currency?.currency_code || ""}
           </div>
         </div>
       ),
@@ -135,6 +135,35 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
       },
     },
     {
+      accessorKey: "amount_payable",
+      header: "Amount Payable",
+      cell: ({ row }) => (
+        <div className="text-right">
+          <div className="font-medium text-gray-900">
+            {formatToCurrency(row.original.amount_payable || 0)}
+          </div>
+          <div className="text-sm text-gray-500">
+            {row.original.origin_currency?.currency_code || ""}
+          </div>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "dest_amount",
+      header: "Amount to Transfer (Destination Currency)",
+      cell: ({ row }) => (
+        <div className="text-right">
+          <div className="font-medium text-gray-900">
+            {formatToCurrency(row.original.dest_amount)}
+          </div>
+          <div className="text-sm text-gray-500">
+            {row.original.dest_currency?.currency_code || ""}
+          </div>
+        </div>
+      ),
+    },
+
+    {
       accessorKey: "status",
       header: "Status",
       cell: ({ row }) => (
@@ -144,6 +173,14 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
             type={"status"}
             title="Transaction Status"
           />
+        </div>
+      ),
+    },
+    {
+      accessorKey: "remittance_status",
+      header: "Remittance Status",
+      cell: ({ row }) => (
+        <div className="space-y-1">
           <StatusBadge
             status={row.original.remittance_status}
             type={"status"}
@@ -168,52 +205,103 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
       header: "Actions",
       cell: ({ row }) => {
         const transaction = row.original;
+        // Only show actions for outbound transactions
+        const isOutbound = transaction.direction === "OUTBOUND";
+
         const canCancel =
-          ["PENDING", "PENDING_APPROVAL"].includes(transaction.status) &&
+          isOutbound &&
+          ["PENDING", "PENDING_APPROVAL", "READY"].includes(
+            transaction.status
+          ) &&
           transaction.remittance_status === "PENDING";
         const canReverse =
+          isOutbound &&
           transaction.status === "APPROVED" &&
           transaction.remittance_status === "PENDING";
         const canApprove =
-          transaction.status === "PENDING_APPROVAL" &&
+          isOutbound &&
+          transaction.status === "READY" &&
+          transaction.remittance_status === "READY";
+        const canUpdate =
+          isOutbound &&
+          ["PENDING", "PENDING_APPROVAL"].includes(transaction.status) &&
+          transaction.remittance_status === "PENDING";
+        const canMarkAsReady =
+          isOutbound &&
+          ["PENDING", "PENDING_APPROVAL"].includes(transaction.status) &&
           transaction.remittance_status === "PENDING";
 
         return (
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onView?.(transaction)}
-            >
-              View
-            </Button>
-            {canCancel && (
+          <div className="flex items-center space-x-1">
+            <Tooltip content="View transaction details">
               <Button
-                variant="destructive"
+                variant="outline"
                 size="sm"
-                onClick={() => onCancel?.(transaction)}
+                onClick={() => onView?.(transaction)}
+                className="p-2"
               >
-                Cancel
+                <FiEye className="h-4 w-4" />
               </Button>
+            </Tooltip>
+            {canUpdate && (
+              <Tooltip content="Edit transaction">
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => onUpdate?.(transaction)}
+                  className="p-2 bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
+                >
+                  <FiEdit3 className="h-4 w-4" />
+                </Button>
+              </Tooltip>
+            )}
+            {canMarkAsReady && (
+              <Tooltip content="Mark as ready for approval">
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => onMarkAsReady?.(transaction)}
+                  className="p-2 bg-yellow-600 hover:bg-yellow-700 text-white border-yellow-600"
+                >
+                  <FiClock className="h-4 w-4" />
+                </Button>
+              </Tooltip>
             )}
             {canApprove && (
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => onApprove?.(transaction)}
-                className="bg-green-600 hover:bg-green-700 text-white"
-              >
-                Approve
-              </Button>
+              <Tooltip content="Approve transaction">
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => onApprove?.(transaction)}
+                  className="p-2 bg-green-600 hover:bg-green-700 text-white border-green-600"
+                >
+                  <FiCheckCircle className="h-4 w-4" />
+                </Button>
+              </Tooltip>
+            )}
+            {canCancel && (
+              <Tooltip content="Cancel transaction">
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => onCancel?.(transaction)}
+                  className="p-2 bg-red-600 hover:bg-red-700 text-white border-red-600"
+                >
+                  <FiXCircle className="h-4 w-4" />
+                </Button>
+              </Tooltip>
             )}
             {canReverse && (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => onReverse?.(transaction)}
-              >
-                Reverse
-              </Button>
+              <Tooltip content="Reverse transaction">
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => onReverse?.(transaction)}
+                  className="p-2 bg-red-600 hover:bg-red-700 text-white border-red-600"
+                >
+                  <FiRotateCcw className="h-4 w-4" />
+                </Button>
+              </Tooltip>
             )}
           </div>
         );

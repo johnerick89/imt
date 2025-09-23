@@ -6,6 +6,7 @@ import type {
   InboundTransactionStatsResponse,
   ApproveTransactionRequest,
   ReverseTransactionRequest,
+  CancelTransactionRequest,
 } from "../types/TransactionsTypes";
 
 export class InboundTransactionService {
@@ -90,6 +91,20 @@ export class InboundTransactionService {
   ): Promise<InboundTransactionResponse> {
     const response = await apiClient.post(
       `/api/v1/transactions/inbound/${transactionId}/reverse`,
+      data
+    );
+    return response.data;
+  }
+
+  /**
+   * Cancel inbound transaction
+   */
+  async cancelInboundTransaction(
+    transactionId: string,
+    data: CancelTransactionRequest
+  ): Promise<InboundTransactionResponse> {
+    const response = await apiClient.post(
+      `/api/v1/transactions/${transactionId}/cancel`,
       data
     );
     return response.data;

@@ -1,7 +1,7 @@
 import type { User } from "./UsersTypes";
 
 // Transaction Channel Types
-export interface TransactionChannel {
+export interface ITransactionChannel {
   id: string;
   name: string;
   description: string;
@@ -11,6 +11,9 @@ export interface TransactionChannel {
   updated_at: string;
   created_by_user?: User | null;
 }
+
+// Alias for backward compatibility
+export type TransactionChannel = ITransactionChannel;
 
 export interface TransactionChannelFilters {
   page?: number;

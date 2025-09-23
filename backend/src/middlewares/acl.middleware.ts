@@ -1,51 +1,44 @@
 import { Response, NextFunction } from "express";
-import { verifyToken } from "../api/auth/auth.utils";
-import { IAuthUser } from "../api/auth/auth.interfaces";
 import { AuthRequest } from "./auth.middleware";
 
-export const aclMiddleware = async (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction,
-  permission: string
-): Promise<void> => {
-  try {
+function aclMiddleware({
+  errorMessage,
+  resource,
+}: {
+  errorMessage: string;
+  resource: string;
+}) {
+  return function (req: AuthRequest, res: Response, next: NextFunction) {
     if (req.method === "OPTIONS") return next();
+    // Check if user is authorised to perform action (role and permissions)
 
-    if (!permission) {
-      next();
-      return;
+    if (!checkUserAccessRightsToResource({ resource, req })) {
+      const error = {
+        error: `Access denied - ${errorMessage}`,
+      };
+      // User is not authorized, respond with errorMessage
+      return res.status(403).send(error);
     }
-    console.log(req.user?.user_role?.role_permissions);
-    if (!req.user?.user_role?.role_permissions) {
-      res.status(403).json({
-        success: false,
-        message:
-          "Access denied. You do not have permission to access this resource.",
-      });
-      return;
-    }
-    if (
-      !req.user?.user_role?.role_permissions?.some(
-        (p) => p.permission.name === permission
-      )
-    ) {
-      res.status(403).json({
-        success: false,
-        message:
-          "Access denied. You do not have permission to access this resource.",
-      });
-      return;
-    }
-
-    // Attach user to request
-
     next();
-  } catch (error) {
-    console.error("ACL middleware error:", error);
-    res.status(401).json({
-      success: false,
-      message: "Invalid token.",
-    });
-  }
+  };
+}
+
+const checkUserAccessRightsToResource = ({
+  resource,
+  req,
+}: {
+  resource: string;
+  req: AuthRequest;
+}) => {
+  const userPermissions = req.user?.user_role?.role_permissions;
+  const permissions = userPermissions?.map(
+    (permission) => permission.permission.name
+  );
+
+  if (permissions && permissions.length > 0)
+    return permissions.includes(resource);
+
+  return false;
 };
+
+export { aclMiddleware };

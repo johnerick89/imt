@@ -38,6 +38,11 @@ export interface Beneficiary {
   occupation: Occupation;
   industry_id: string;
   industry: Industry;
+  gender?: string | null;
+  residence_country_id?: string | null;
+  residence_country?: Country | null;
+  incorporation_country_id?: string | null;
+  incorporation_country?: Country | null;
   bank_name?: string | null;
   bank_address?: string | null;
   bank_city?: string | null;
@@ -51,7 +56,7 @@ export interface CreateBeneficiaryRequest {
   name: string;
   email?: string;
   phone?: string;
-  id_type: IdType;
+  id_type?: IdType;
   id_number: string;
   date_of_birth?: string;
   nationality_id?: string;
@@ -59,11 +64,12 @@ export interface CreateBeneficiaryRequest {
   customer_id: string;
   organisation_id: string;
   type: CustomerType;
-  tax_number_type: TaxNumberType;
-  tax_number: string;
-  reg_number: string;
-  occupation_id: string;
-  industry_id: string;
+  tax_number_type?: TaxNumberType;
+  tax_number?: string;
+  reg_number?: string;
+  occupation_id?: string;
+  industry_id?: string;
+  gender?: string;
   residence_country_id?: string;
   incorporation_country_id?: string;
   bank_name?: string;
@@ -90,6 +96,7 @@ export interface UpdateBeneficiaryRequest {
   reg_number?: string;
   occupation_id?: string;
   industry_id?: string;
+  gender?: string;
   residence_country_id?: string;
   incorporation_country_id?: string;
   status?: CustomerStatus;

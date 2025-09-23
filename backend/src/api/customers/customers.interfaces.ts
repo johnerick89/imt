@@ -107,8 +107,8 @@ export interface CreateCustomerRequest {
     | "OTHER";
   id_number?: string;
   address?: string;
-  email?: string;
-  phone_number?: string;
+  email: string;
+  phone_number: string;
   occupation_id?: string;
   risk_rating?: number;
   risk_reasons?: string;
@@ -125,7 +125,7 @@ export interface CreateCustomerRequest {
   current_age?: number;
   first_name?: string;
   last_name?: string;
-  currency_id?: string;
+  currency_id: string;
   industry_id?: string;
   legacy_customer_id?: string;
   has_adverse_media?: boolean;
@@ -147,8 +147,8 @@ export interface UpdateCustomerRequest {
     | "OTHER";
   id_number?: string;
   address?: string;
-  email?: string;
-  phone_number?: string;
+  email: string;
+  phone_number: string;
   occupation_id?: string;
   risk_rating?: number;
   risk_reasons?: string;

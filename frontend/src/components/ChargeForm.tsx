@@ -4,7 +4,12 @@ import { Input } from "./ui/Input";
 import { Select } from "./ui/Select";
 import { Textarea } from "./ui/Textarea";
 import { SearchableSelect } from "./ui/SearchableSelect";
-import { useAllCurrencies, useAllOrganisations, useSession } from "../hooks";
+import {
+  useAllCurrencies,
+  useAllOrganisations,
+  useOrganisation,
+  useSession,
+} from "../hooks";
 import type {
   CreateChargeRequest,
   UpdateChargeRequest,
@@ -30,6 +35,14 @@ export default function ChargeForm({
 }: ChargeFormProps) {
   const { user } = useSession();
   const userOrganisationId = user?.organisation_id;
+  const { data: userOrganisationData } = useOrganisation(
+    userOrganisationId || ""
+  );
+  const userOrganisation = userOrganisationData?.data;
+  const { data: currentOrganisationData } = useOrganisation(
+    currentOrganisationId || ""
+  );
+  const currentOrganisation = currentOrganisationData?.data;
   const { data: currenciesData } = useAllCurrencies();
   const { data: organisationsData } = useAllOrganisations();
   console.log(
@@ -52,7 +65,11 @@ export default function ChargeForm({
           name: initialData.name,
           description: initialData.description,
           application_method: initialData.application_method,
-          currency_id: initialData.currency_id || "",
+          currency_id:
+            initialData.currency_id ||
+            currentOrganisation?.base_currency_id ||
+            userOrganisation?.base_currency_id ||
+            "",
           type: initialData.type,
           rate: initialData.rate,
           origin_organisation_id:
@@ -75,7 +92,10 @@ export default function ChargeForm({
           name: "",
           description: "",
           application_method: "PERCENTAGE",
-          currency_id: "",
+          currency_id:
+            currentOrganisation?.base_currency_id ||
+            userOrganisation?.base_currency_id ||
+            "",
           type: "TAX",
           rate: 0,
           origin_organisation_id: userOrganisationId || "",
