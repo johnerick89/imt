@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { FormItem } from "./ui/FormItem";
 import { Input } from "./ui/Input";
@@ -52,6 +52,7 @@ const CorridorForm: React.FC<CorridorFormProps> = ({
     control,
     handleSubmit,
     formState: { errors },
+    setValue,
   } = useForm<CreateCorridorRequest>({
     defaultValues: initialData
       ? {
@@ -60,7 +61,10 @@ const CorridorForm: React.FC<CorridorFormProps> = ({
           base_country_id:
             initialData.base_country?.id || userOrganisation?.country_id || "",
           destination_country_id: initialData.destination_country?.id || "",
-          base_currency_id: initialData.base_currency?.id || "",
+          base_currency_id:
+            initialData.base_currency?.id ||
+            userOrganisation?.base_currency_id ||
+            "",
           organisation_id: initialData.organisation_id,
           status: initialData.status,
           origin_organisation_id: initialData.origin_organisation_id || "",
@@ -76,6 +80,12 @@ const CorridorForm: React.FC<CorridorFormProps> = ({
           origin_organisation_id: currentUserOrganisationId || "",
         },
   });
+
+  useEffect(() => {
+    if (userOrganisation) {
+      setValue("base_currency_id", userOrganisation.base_currency_id || "");
+    }
+  }, [userOrganisation, setValue]);
 
   const handleFormSubmit = (data: CreateCorridorRequest) => {
     console.log("data", data);

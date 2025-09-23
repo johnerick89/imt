@@ -12,6 +12,8 @@ interface TransactionDetailsModalProps {
   onCancel?: (transaction: Transaction) => void;
   onReverse?: (transaction: Transaction) => void;
   onApprove?: (transaction: Transaction) => void;
+  onUpdate?: (transaction: Transaction) => void;
+  onMarkAsReady?: (transaction: Transaction) => void;
   isLoading?: boolean;
 }
 
@@ -24,11 +26,14 @@ export const TransactionDetailsModal: React.FC<
   onCancel,
   onReverse,
   onApprove,
+  onUpdate,
+  onMarkAsReady,
   isLoading = false,
 }) => {
   const [activeTab, setActiveTab] = useState<"details" | "charges" | "audit">(
     "details"
   );
+  console.log("transaction", transaction);
 
   if (!transaction) return null;
 
@@ -37,16 +42,38 @@ export const TransactionDetailsModal: React.FC<
       (sum, charge) => sum + charge.amount,
       0
     ) || 0;
-  const netAmount = transaction.origin_amount - totalCharges;
+  const netAmount = transaction.dest_amount;
+
+  // Only show actions for outbound transactions
+  const isOutbound = transaction.direction === "OUTBOUND";
+  const isInbound = transaction.direction === "INBOUND";
+
   const canCancel =
-    ["PENDING", "PENDING_APPROVAL"].includes(transaction.status) &&
+    isOutbound &&
+    ["PENDING", "PENDING_APPROVAL", "READY"].includes(transaction.status) &&
     transaction.remittance_status === "PENDING";
   const canReverse =
+    isOutbound &&
     transaction.status === "APPROVED" &&
-    transaction.remittance_status === "PENDING";
+    transaction.remittance_status === "READY";
   const canApprove =
-    transaction.status === "PENDING_APPROVAL" &&
+    isOutbound &&
+    transaction.status === "READY" &&
+    transaction.remittance_status === "READY";
+  const canUpdate =
+    isOutbound &&
+    ["PENDING", "PENDING_APPROVAL"].includes(transaction.status) &&
     transaction.remittance_status === "PENDING";
+  const canMarkAsReady =
+    isOutbound && ["PENDING", "PENDING_APPROVAL"].includes(transaction.status);
+
+  const getCounterPartyEmail = (metadata: Record<string, unknown>) => {
+    return metadata.email as string;
+  };
+
+  const getCounterPartyPhone = (metadata: Record<string, unknown>) => {
+    return metadata.phone as string;
+  };
 
   const renderDetailsTab = () => (
     <div className="space-y-6">
@@ -100,19 +127,28 @@ export const TransactionDetailsModal: React.FC<
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Amount Paid
+              Amount To Transfer (Origin)
             </label>
             <p className="mt-1 text-lg font-semibold text-gray-900">
-              {formatToCurrency(transaction.origin_amount)}{" "}
+              {formatToCurrency(transaction.origin_amount || 0)}{" "}
               {transaction.origin_currency?.currency_code}
             </p>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Amount to Transfer
+              Total Charges (Origin)
             </label>
             <p className="mt-1 text-lg font-semibold text-gray-900">
-              {formatToCurrency(transaction.dest_amount)}{" "}
+              {formatToCurrency(transaction.total_all_charges || 0)}{" "}
+              {transaction.origin_currency?.currency_code}
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Amount paid (Origin)
+            </label>
+            <p className="mt-1 text-lg font-semibold text-gray-900">
+              {formatToCurrency(transaction.amount_payable || 0)}{" "}
               {transaction.dest_currency?.currency_code}
             </p>
           </div>
@@ -124,77 +160,163 @@ export const TransactionDetailsModal: React.FC<
               {transaction.rate}
             </p>
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Amount to Transfer (Destination)
+            </label>
+            <p className="mt-1 text-lg font-semibold text-gray-900">
+              {formatToCurrency(transaction.dest_amount)}{" "}
+              {transaction.dest_currency?.currency_code}
+            </p>
+          </div>
         </div>
       </div>
 
       {/* Customer & Beneficiary */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white border rounded-lg p-4">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
-            Customer (Sender)
-          </h3>
-          <div className="space-y-2">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Name
-              </label>
-              <p className="text-sm text-gray-900">
-                {transaction.customer
-                  ? `${transaction.customer.full_name}`
-                  : "N/A"}
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Email
-              </label>
-              <p className="text-sm text-gray-900">
-                {transaction.customer?.email || "N/A"}
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Phone
-              </label>
-              <p className="text-sm text-gray-900">
-                {transaction.customer?.phone_number || "N/A"}
-              </p>
+      {isOutbound && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white border rounded-lg p-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              Customer (Sender)
+            </h3>
+            <div className="space-y-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Name
+                </label>
+                <p className="text-sm text-gray-900">
+                  {transaction.customer
+                    ? `${transaction.customer.full_name}`
+                    : "N/A"}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Email
+                </label>
+                <p className="text-sm text-gray-900">
+                  {transaction.customer?.email || "N/A"}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Phone
+                </label>
+                <p className="text-sm text-gray-900">
+                  {transaction.customer?.phone_number || "N/A"}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="bg-white border rounded-lg p-4">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
-            Beneficiary
-          </h3>
-          <div className="space-y-2">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Name
-              </label>
-              <p className="text-sm text-gray-900">
-                {transaction.beneficiary?.name || "N/A"}
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Bank
-              </label>
-              <p className="text-sm text-gray-900">
-                {transaction.beneficiary?.bank_name || "N/A"}
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Account Number
-              </label>
-              <p className="text-sm text-gray-900">
-                {transaction.beneficiary?.bank_account_number || "N/A"}
-              </p>
+          <div className="bg-white border rounded-lg p-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              Beneficiary
+            </h3>
+            <div className="space-y-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Name
+                </label>
+                <p className="text-sm text-gray-900">
+                  {transaction.beneficiary?.name || "N/A"}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Bank
+                </label>
+                <p className="text-sm text-gray-900">
+                  {transaction.beneficiary?.bank_name || "N/A"}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Account Number
+                </label>
+                <p className="text-sm text-gray-900">
+                  {transaction.beneficiary?.bank_account_number || "N/A"}
+                </p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Sender & Receiver */}
+      {isInbound && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white border rounded-lg p-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Sender</h3>
+            <div className="space-y-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Name
+                </label>
+                <p className="text-sm text-gray-900">
+                  {transaction.sender_trasaction_party
+                    ? `${transaction.sender_trasaction_party?.name}`
+                    : "N/A"}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Email
+                </label>
+                <p className="text-sm text-gray-900">
+                  {getCounterPartyEmail(
+                    transaction.sender_trasaction_party?.metadata || {}
+                  ) || "N/A"}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Phone
+                </label>
+                <p className="text-sm text-gray-900">
+                  {getCounterPartyPhone(
+                    transaction.sender_trasaction_party?.metadata || {}
+                  ) || "N/A"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white border rounded-lg p-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Receiver</h3>
+            <div className="space-y-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Name
+                </label>
+                <p className="text-sm text-gray-900">
+                  {transaction.receiver_trasaction_party?.name || "N/A"}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Email
+                </label>
+                <p className="text-sm text-gray-900">
+                  {getCounterPartyEmail(
+                    transaction.receiver_trasaction_party?.metadata || {}
+                  ) || "N/A"}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Phone
+                </label>
+                <p className="text-sm text-gray-900">
+                  {getCounterPartyPhone(
+                    transaction.receiver_trasaction_party?.metadata || {}
+                  ) || "N/A"}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Organisations */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -471,126 +593,167 @@ export const TransactionDetailsModal: React.FC<
     </div>
   );
 
-  const renderAuditTab = () => (
-    <div className="space-y-6">
-      {/* Transaction Timeline */}
-      <div className="bg-white border rounded-lg p-4">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
-          Transaction Timeline
-        </h3>
-        <div className="space-y-4">
-          <div className="flex items-start space-x-3">
-            <div className="flex-shrink-0">
-              <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-900">
-                Transaction Created
-              </p>
-              <p className="text-sm text-gray-500">
-                {transaction.created_at
-                  ? new Date(transaction.created_at).toLocaleString()
-                  : "N/A"}
-              </p>
-              <p className="text-sm text-gray-500">
-                by{" "}
-                {transaction.created_by_user
-                  ? `${transaction.created_by_user.first_name} ${transaction.created_by_user.last_name}`
-                  : "Unknown User"}
-              </p>
-            </div>
-          </div>
+  const renderAuditTab = () => {
+    const audits = transaction.transaction_audits || [];
 
-          {transaction.updated_at &&
-            transaction.updated_at !== transaction.created_at && (
-              <div className="flex items-start space-x-3">
-                <div className="flex-shrink-0">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2"></div>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">
-                    Transaction Updated
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    {new Date(transaction.updated_at).toLocaleString()}
-                  </p>
-                </div>
-              </div>
-            )}
+    const getActionColor = (action: string) => {
+      switch (action) {
+        case "CREATED":
+          return "bg-blue-500";
+        case "UPDATED":
+          return "bg-yellow-500";
+        case "APPROVED":
+          return "bg-green-500";
+        case "CANCELLED":
+          return "bg-red-500";
+        case "REVERSED":
+          return "bg-red-600";
+        case "MADE_READY":
+          return "bg-orange-500";
+        case "REASSIGNED":
+          return "bg-purple-500";
+        default:
+          return "bg-gray-500";
+      }
+    };
 
-          {transaction.received_at && (
-            <div className="flex items-start space-x-3">
-              <div className="flex-shrink-0">
-                <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-900">
-                  Transaction Received
-                </p>
-                <p className="text-sm text-gray-500">
-                  {new Date(transaction.received_at).toLocaleString()}
-                </p>
-              </div>
+    const getActionLabel = (action: string) => {
+      switch (action) {
+        case "CREATED":
+          return "Transaction Created";
+        case "UPDATED":
+          return "Transaction Updated";
+        case "APPROVED":
+          return "Transaction Approved";
+        case "CANCELLED":
+          return "Transaction Cancelled";
+        case "REVERSED":
+          return "Transaction Reversed";
+        case "MADE_READY":
+          return "Transaction Made Ready";
+        case "REASSIGNED":
+          return "Transaction Reassigned";
+        default:
+          return action;
+      }
+    };
+
+    return (
+      <div className="space-y-6">
+        {/* Transaction Audits */}
+        <div className="bg-white border rounded-lg p-4">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">
+            Audit Trail
+          </h3>
+          {audits.length > 0 ? (
+            <div className="space-y-4">
+              {audits
+                .sort(
+                  (a, b) =>
+                    new Date(b.timestamp).getTime() -
+                    new Date(a.timestamp).getTime()
+                )
+                .map((audit) => (
+                  <div key={audit.id} className="flex items-start space-x-3">
+                    <div className="flex-shrink-0">
+                      <div
+                        className={`w-2 h-2 ${getActionColor(
+                          audit.action
+                        )} rounded-full mt-2`}
+                      ></div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium text-gray-900">
+                          {getActionLabel(audit.action)}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {new Date(audit.timestamp).toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="mt-1">
+                        <p className="text-sm text-gray-600">
+                          by{" "}
+                          {audit.user
+                            ? `${audit.user.first_name} ${audit.user.last_name}`
+                            : "Unknown User"}
+                        </p>
+                        {audit.new_user && (
+                          <p className="text-sm text-gray-600">
+                            reassigned to{" "}
+                            {`${audit.new_user.first_name} ${audit.new_user.last_name}`}
+                          </p>
+                        )}
+                        {audit.notes && (
+                          <p className="text-sm text-gray-600 mt-1">
+                            <span className="font-medium">Notes:</span>{" "}
+                            {audit.notes}
+                          </p>
+                        )}
+                        {audit.details &&
+                          Object.keys(audit.details).length > 0 && (
+                            <details className="mt-2">
+                              <summary className="text-sm text-gray-600 cursor-pointer hover:text-gray-800">
+                                View Details
+                              </summary>
+                              <div className="mt-2 p-3 bg-gray-50 rounded-md">
+                                <pre className="text-xs text-gray-700 whitespace-pre-wrap">
+                                  {JSON.stringify(audit.details, null, 2)}
+                                </pre>
+                              </div>
+                            </details>
+                          )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
             </div>
-          )}
-
-          {transaction.remitted_at && (
-            <div className="flex items-start space-x-3">
-              <div className="flex-shrink-0">
-                <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-900">
-                  Transaction Remitted
-                </p>
-                <p className="text-sm text-gray-500">
-                  {new Date(transaction.remitted_at).toLocaleString()}
-                </p>
-              </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-gray-500">
+                No audit trail available for this transaction.
+              </p>
             </div>
           )}
         </div>
-      </div>
 
-      {/* Status History */}
-      <div className="bg-white border rounded-lg p-4">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
-          Status History
-        </h3>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <div>
-              <p className="text-sm font-medium text-gray-900">
-                Current Status
-              </p>
-              <p className="text-sm text-gray-500">Transaction Status</p>
+        {/* Current Status Summary */}
+        <div className="bg-white border rounded-lg p-4">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">
+            Current Status
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div>
+                <p className="text-sm font-medium text-gray-900">
+                  Transaction Status
+                </p>
+              </div>
+              <StatusBadge status={transaction.status} />
             </div>
-            <StatusBadge status={transaction.status} />
-          </div>
-          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <div>
-              <p className="text-sm font-medium text-gray-900">
-                Remittance Status
-              </p>
-              <p className="text-sm text-gray-500">Payment Status</p>
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div>
+                <p className="text-sm font-medium text-gray-900">
+                  Remittance Status
+                </p>
+              </div>
+              <StatusBadge status={transaction.remittance_status} />
             </div>
-            <StatusBadge status={transaction.remittance_status} />
-          </div>
-          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <div>
-              <p className="text-sm font-medium text-gray-900">
-                Request Status
-              </p>
-              <p className="text-sm text-gray-500">Processing Status</p>
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div>
+                <p className="text-sm font-medium text-gray-900">
+                  Request Status
+                </p>
+              </div>
+              <span className="text-sm text-gray-900">
+                {transaction.request_status}
+              </span>
             </div>
-            <span className="text-sm text-gray-900">
-              {transaction.request_status}
-            </span>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <Modal
@@ -631,10 +794,30 @@ export const TransactionDetailsModal: React.FC<
         {activeTab === "audit" && renderAuditTab()}
 
         {/* Action Buttons */}
-        <div className="flex justify-end space-x-3 pt-6 border-t">
+        <div className="flex justify-end space-x-3 pt-6 border-t flex-wrap">
           <Button variant="outline" onClick={onClose}>
             Close
           </Button>
+          {canUpdate && (
+            <Button
+              variant="outline"
+              onClick={() => onUpdate?.(transaction)}
+              disabled={isLoading}
+              className="bg-blue-600 hover:bg-blue-700 text-gray-900"
+            >
+              Edit Transaction
+            </Button>
+          )}
+          {canMarkAsReady && (
+            <Button
+              variant="outline"
+              onClick={() => onMarkAsReady?.(transaction)}
+              disabled={isLoading}
+              className="bg-yellow-600 hover:bg-yellow-700 text-white"
+            >
+              Make Ready
+            </Button>
+          )}
           {canApprove && (
             <Button
               variant="default"

@@ -15,6 +15,8 @@ import type {
   OutboundTransactionResult,
   ITransactionChargeInItem,
   ChargeWithNegotiatedRate,
+  MarkAsReadyRequest,
+  UpdateTransactionRequest,
 } from "./transactions.interfaces";
 import { prisma } from "../../lib/prisma.lib";
 import { AppError } from "../../utils/AppError";
@@ -140,24 +142,15 @@ export class TransactionService {
 
       // 5.1. Validate customer country matches origin country
       if (data.origin_country_id) {
-        const customerCountryId =
-          customer.nationality_id ||
-          customer.residence_country_id ||
-          customer.incorporation_country_id;
+        const countryMatches =
+          (customer.nationality_id &&
+            customer.nationality_id === data.origin_country_id) ||
+          (customer.residence_country_id &&
+            customer.residence_country_id === data.origin_country_id) ||
+          (customer.incorporation_country_id &&
+            customer.incorporation_country_id === data.origin_country_id);
 
-        if (customerCountryId && customerCountryId !== data.origin_country_id) {
-          console.log(
-            "Customer's country (nationality/residence/incorporation) must match the origin country",
-            customerCountryId,
-            "origin_country_id",
-            data.origin_country_id,
-            "nationality_id",
-            customer.nationality_id,
-            "residence_country_id",
-            customer.residence_country_id,
-            "incorporation_country_id",
-            customer.incorporation_country_id
-          );
+        if (!countryMatches) {
           throw new AppError(
             "Customer's country (nationality/residence/incorporation) must match the origin country",
             400
@@ -187,15 +180,16 @@ export class TransactionService {
 
       // 6.1. Validate beneficiary country matches destination country
       if (data.destination_country_id) {
-        const beneficiaryCountryId =
-          beneficiary.nationality_id ||
-          beneficiary.residence_country_id ||
-          beneficiary.incorporation_country_id;
+        const countryMatches =
+          (beneficiary.nationality_id &&
+            beneficiary.nationality_id === data.destination_country_id) ||
+          (beneficiary.residence_country_id &&
+            beneficiary.residence_country_id === data.destination_country_id) ||
+          (beneficiary.incorporation_country_id &&
+            beneficiary.incorporation_country_id ===
+              data.destination_country_id);
 
-        if (
-          beneficiaryCountryId &&
-          beneficiaryCountryId !== data.destination_country_id
-        ) {
+        if (!countryMatches) {
           throw new AppError(
             "Beneficiary's country (nationality/residence/incorporation) must match the destination country",
             400
@@ -296,6 +290,12 @@ export class TransactionService {
               description: charge.description,
               organisation_id: organisationId,
               status: "PENDING",
+              original_rate: charge.rate,
+              negotiated_rate: charge.negotiated_rate,
+              internal_amount: charge.internal_amount,
+              internal_percentage: charge.internal_percentage,
+              external_amount: charge.external_amount,
+              external_percentage: charge.external_percentage,
             },
           })
         )
@@ -513,11 +513,18 @@ export class TransactionService {
       }
 
       // Check if transaction can be approved
-      if (!["PENDING", "PENDING_APPROVAL"].includes(transaction.status)) {
+      if (
+        !["PENDING", "PENDING_APPROVAL", "READY"].includes(transaction.status)
+      ) {
         throw new AppError(
           "Transaction cannot be approved in current status",
           400
         );
+      }
+
+      // Check if transaction is already approved
+      if (transaction.status === "APPROVED") {
+        throw new AppError("Transaction is already approved", 400);
       }
 
       // Update transaction status
@@ -527,7 +534,7 @@ export class TransactionService {
           status: "APPROVED",
           approved_by: userId,
           approved_at: new Date(),
-          remittance_status: "COMPLETED",
+          remittance_status: "TRANSIT",
           request_status: "APPROVED",
           remarks: data.remarks
             ? `${transaction.remarks || ""}\nApproved: ${data.remarks}`.trim()
@@ -665,6 +672,249 @@ export class TransactionService {
       return {
         success: true,
         message: "Transaction approved successfully",
+        data: result as unknown as ITransaction,
+      };
+    });
+  }
+
+  // Mark Transaction as Ready
+  async markAsReady(
+    transactionId: string,
+    data: MarkAsReadyRequest,
+    userId: string,
+    ipAddress: string
+  ): Promise<TransactionResponse> {
+    return await prisma.$transaction(async (tx) => {
+      // Get transaction
+      const transaction = await tx.transaction.findUnique({
+        where: { id: transactionId },
+        include: {
+          assigned_to_user: true,
+        },
+      });
+
+      if (!transaction) {
+        throw new AppError("Transaction not found", 400);
+      }
+
+      // Check if transaction can be made ready
+      if (
+        transaction.status !== "PENDING" &&
+        transaction.status !== "PENDING_APPROVAL"
+      ) {
+        throw new AppError(
+          "Transaction can only be made ready when in PENDING or PENDING_APPROVAL status",
+          400
+        );
+      }
+
+      // If reassigning to a different user, validate the user
+      let assignedToUserId = transaction.assigned_to;
+      if (data.assigned_to && data.assigned_to !== transaction.assigned_to) {
+        const newUser = await tx.user.findUnique({
+          where: { id: data.assigned_to },
+        });
+
+        if (!newUser) {
+          throw new AppError("Assigned user not found", 400);
+        }
+
+        // Check if user is in the same organisation
+        if (newUser.organisation_id !== transaction.origin_organisation_id) {
+          throw new AppError(
+            "User must be in the same organisation as the transaction",
+            400
+          );
+        }
+
+        assignedToUserId = data.assigned_to;
+      }
+
+      // Update transaction status
+      const updatedTransaction = await tx.transaction.update({
+        where: { id: transactionId },
+        data: {
+          status: "READY",
+          remittance_status: "READY",
+          assigned_to: assignedToUserId,
+          remarks: data.remarks
+            ? `${transaction.remarks || ""}\nMade ready: ${data.remarks}`.trim()
+            : transaction.remarks,
+          updated_at: new Date(),
+        },
+      });
+
+      // Create transaction audit
+      await tx.transactionAudit.create({
+        data: {
+          transaction_id: transactionId,
+          action: "MADE_READY",
+          user_id: userId,
+          new_user_id: assignedToUserId,
+          details: {
+            old_status: transaction.status,
+            new_status: updatedTransaction.status,
+            old_remittance_status: transaction.remittance_status,
+            new_remittance_status: updatedTransaction.remittance_status,
+          },
+          ip_address: ipAddress,
+          notes: data.remarks || "Transaction marked as ready",
+        },
+      });
+
+      // If reassigned, create reassignment audit
+      if (data.assigned_to && data.assigned_to !== transaction.assigned_to) {
+        await tx.transactionAudit.create({
+          data: {
+            transaction_id: transactionId,
+            action: "REASSIGNED",
+            user_id: userId,
+            new_user_id: data.assigned_to,
+            details: {
+              old_assigned_to: transaction.assigned_to,
+              new_assigned_to: data.assigned_to,
+            },
+            ip_address: ipAddress,
+            notes: data.remarks || "Transaction reassigned",
+          },
+        });
+      }
+
+      // Get updated transaction with relations
+      const result = await tx.transaction.findUnique({
+        where: { id: transactionId },
+        include: {
+          corridor: {
+            include: {
+              base_country: true,
+              destination_country: true,
+              base_currency: true,
+            },
+          },
+          till: {
+            include: {
+              organisation: true,
+            },
+          },
+          customer: true,
+          origin_channel: true,
+          origin_currency: true,
+          beneficiary: true,
+          dest_channel: true,
+          dest_currency: true,
+          exchange_rate: true,
+          external_exchange_rate: true,
+          created_by_user: true,
+          assigned_to_user: true,
+          origin_organisation: true,
+          destination_organisation: true,
+          transaction_charges: {
+            include: {
+              charge: true,
+              organisation: true,
+            },
+          },
+        },
+      });
+
+      return {
+        success: true,
+        message: "Transaction marked as ready successfully",
+        data: result as unknown as ITransaction,
+      };
+    });
+  }
+
+  // Update Outbound Transaction (only when PENDING)
+  async updateOutboundTransaction(
+    transactionId: string,
+    data: UpdateTransactionRequest,
+    userId: string,
+    ipAddress: string
+  ): Promise<TransactionResponse> {
+    return await prisma.$transaction(async (tx) => {
+      // Get transaction
+      const transaction = await tx.transaction.findUnique({
+        where: { id: transactionId },
+      });
+
+      if (!transaction) {
+        throw new AppError("Transaction not found", 400);
+      }
+
+      // Check if transaction can be updated
+      if (transaction.status !== "PENDING") {
+        throw new AppError(
+          "Transaction can only be updated when in PENDING status",
+          400
+        );
+      }
+
+      // Update transaction
+      const updatedTransaction = await tx.transaction.update({
+        where: { id: transactionId },
+        data: {
+          ...data,
+          updated_at: new Date(),
+        },
+      });
+
+      // Create transaction audit
+      await tx.transactionAudit.create({
+        data: {
+          transaction_id: transactionId,
+          action: "UPDATED",
+          user_id: userId,
+          details: {
+            updated_fields: Object.keys(data),
+            old_values: { ...transaction },
+            new_values: { ...data },
+          } as unknown as any,
+          ip_address: ipAddress,
+          notes: "Transaction updated",
+        },
+      });
+
+      // Get updated transaction with relations
+      const result = await tx.transaction.findUnique({
+        where: { id: transactionId },
+        include: {
+          corridor: {
+            include: {
+              base_country: true,
+              destination_country: true,
+              base_currency: true,
+            },
+          },
+          till: {
+            include: {
+              organisation: true,
+            },
+          },
+          customer: true,
+          origin_channel: true,
+          origin_currency: true,
+          beneficiary: true,
+          dest_channel: true,
+          dest_currency: true,
+          exchange_rate: true,
+          external_exchange_rate: true,
+          created_by_user: true,
+          assigned_to_user: true,
+          origin_organisation: true,
+          destination_organisation: true,
+          transaction_charges: {
+            include: {
+              charge: true,
+              organisation: true,
+            },
+          },
+        },
+      });
+
+      return {
+        success: true,
+        message: "Transaction updated successfully",
         data: result as unknown as ITransaction,
       };
     });
@@ -968,6 +1218,12 @@ export class TransactionService {
               organisation: true,
             },
           },
+          transaction_audits: {
+            include: {
+              user: true,
+              new_user: true,
+            },
+          },
         },
       }),
       prisma.transaction.count({ where }),
@@ -1058,6 +1314,12 @@ export class TransactionService {
           include: {
             charge: true,
             organisation: true,
+          },
+        },
+        transaction_audits: {
+          include: {
+            user: true,
+            new_user: true,
           },
         },
       },
@@ -1309,6 +1571,13 @@ export class TransactionService {
         amount = charge.max_amount;
       }
 
+      const internalAmount = charge.origin_share_percentage
+        ? (amount * charge.origin_share_percentage) / 100
+        : null;
+      const externalAmount = charge.destination_share_percentage
+        ? (amount * charge.destination_share_percentage) / 100
+        : null;
+
       calculatedCharges.push({
         charge_id: charge.id,
         type: charge.type,
@@ -1317,15 +1586,11 @@ export class TransactionService {
         negotiated_rate: charge.negotiated_rate,
         description: `${charge.name}: ${charge.description}`,
         is_reversible: charge.is_reversible,
-        internal_amount: charge.origin_share_percentage
-          ? (originAmount * charge.origin_share_percentage) / 100
-          : null,
+        internal_amount: internalAmount,
         internal_percentage: charge.origin_share_percentage
           ? charge.origin_share_percentage
           : null,
-        external_amount: charge.destination_share_percentage
-          ? (originAmount * charge.destination_share_percentage) / 100
-          : null,
+        external_amount: externalAmount,
         external_percentage: charge.destination_share_percentage
           ? charge.destination_share_percentage
           : null,
@@ -1361,6 +1626,13 @@ export class TransactionService {
         amount = charge.max_amount;
       }
 
+      const internalAmount = charge.origin_share_percentage
+        ? (amount * charge.origin_share_percentage) / 100
+        : null;
+      const externalAmount = charge.destination_share_percentage
+        ? (amount * charge.destination_share_percentage) / 100
+        : null;
+
       calculatedCharges.push({
         charge_id: charge.id,
         type: charge.type,
@@ -1369,15 +1641,11 @@ export class TransactionService {
         negotiated_rate: charge.negotiated_rate,
         description: `${charge.name}: ${charge.description}`,
         is_reversible: charge.is_reversible,
-        internal_amount: charge.origin_share_percentage
-          ? (nonTaxChargesTotal * charge.origin_share_percentage) / 100
-          : null,
+        internal_amount: internalAmount,
         internal_percentage: charge.origin_share_percentage
           ? charge.origin_share_percentage
           : null,
-        external_amount: charge.destination_share_percentage
-          ? (nonTaxChargesTotal * charge.destination_share_percentage) / 100
-          : null,
+        external_amount: externalAmount,
         external_percentage: charge.destination_share_percentage
           ? charge.destination_share_percentage
           : null,
@@ -1638,6 +1906,12 @@ export class TransactionService {
       if (!customer || !beneficiary) {
         throw new AppError("Customer or beneficiary not found", 400);
       }
+
+      //get transaction charges
+      const transactionCharges = await tx.transactionCharge.findMany({
+        where: { transaction_id: transaction.id },
+      });
+
       // Insert counter_party (sender and receiver) - customer becomes SENDER, beneficiary becomes RECEIVER
 
       // Get a default till for the destination organisation
@@ -1670,10 +1944,10 @@ export class TransactionService {
           dest_amount: transaction.dest_amount, // Received amount in destination currency
           dest_channel_id: transaction.dest_channel_id,
           dest_currency_id: transaction.dest_currency_id,
-          rate: 1, // 1:1 for inbound as it's already converted
+          rate: transaction.rate, // 1:1 for inbound as it's already converted
           internal_exchange_rate: transaction.internal_exchange_rate,
-          inflation: 0,
-          markup: 0,
+          inflation: transaction.inflation,
+          markup: transaction.markup,
           purpose: transaction.purpose,
           funds_source: transaction.funds_source,
           relationship: transaction.relationship,
@@ -1689,9 +1963,14 @@ export class TransactionService {
           amount_payable: transaction.dest_amount,
           amount_receivable: transaction.dest_amount,
           status: "PENDING_APPROVAL",
-          remittance_status: "PENDING",
+          remittance_status: "TRANSIT",
           request_status: "UNDER_REVIEW",
           created_by: userId,
+          outbound_transaction_id: transaction.id,
+          outbound_transaction_no: transaction.transaction_no,
+          total_all_charges: transaction.total_all_charges,
+          commissions: transaction.commissions,
+          total_taxes: transaction.total_taxes,
         },
       });
 
@@ -1714,6 +1993,9 @@ export class TransactionService {
           payout_phone: customer.phone_number,
           metadata: {
             email: customer.email,
+            phone: customer.phone_number,
+            id_type: customer.id_type,
+            id_number: customer.id_number,
             address: customer.address,
             customer_type: customer.customer_type,
             tax_number: customer.tax_number,
@@ -1743,6 +2025,9 @@ export class TransactionService {
           payout_phone: beneficiary.phone,
           metadata: {
             email: beneficiary.email,
+            phone: beneficiary.phone,
+            id_type: beneficiary.id_type,
+            id_number: beneficiary.id_number,
             address: beneficiary.address,
             bank_address: beneficiary.bank_address,
             bank_city: beneficiary.bank_city,
@@ -1751,6 +2036,17 @@ export class TransactionService {
           },
           organisation_id: transaction.destination_organisation_id,
           created_by: userId,
+        },
+      });
+
+      // Create transaction audit
+      await tx.transactionAudit.create({
+        data: {
+          transaction_id: inboundTransaction.id,
+          user_id: userId,
+          new_user_id: userId,
+          action: "CREATED",
+          notes: "Inbound transaction created",
         },
       });
 
@@ -2112,7 +2408,9 @@ export class TransactionService {
       const updatedTransaction = await tx.transaction.update({
         where: { id: transactionId },
         data: {
-          status: "APPROVED",
+          status: "COMPLETED",
+          remittance_status: "PAID",
+          request_status: "APPROVED",
           till_id: userTill.till_id,
           remarks: data.remarks
             ? `${transaction.remarks || ""}\nApproved: ${data.remarks}`.trim()
@@ -2190,6 +2488,17 @@ export class TransactionService {
           notes: data.remarks || "Inbound transaction approved",
         },
       });
+
+      //update outbound transaction status to COMPLETED
+      if (updatedTransaction.outbound_transaction_id) {
+        await tx.transaction.update({
+          where: { id: updatedTransaction.outbound_transaction_id },
+          data: {
+            status: "COMPLETED",
+            remittance_status: "PAID",
+          },
+        });
+      }
 
       // Get updated transaction with relations
       const result = await tx.transaction.findUnique({

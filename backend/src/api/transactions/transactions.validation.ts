@@ -267,6 +267,21 @@ export const approveTransactionSchema = z.object({
     .optional(),
 });
 
+// Mark as Ready Transaction Schema
+export const markAsReadySchema = z.object({
+  remarks: z
+    .string()
+    .max(500, "Remarks must be less than 500 characters")
+    .optional(),
+  assigned_to: z.string().uuid("Invalid assigned user ID").optional(),
+});
+
+// Reassign Transaction Schema
+export const reassignTransactionSchema = z.object({
+  assigned_to: z.string().uuid("Invalid assigned user ID"),
+  remarks: z.string().max(500, "Remarks must be less than 500 characters"),
+});
+
 // Reverse Transaction Schema
 export const reverseTransactionSchema = z.object({
   reason: z

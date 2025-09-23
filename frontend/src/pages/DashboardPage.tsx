@@ -3,7 +3,8 @@ import { useSession } from "../hooks";
 import { useDashboardData } from "../hooks/useDashboard";
 import StatCard from "../components/dashboard/StatCard";
 import AlertCard from "../components/dashboard/AlertCard";
-import SimpleChart from "../components/dashboard/SimpleChart";
+import ChargesChart from "../components/dashboard/ChargesChart";
+import TransactionsChart from "../components/dashboard/TransactionsChart";
 import { formatToCurrency } from "../utils/textUtils";
 import {
   FiDollarSign,
@@ -120,25 +121,30 @@ const DashboardPage: React.FC = () => {
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <SimpleChart
-          title="Transaction Trend (30 Days)"
-          type="line"
+        <TransactionsChart
           data={
-            data?.transactionSummary.transactionTrend.map((item) => ({
-              label: new Date(item.date).toLocaleDateString(),
-              value: item.count,
-            })) || []
+            data?.transactionSummary || {
+              totalTransactions: { today: 0, week: 0, month: 0 },
+              transactionValue: {
+                today: 0,
+                week: 0,
+                month: 0,
+                currency: "USD",
+              },
+              pendingTransactions: 0,
+              recentTransactions: [],
+              transactionTrend: [],
+            }
           }
           height={300}
         />
-        <SimpleChart
-          title="Charge Breakdown"
-          type="pie"
+        <ChargesChart
           data={
-            data?.chargesAndPayments.chargeBreakdown.map((item) => ({
-              label: item.type,
-              value: item.amount,
-            })) || []
+            data?.chargesAndPayments || {
+              pendingCharges: { total: 0, currency: "USD", byType: [] },
+              recentBatchPayments: [],
+              chargeBreakdown: [],
+            }
           }
           height={300}
         />

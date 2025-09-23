@@ -16,18 +16,24 @@ import { useExchangeRates } from "../hooks/useExchangeRates";
 import { useCharges } from "../hooks/useCharges";
 import type {
   CreateOutboundTransactionRequest,
+  UpdateTransactionRequest,
+  Transaction,
   ChargeType,
 } from "../types/TransactionsTypes";
 import type { UserTill } from "../types/TillsTypes";
 import { formatToCurrencyWithSymbol } from "../utils/textUtils";
 import { siteCommonStrings } from "../config";
 
-interface CreateTransactionFormProps {
+interface TransactionFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: CreateOutboundTransactionRequest) => void;
+  onSubmit: (
+    data: CreateOutboundTransactionRequest | UpdateTransactionRequest
+  ) => void;
   isLoading?: boolean;
   organisationId: string;
+  mode?: "create" | "edit";
+  transaction?: Transaction | null;
 }
 
 interface FormData {
@@ -63,12 +69,14 @@ interface FormData {
   }>;
 }
 
-export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
+export const TransactionForm: React.FC<TransactionFormProps> = ({
   isOpen,
   onClose,
   onSubmit,
   isLoading = false,
   organisationId,
+  mode = "create",
+  transaction,
 }) => {
   // Fetch data
   const { data: userTillsData } = useUserTills({
@@ -129,27 +137,63 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
     formState: { errors },
   } = useForm<FormData>({
     defaultValues: {
-      corridor_id: "",
-      till_id: currentUserTill?.till_id || "",
-      customer_id: "",
-      origin_amount: "",
-      origin_channel_id: "",
-      origin_currency_id: currentOrganisation?.base_currency_id || "",
-      beneficiary_id: "",
-      dest_amount: "",
-      dest_channel_id: "",
-      dest_currency_id: "",
-      rate: "1",
-      internal_exchange_rate: "1",
-      inflation: "0",
-      markup: "0",
-      purpose: "",
-      funds_source: "",
-      relationship: "",
-      remarks: "",
-      exchange_rate_id: "",
-      external_exchange_rate_id: "",
-      destination_organisation_id: "",
+      corridor_id:
+        mode === "edit" && transaction ? transaction.corridor_id : "",
+      till_id:
+        mode === "edit" && transaction
+          ? transaction.till_id
+          : currentUserTill?.till_id || "",
+      customer_id:
+        mode === "edit" && transaction ? transaction.customer_id : "",
+      origin_amount:
+        mode === "edit" && transaction
+          ? transaction.origin_amount?.toString()
+          : "",
+      origin_channel_id:
+        mode === "edit" && transaction ? transaction.origin_channel_id : "",
+      origin_currency_id:
+        mode === "edit" && transaction
+          ? transaction.origin_currency_id
+          : currentOrganisation?.base_currency_id || "",
+      beneficiary_id:
+        mode === "edit" && transaction ? transaction.beneficiary_id : "",
+      dest_amount:
+        mode === "edit" && transaction
+          ? transaction.dest_amount?.toString()
+          : "",
+      dest_channel_id:
+        mode === "edit" && transaction ? transaction.dest_channel_id : "",
+      dest_currency_id:
+        mode === "edit" && transaction ? transaction.dest_currency_id : "",
+      rate: mode === "edit" && transaction ? transaction.rate?.toString() : "1",
+      internal_exchange_rate:
+        mode === "edit" && transaction
+          ? transaction.internal_exchange_rate?.toString()
+          : "1",
+      inflation:
+        mode === "edit" && transaction
+          ? transaction.inflation?.toString()
+          : "0",
+      markup:
+        mode === "edit" && transaction ? transaction.markup?.toString() : "0",
+      purpose: mode === "edit" && transaction ? transaction.purpose || "" : "",
+      funds_source:
+        mode === "edit" && transaction ? transaction.funds_source || "" : "",
+      relationship:
+        mode === "edit" && transaction ? transaction.relationship || "" : "",
+      remarks: mode === "edit" && transaction ? transaction.remarks || "" : "",
+      exchange_rate_id:
+        mode === "edit" && transaction
+          ? transaction.exchange_rate_id || ""
+          : "",
+      external_exchange_rate_id:
+        mode === "edit" && transaction
+          ? transaction.external_exchange_rate_id || ""
+          : "",
+      destination_organisation_id:
+        mode === "edit" && transaction
+          ? transaction.destination_organisation_id || ""
+          : "",
       origin_country_id: currentOrganisation?.country_id || "",
       destination_country_id: "",
       amount_payable: "",
@@ -414,37 +458,69 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
   };
 
   const handleFormSubmit = (data: FormData) => {
-    const submitData: CreateOutboundTransactionRequest = {
-      corridor_id: data.corridor_id,
-      till_id: data.till_id || currentUserTill?.till_id || "",
-      customer_id: data.customer_id,
-      origin_amount: parseFloat(data.origin_amount),
-      origin_channel_id: data.origin_channel_id,
-      origin_currency_id: data.origin_currency_id,
-      beneficiary_id: data.beneficiary_id,
-      dest_amount: parseFloat(data.dest_amount),
-      dest_channel_id: data.dest_channel_id,
-      dest_currency_id: data.dest_currency_id,
-      rate: parseFloat(data.rate),
-      internal_exchange_rate: data.internal_exchange_rate
-        ? parseFloat(data.internal_exchange_rate)
-        : undefined,
-      inflation: 0,
-      markup: 0,
-      purpose: data.purpose || undefined,
-      funds_source: data.funds_source || undefined,
-      relationship: data.relationship || undefined,
-      remarks: data.remarks || undefined,
-      exchange_rate_id: data.exchange_rate_id || undefined,
-      external_exchange_rate_id: data.external_exchange_rate_id || undefined,
-      destination_organisation_id:
-        data.destination_organisation_id || undefined,
-      origin_country_id: data.origin_country_id || undefined,
-      destination_country_id: data.destination_country_id || undefined,
-      transaction_charges: data.transaction_charges || undefined,
-    };
-
-    onSubmit(submitData);
+    if (mode === "edit") {
+      const submitData: UpdateTransactionRequest = {
+        corridor_id: data.corridor_id,
+        till_id: data.till_id,
+        customer_id: data.customer_id,
+        origin_amount: parseFloat(data.origin_amount),
+        origin_channel_id: data.origin_channel_id,
+        origin_currency_id: data.origin_currency_id,
+        beneficiary_id: data.beneficiary_id,
+        dest_amount: parseFloat(data.dest_amount),
+        dest_channel_id: data.dest_channel_id,
+        dest_currency_id: data.dest_currency_id,
+        rate: parseFloat(data.rate),
+        internal_exchange_rate: data.internal_exchange_rate
+          ? parseFloat(data.internal_exchange_rate)
+          : undefined,
+        inflation: data.inflation ? parseFloat(data.inflation) : undefined,
+        markup: data.markup ? parseFloat(data.markup) : undefined,
+        purpose: data.purpose || undefined,
+        funds_source: data.funds_source || undefined,
+        relationship: data.relationship || undefined,
+        remarks: data.remarks || undefined,
+        exchange_rate_id: data.exchange_rate_id || undefined,
+        external_exchange_rate_id: data.external_exchange_rate_id || undefined,
+        destination_organisation_id:
+          data.destination_organisation_id || undefined,
+        origin_country_id: data.origin_country_id || undefined,
+        destination_country_id: data.destination_country_id || undefined,
+        transaction_charges: data.transaction_charges || undefined,
+      };
+      onSubmit(submitData);
+    } else {
+      const submitData: CreateOutboundTransactionRequest = {
+        corridor_id: data.corridor_id,
+        till_id: data.till_id || currentUserTill?.till_id || "",
+        customer_id: data.customer_id,
+        origin_amount: parseFloat(data.origin_amount),
+        origin_channel_id: data.origin_channel_id,
+        origin_currency_id: data.origin_currency_id,
+        beneficiary_id: data.beneficiary_id,
+        dest_amount: parseFloat(data.dest_amount),
+        dest_channel_id: data.dest_channel_id,
+        dest_currency_id: data.dest_currency_id,
+        rate: parseFloat(data.rate),
+        internal_exchange_rate: data.internal_exchange_rate
+          ? parseFloat(data.internal_exchange_rate)
+          : undefined,
+        inflation: 0,
+        markup: 0,
+        purpose: data.purpose || undefined,
+        funds_source: data.funds_source || undefined,
+        relationship: data.relationship || undefined,
+        remarks: data.remarks || undefined,
+        exchange_rate_id: data.exchange_rate_id || undefined,
+        external_exchange_rate_id: data.external_exchange_rate_id || undefined,
+        destination_organisation_id:
+          data.destination_organisation_id || undefined,
+        origin_country_id: data.origin_country_id || undefined,
+        destination_country_id: data.destination_country_id || undefined,
+        transaction_charges: data.transaction_charges || undefined,
+      };
+      onSubmit(submitData);
+    }
   };
 
   const handleClose = () => {
@@ -456,7 +532,11 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title={`Create ${outboundLabel} Transaction`}
+      title={
+        mode === "edit"
+          ? `Edit ${outboundLabel} Transaction`
+          : `Create ${outboundLabel} Transaction`
+      }
       size="lg"
     >
       <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
@@ -1034,7 +1114,13 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
             Cancel
           </Button>
           <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Creating..." : "Create Transaction"}
+            {isLoading
+              ? mode === "edit"
+                ? "Updating..."
+                : "Creating..."
+              : mode === "edit"
+              ? "Update Transaction"
+              : "Create Transaction"}
           </Button>
         </div>
       </form>
@@ -1042,4 +1128,4 @@ export const CreateTransactionForm: React.FC<CreateTransactionFormProps> = ({
   );
 };
 
-export default CreateTransactionForm;
+export default TransactionForm;

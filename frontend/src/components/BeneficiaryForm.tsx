@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { FormItem } from "./ui/FormItem";
 import { Input } from "./ui/Input";
@@ -13,6 +13,7 @@ import type {
   UpdateBeneficiaryRequest,
   Beneficiary,
 } from "../types/BeneficiariesTypes";
+import { useOrganisation } from "../hooks/useOrganisations";
 
 interface BeneficiaryFormProps {
   initialData?: Beneficiary;
@@ -33,12 +34,15 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
   const { data: countriesData } = useAllCountries();
   const { data: occupationsData } = useOccupations({ limit: 100 });
   const { data: industriesData } = useIndustries({ limit: 100 });
+  const { data: organisationData } = useOrganisation(organisationId);
+  const userOrganisation = organisationData?.data;
 
   const {
     control,
     handleSubmit,
     watch,
     formState: { errors },
+    setValue,
   } = useForm<CreateBeneficiaryRequest>({
     defaultValues: {
       name: initialData?.name || "",
@@ -72,6 +76,17 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
   });
 
   const watchedType = watch("type");
+
+  const isIndividualBeneficiary = watchedType === "INDIVIDUAL";
+
+  useEffect(() => {
+    if (userOrganisation && isIndividualBeneficiary) {
+      setValue("organisation_id", userOrganisation.id || "");
+      setValue("nationality_id", userOrganisation.country_id || "");
+      setValue("residence_country_id", userOrganisation.country_id || "");
+      setValue("incorporation_country_id", userOrganisation.country_id || "");
+    }
+  }, [userOrganisation, setValue, isIndividualBeneficiary]);
 
   const handleFormSubmit = (data: CreateBeneficiaryRequest) => {
     try {

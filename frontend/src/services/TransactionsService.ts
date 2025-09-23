@@ -9,6 +9,8 @@ import type {
   ApproveTransactionRequest,
   ReverseTransactionRequest,
   OutboundTransactionResult,
+  MarkAsReadyRequest,
+  UpdateTransactionRequest,
 } from "../types/TransactionsTypes";
 
 export const TransactionsService = {
@@ -81,6 +83,30 @@ export const TransactionsService = {
   ): Promise<TransactionResponse> {
     const response = await apiClient.post(
       `/api/v1/transactions/transactions/${transactionId}/approve`,
+      data
+    );
+    return response.data;
+  },
+
+  // Mark Transaction as Ready
+  async markAsReady(
+    transactionId: string,
+    data: MarkAsReadyRequest
+  ): Promise<TransactionResponse> {
+    const response = await apiClient.post(
+      `/api/v1/transactions/transactions/${transactionId}/ready`,
+      data
+    );
+    return response.data;
+  },
+
+  // Update Outbound Transaction
+  async updateOutboundTransaction(
+    transactionId: string,
+    data: UpdateTransactionRequest
+  ): Promise<TransactionResponse> {
+    const response = await apiClient.put(
+      `/api/v1/transactions/transactions/${transactionId}`,
       data
     );
     return response.data;

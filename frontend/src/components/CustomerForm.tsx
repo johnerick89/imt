@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { FormItem } from "./ui/FormItem";
 import { Input } from "./ui/Input";
@@ -48,11 +48,14 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
     (org) => org.id === organisationId
   );
 
+  console.log("userOrganisation", userOrganisation);
+
   const {
     control,
     handleSubmit,
     watch,
     formState: { errors },
+    setValue,
   } = useForm<CreateCustomerRequest>({
     defaultValues: {
       full_name: initialData?.full_name || "",
@@ -102,6 +105,16 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
   // Watch customer type to conditionally show/hide fields
   const customerType = watch("customer_type");
   const isIndividualCustomer = customerType === "INDIVIDUAL";
+
+  useEffect(() => {
+    if (userOrganisation) {
+      setValue("currency_id", userOrganisation.base_currency_id || "");
+      setValue("organisation_id", userOrganisation.id || "");
+      setValue("nationality_id", userOrganisation.country_id || "");
+      setValue("residence_country_id", userOrganisation.country_id || "");
+      setValue("incorporation_country_id", userOrganisation.country_id || "");
+    }
+  }, [userOrganisation, setValue]);
 
   const handleFormSubmit = (data: CreateCustomerRequest) => {
     try {

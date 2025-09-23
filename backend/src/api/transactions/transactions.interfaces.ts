@@ -17,6 +17,7 @@ import {
   User,
   Charge,
   Country,
+  TransactionAudit,
 } from "@prisma/client";
 
 // Base Transaction Interface
@@ -83,6 +84,7 @@ export interface ITransaction {
   origin_country?: Country | null;
   destination_country?: Country | null;
   transaction_parties?: TransactionParty[];
+  transaction_audits?: TransactionAudit[];
 }
 
 export interface ITransactionChargeInItem {
@@ -254,6 +256,18 @@ export interface CancelTransactionRequest {
 // Approve Transaction Request
 export interface ApproveTransactionRequest {
   remarks?: string;
+}
+
+// Mark Transaction as Ready Request
+export interface MarkAsReadyRequest {
+  remarks?: string;
+  assigned_to?: string; // User ID to reassign to
+}
+
+// Reassign Transaction Request
+export interface ReassignTransactionRequest {
+  assigned_to: string; // User ID to reassign to
+  remarks: string;
 }
 
 // Reverse Transaction Request

@@ -8,6 +8,8 @@ import {
   cancelTransactionSchema,
   approveTransactionSchema,
   reverseTransactionSchema,
+  markAsReadySchema,
+  reassignTransactionSchema,
 } from "./transactions.validation";
 import type CustomRequest from "../../types/CustomReq.type";
 import { AppError } from "../../utils/AppError";
@@ -95,6 +97,62 @@ export class TransactionController {
       }
 
       const result = await transactionService.approveTransaction(
+        transactionId,
+        validation.data,
+        userId,
+        req.ip || ""
+      );
+      res.json(result);
+    }
+  );
+
+  // Mark Transaction as Ready
+  markAsReady = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
+      const { transactionId } = req.params;
+      if (!transactionId) {
+        throw new AppError("Transaction ID is required", 400);
+      }
+
+      const validation = markAsReadySchema.safeParse(req.body);
+      if (!validation.success) {
+        throw new AppError("Validation error", 400);
+      }
+
+      const userId = req.user?.id;
+      if (!userId) {
+        throw new AppError("User not authenticated", 401);
+      }
+
+      const result = await transactionService.markAsReady(
+        transactionId,
+        validation.data,
+        userId,
+        req.ip || ""
+      );
+      res.json(result);
+    }
+  );
+
+  // Update Outbound Transaction
+  updateOutboundTransaction = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
+      const { transactionId } = req.params;
+      if (!transactionId) {
+        throw new AppError("Transaction ID is required", 400);
+      }
+
+      const validation = updateTransactionSchema.safeParse(req.body);
+      if (!validation.success) {
+        throw new AppError("Validation error", 400);
+      }
+
+      const userId = req.user?.id;
+      if (!userId) {
+        throw new AppError("User not authenticated", 401);
+      }
+
+      const result = await transactionService.updateOutboundTransaction(
         transactionId,
         validation.data,
         userId,

@@ -4,6 +4,7 @@ import type {
   InboundTransactionFilters,
   ApproveTransactionRequest,
   ReverseTransactionRequest,
+  CancelTransactionRequest,
 } from "../types/TransactionsTypes";
 import { useToast } from "../contexts/ToastContext";
 
@@ -126,6 +127,51 @@ export const useReverseInboundTransaction = () => {
           ? error.message
           : "Failed to reverse inbound transaction";
       showError("Inbound Transaction Reversal Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
+    },
+  });
+};
+
+// Hook to cancel an inbound transaction
+export const useCancelInboundTransaction = () => {
+  const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
+  return useMutation({
+    mutationFn: ({
+      transactionId,
+      data,
+    }: {
+      transactionId: string;
+      data: CancelTransactionRequest;
+    }) =>
+      inboundTransactionService.cancelInboundTransaction(transactionId, data),
+    onSuccess: (response, variables) => {
+      showSuccess(
+        "Inbound Transaction Cancelled Successfully",
+        response.message ||
+          "The inbound transaction has been cancelled successfully."
+      );
+      // Invalidate and refetch inbound transactions
+      queryClient.invalidateQueries({
+        queryKey: ["inboundTransactions"],
+      });
+
+      // Update the specific transaction in cache
+      queryClient.setQueryData(
+        ["inboundTransaction", variables.transactionId],
+        response.data
+      );
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to cancel inbound transaction";
+      showError("Inbound Transaction Cancellation Failed", errorMessage);
       return {
         success: false,
         message: errorMessage,

@@ -19,6 +19,7 @@ export const Status = {
   PENDING_APPROVAL: "PENDING_APPROVAL",
   APPROVED: "APPROVED",
   PENDING: "PENDING",
+  READY: "READY",
   FAILED: "FAILED",
   CANCELLED: "CANCELLED",
   REJECTED: "REJECTED",
@@ -29,6 +30,7 @@ export type Status = (typeof Status)[keyof typeof Status];
 
 export const RemittanceStatus = {
   PENDING: "PENDING",
+  READY: "READY",
   FAILED: "FAILED",
   REJECTED: "REJECTED",
   COMPLETED: "COMPLETED",
@@ -118,6 +120,19 @@ export interface TransactionParty {
   };
 }
 
+export interface TransactionAudit {
+  id: string;
+  transaction_id: string;
+  action: string;
+  user_id: string;
+  new_user_id: string;
+  details: Record<string, unknown>;
+  ip_address: string;
+  notes: string;
+  timestamp: string;
+  user?: User;
+  new_user?: User;
+}
 // Base Transaction Interface
 export interface Transaction {
   id: string;
@@ -174,6 +189,12 @@ export interface Transaction {
   destination_organisation?: Organisation;
   transaction_charges?: TransactionCharge[];
   transaction_parties?: TransactionParty[];
+  transaction_audits?: TransactionAudit[];
+  sender_trasaction_party?: TransactionParty;
+  receiver_trasaction_party?: TransactionParty;
+  total_all_charges?: number;
+  total_taxes?: number;
+  commissions?: number;
 }
 
 // Transaction Charge Interface
@@ -323,6 +344,40 @@ export interface CancelTransactionRequest {
 // Approve Transaction Request
 export interface ApproveTransactionRequest {
   remarks?: string;
+}
+
+// Mark as Ready Transaction Request
+export interface MarkAsReadyRequest {
+  remarks?: string;
+  assigned_to?: string; // User ID to reassign to
+}
+
+// Update Transaction Request
+export interface UpdateTransactionRequest {
+  corridor_id?: string;
+  till_id?: string;
+  customer_id?: string;
+  origin_amount?: number;
+  origin_channel_id?: string;
+  origin_currency_id?: string;
+  beneficiary_id?: string;
+  dest_amount?: number;
+  dest_channel_id?: string;
+  dest_currency_id?: string;
+  rate?: number;
+  internal_exchange_rate?: number;
+  inflation?: number;
+  markup?: number;
+  purpose?: string;
+  funds_source?: string;
+  relationship?: string;
+  remarks?: string;
+  exchange_rate_id?: string;
+  external_exchange_rate_id?: string;
+  destination_organisation_id?: string;
+  origin_country_id?: string;
+  destination_country_id?: string;
+  transaction_charges?: ITransactionChargeInItem[];
 }
 
 // Reverse Transaction Request

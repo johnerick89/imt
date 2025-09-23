@@ -9,6 +9,7 @@ import {
   useCurrencies,
   useOrganisations,
   useSession,
+  useOrganisation,
 } from "../hooks";
 import { TillStatus } from "../types/TillsTypes";
 import type {
@@ -31,7 +32,10 @@ const TillForm: React.FC<TillFormProps> = ({
   const isEdit = !!initialData;
   const { user } = useSession();
   const currentOrganisationId = user?.organisation_id;
-
+  const { data: userOrganisationData } = useOrganisation(
+    currentOrganisationId || ""
+  );
+  const userOrganisation = userOrganisationData?.data;
   const {
     control,
     handleSubmit,
@@ -43,9 +47,13 @@ const TillForm: React.FC<TillFormProps> = ({
       status: initialData?.status || TillStatus.ACTIVE,
       location: initialData?.location || "",
       vault_id: initialData?.vault_id || "",
-      currency_id: initialData?.currency_id || "",
+      currency_id:
+        initialData?.currency_id || userOrganisation?.base_currency_id || "",
       organisation_id:
-        initialData?.organisation_id || currentOrganisationId || "",
+        initialData?.organisation_id ||
+        currentOrganisationId ||
+        userOrganisation?.id ||
+        "",
       opening_balance: 0,
     },
   });
@@ -93,7 +101,7 @@ const TillForm: React.FC<TillFormProps> = ({
         <h3 className="text-lg font-medium text-gray-900 mb-4">
           Till Information
         </h3>
-        <div className="grid grid-cols-1 gap-6">
+        <div className="grid grid-cols-2 gap-6">
           <FormItem
             label="Till Name"
             invalid={!!errors.name}

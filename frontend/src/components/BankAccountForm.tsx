@@ -3,7 +3,12 @@ import { useForm, Controller } from "react-hook-form";
 import { FormItem } from "./ui/FormItem";
 import { Input } from "./ui/Input";
 import { SearchableSelect } from "./ui/SearchableSelect";
-import { useCurrencies, useOrganisations, useSession } from "../hooks";
+import {
+  useCurrencies,
+  useOrganisation,
+  useOrganisations,
+  useSession,
+} from "../hooks";
 import type {
   CreateBankAccountRequest,
   UpdateBankAccountRequest,
@@ -27,6 +32,8 @@ const BankAccountForm: React.FC<BankAccountFormProps> = ({
   const { data: organisationsData } = useOrganisations({ limit: 100 });
   const { user } = useSession();
   const organisationId = user?.organisation_id;
+  const { data: userOrganisationData } = useOrganisation(organisationId || "");
+  const userOrganisation = userOrganisationData?.data;
 
   const currencies = currenciesData?.data?.currencies || [];
   const organisations = organisationsData?.data?.organisations || [];
@@ -51,8 +58,13 @@ const BankAccountForm: React.FC<BankAccountFormProps> = ({
           account_number: initialData.account_number,
           bank_name: initialData.bank_name,
           swift_code: initialData.swift_code || "",
-          currency_id: initialData.currency_id,
-          organisation_id: initialData.organisation_id || organisationId || "",
+          currency_id:
+            initialData.currency_id || userOrganisation?.base_currency_id || "",
+          organisation_id:
+            initialData.organisation_id ||
+            organisationId ||
+            userOrganisation?.id ||
+            "",
           balance: initialData.balance,
           locked_balance: initialData.locked_balance || 0,
         }
@@ -61,8 +73,8 @@ const BankAccountForm: React.FC<BankAccountFormProps> = ({
           account_number: "",
           bank_name: "",
           swift_code: "",
-          currency_id: "",
-          organisation_id: organisationId || "",
+          currency_id: userOrganisation?.base_currency_id || "",
+          organisation_id: organisationId || userOrganisation?.id || "",
           balance: 0,
           locked_balance: 0,
         },
