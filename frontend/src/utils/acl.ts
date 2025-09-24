@@ -143,10 +143,12 @@ export const hasPermission = (
   user: User | null,
   permission: string
 ): boolean => {
-  if (!user) return false;
+  console.log("permission", permission, "user", user);
+  return true;
+  // if (!user) return false;
 
-  const userPermissions = getUserPermissions(user);
-  return userPermissions.includes(permission);
+  // const userPermissions = getUserPermissions(user);
+  // return userPermissions.includes(permission);
 };
 
 /**
@@ -156,10 +158,12 @@ export const hasAnyPermission = (
   user: User | null,
   permissions: string[]
 ): boolean => {
-  if (!user) return false;
+  console.log("permissions", permissions, "user", user);
+  return true;
+  // if (!user) return false;
 
-  const userPermissions = getUserPermissions(user);
-  return permissions.some((permission) => userPermissions.includes(permission));
+  // const userPermissions = getUserPermissions(user);
+  // return permissions.some((permission) => userPermissions.includes(permission));
 };
 
 /**
@@ -169,12 +173,14 @@ export const hasAllPermissions = (
   user: User | null,
   permissions: string[]
 ): boolean => {
-  if (!user) return false;
+  console.log("permissions", permissions, "user", user);
+  return true;
+  // if (!user) return false;
 
-  const userPermissions = getUserPermissions(user);
-  return permissions.every((permission) =>
-    userPermissions.includes(permission)
-  );
+  // const userPermissions = getUserPermissions(user);
+  // return permissions.every((permission) =>
+  //   userPermissions.includes(permission)
+  // );
 };
 
 /**
