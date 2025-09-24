@@ -8,35 +8,25 @@ import {
   pendingTransactionChargesFiltersSchema,
 } from "./chargespayments.validation";
 import type CustomRequest from "../../types/CustomReq.type";
+import { AppError } from "../../utils/AppError";
+import { asyncHandler } from "../../middlewares/error.middleware";
 
 const chargesPaymentService = new ChargesPaymentService();
 
 export class ChargesPaymentController {
   // Get pending transaction charges
-  async getPendingTransactionCharges(
-    req: CustomRequest,
-    res: Response
-  ): Promise<void> {
-    try {
+  getPendingTransactionCharges = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { orgId } = req.params;
       if (!orgId) {
-        res.status(400).json({
-          success: false,
-          message: "Organisation ID is required",
-        });
-        return;
+        throw new AppError("Organisation ID is required", 400);
       }
 
       const validation = pendingTransactionChargesFiltersSchema.safeParse(
         req.query
       );
       if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: "Validation error",
-          error: validation.error.issues,
-        });
-        return;
+        throw new AppError("Validation error", 400);
       }
 
       const result = await chargesPaymentService.getPendingTransactionCharges(
@@ -45,134 +35,74 @@ export class ChargesPaymentController {
       );
 
       res.status(200).json(result);
-    } catch (error: any) {
-      console.error("Error fetching pending transaction charges:", error);
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to fetch pending transaction charges",
-      });
     }
-  }
+  );
 
   // Get pending charges stats
-  async getPendingChargesStats(
-    req: CustomRequest,
-    res: Response
-  ): Promise<void> {
-    try {
+  getPendingChargesStats = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { orgId } = req.params;
       if (!orgId) {
-        res.status(400).json({
-          success: false,
-          message: "Organisation ID is required",
-        });
-        return;
+        throw new AppError("Organisation ID is required", 400);
       }
 
       const result = await chargesPaymentService.getPendingChargesStats(orgId);
       res.status(200).json(result);
-    } catch (error: any) {
-      console.error("Error fetching pending charges stats:", error);
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to fetch pending charges stats",
-      });
     }
-  }
+  );
 
   // Get charge payments stats
-  async getChargePaymentsStats(
-    req: CustomRequest,
-    res: Response
-  ): Promise<void> {
-    try {
+  getChargePaymentsStats = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { orgId } = req.params;
       if (!orgId) {
-        res.status(400).json({
-          success: false,
-          message: "Organisation ID is required",
-        });
-        return;
+        throw new AppError("Organisation ID is required", 400);
       }
 
       const result = await chargesPaymentService.getChargePaymentsStats(orgId);
       res.status(200).json(result);
-    } catch (error: any) {
-      console.error("Error fetching charge payments stats:", error);
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to fetch charge payments stats",
-      });
     }
-  }
+  );
 
   // Create charges payment
-  async createChargesPayment(req: CustomRequest, res: Response): Promise<void> {
-    try {
+  createChargesPayment = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { orgId } = req.params;
       if (!orgId) {
-        res.status(400).json({
-          success: false,
-          message: "Organisation ID is required",
-        });
-        return;
+        throw new AppError("Organisation ID is required", 400);
       }
 
       const validation = createChargesPaymentSchema.safeParse(req.body);
       if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: "Validation error",
-          error: validation.error.issues,
-        });
-        return;
+        throw new AppError("Validation error", 400);
       }
 
       const userId = req.user?.id;
       if (!userId) {
-        res.status(401).json({
-          success: false,
-          message: "User not authenticated",
-        });
-        return;
+        throw new AppError("User not authenticated", 401);
       }
 
       const result = await chargesPaymentService.createChargesPayment(
         orgId,
         validation.data,
-        userId
+        userId!
       );
 
       res.status(201).json(result);
-    } catch (error: any) {
-      console.error("Error creating charges payment:", error);
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to create charges payment",
-      });
     }
-  }
+  );
 
   // Get charges payments
-  async getChargesPayments(req: CustomRequest, res: Response): Promise<void> {
-    try {
+  getChargesPayments = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { orgId } = req.params;
       if (!orgId) {
-        res.status(400).json({
-          success: false,
-          message: "Organisation ID is required",
-        });
-        return;
+        throw new AppError("Organisation ID is required", 400);
       }
 
       const validation = chargesPaymentFiltersSchema.safeParse(req.query);
       if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: "Validation error",
-          error: validation.error.issues,
-        });
-        return;
+        throw new AppError("Validation error", 400);
       }
 
       const result = await chargesPaymentService.getChargesPayments(
@@ -181,125 +111,54 @@ export class ChargesPaymentController {
       );
 
       res.status(200).json(result);
-    } catch (error: any) {
-      console.error("Error fetching charges payments:", error);
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to fetch charges payments",
-      });
     }
-  }
+  );
 
   // Get charges payment by ID
-  async getChargesPaymentById(
-    req: CustomRequest,
-    res: Response
-  ): Promise<void> {
-    try {
+  getChargesPaymentById = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { paymentId } = req.params;
       if (!paymentId) {
-        res.status(400).json({
-          success: false,
-          message: "Payment ID is required",
-        });
-        return;
+        throw new AppError("Payment ID is required", 400);
       }
 
       const result = await chargesPaymentService.getChargesPaymentById(
         paymentId
       );
       res.status(200).json(result);
-    } catch (error: any) {
-      console.error("Error fetching charges payment:", error);
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to fetch charges payment",
-      });
     }
-  }
+  );
 
   // Approve charges payment
-  async approveChargesPayment(
-    req: CustomRequest,
-    res: Response
-  ): Promise<void> {
-    try {
+  approveChargesPayment = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { paymentId } = req.params;
       if (!paymentId) {
-        res.status(400).json({
-          success: false,
-          message: "Payment ID is required",
-        });
-        return;
+        throw new AppError("Payment ID is required", 400);
       }
 
       const validation = approveChargesPaymentSchema.safeParse(req.body);
       if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: "Validation error",
-          error: validation.error.issues,
-        });
-        return;
+        throw new AppError("Validation error", 400);
       }
-
-      const userId = req.user?.id;
-      if (!userId) {
-        res.status(401).json({
-          success: false,
-          message: "User not authenticated",
-        });
-        return;
-      }
-
-      const result = await chargesPaymentService.approveChargesPayment(
-        paymentId,
-        validation.data,
-        userId
-      );
-
-      res.status(200).json(result);
-    } catch (error: any) {
-      console.error("Error approving charges payment:", error);
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to approve charges payment",
-      });
     }
-  }
+  );
 
   // Reverse charges payment
-  async reverseChargesPayment(
-    req: CustomRequest,
-    res: Response
-  ): Promise<void> {
-    try {
+  reverseChargesPayment = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { paymentId } = req.params;
       if (!paymentId) {
-        res.status(400).json({
-          success: false,
-          message: "Payment ID is required",
-        });
-        return;
+        throw new AppError("Payment ID is required", 400);
       }
 
       const validation = reverseChargesPaymentSchema.safeParse(req.body);
       if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: "Validation error",
-          error: validation.error.issues,
-        });
-        return;
+        throw new AppError("Validation error", 400);
       }
-
       const userId = req.user?.id;
       if (!userId) {
-        res.status(401).json({
-          success: false,
-          message: "User not authenticated",
-        });
-        return;
+        throw new AppError("User not authenticated", 401);
       }
 
       const result = await chargesPaymentService.reverseChargesPayment(
@@ -309,12 +168,6 @@ export class ChargesPaymentController {
       );
 
       res.status(200).json(result);
-    } catch (error: any) {
-      console.error("Error reversing charges payment:", error);
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to reverse charges payment",
-      });
     }
-  }
+  );
 }

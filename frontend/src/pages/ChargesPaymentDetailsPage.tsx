@@ -294,6 +294,9 @@ const ChargesPaymentDetailsPage: React.FC = () => {
                   Customer
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Beneficiary
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Internal Amount
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -316,7 +319,12 @@ const ChargesPaymentDetailsPage: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {item.transaction_charges?.transaction?.customer
-                      ? `${item.transaction_charges.transaction.customer.first_name} ${item.transaction_charges.transaction.customer.last_name}`
+                      ? `${item.transaction_charges.transaction.customer.full_name}`
+                      : "N/A"}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {item.transaction_charges?.transaction?.beneficiary
+                      ? `${item.transaction_charges.transaction.beneficiary.name}`
                       : "N/A"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">

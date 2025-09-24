@@ -29,8 +29,6 @@ import BankAccountsPage from "../pages/BankAccountsPage";
 import OrganisationBalancesPage from "../pages/OrganisationBalancesPage";
 import GlAccountsPage from "../pages/GlAccountsPage";
 import GlTransactionsPage from "../pages/GlTransactionsPage";
-import OutboundTransactionsPage from "../pages/OutboundTransactionsPage";
-import InboundTransactionsPage from "../pages/InboundTransactionsPage";
 import ChargesPaymentsPage from "../pages/ChargesPaymentsPage";
 import ChargesPaymentDetailsPage from "../pages/ChargesPaymentDetailsPage";
 import TransactionsPage from "../pages/TransactionsPage";
@@ -95,14 +93,6 @@ const AppRoutes: React.FC = () => {
 
         {/* Transactions */}
         <Route path="transactions" element={<TransactionsPage />} />
-        <Route
-          path="transactions/outbound"
-          element={<OutboundTransactionsPage />}
-        />
-        <Route
-          path="transactions/inbound"
-          element={<InboundTransactionsPage />}
-        />
 
         {/* Charges Payments */}
         <Route path="charges-payments" element={<ChargesPaymentsPage />} />

@@ -47,11 +47,7 @@ const ChargesPaymentsPage: React.FC = () => {
     });
   const [selectedCharges, setSelectedCharges] = useState<string[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedChargeType, setSelectedChargeType] = useState<ChargeType | "">(
-    ""
-  );
   const [notes, setNotes] = useState("");
-  const [destinationOrgId, setDestinationOrgId] = useState("");
 
   // Payments state
   const [paymentFilters, setPaymentFilters] = useState<ChargesPaymentFilters>({
@@ -138,16 +134,14 @@ const ChargesPaymentsPage: React.FC = () => {
   };
 
   const handleCreatePayment = async () => {
-    if (!selectedChargeType || selectedCharges.length === 0) {
+    if (selectedCharges.length === 0) {
       return;
     }
 
     try {
       const data: CreateChargesPaymentRequest = {
-        type: selectedChargeType as ChargeType,
         transaction_charge_ids: selectedCharges,
         notes: notes || undefined,
-        destination_org_id: destinationOrgId || undefined,
       };
 
       await createChargesPaymentMutation.mutateAsync({
@@ -157,9 +151,7 @@ const ChargesPaymentsPage: React.FC = () => {
 
       setShowCreateModal(false);
       setSelectedCharges([]);
-      setSelectedChargeType("");
       setNotes("");
-      setDestinationOrgId("");
       refetchPending();
       refetchPayments();
     } catch (error) {
@@ -169,6 +161,7 @@ const ChargesPaymentsPage: React.FC = () => {
 
   // Payment handlers
   const handleApprove = async () => {
+    console.log("selectedPayment", selectedPayment);
     if (!selectedPayment) return;
 
     try {
@@ -525,6 +518,9 @@ const ChargesPaymentsPage: React.FC = () => {
                       Transaction
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Destination Organisation
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Charge Type
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -558,6 +554,10 @@ const ChargesPaymentsPage: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {charge.transaction?.transaction_no || "N/A"}
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {charge.transaction?.destination_organisation?.name ||
+                          "N/A"}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
                           className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getChargeTypeColor(
@@ -583,7 +583,7 @@ const ChargesPaymentsPage: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {charge.transaction?.customer
-                          ? `${charge.transaction.customer.first_name} ${charge.transaction.customer.last_name}`
+                          ? `${charge.transaction.customer.full_name}`
                           : "N/A"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -934,6 +934,9 @@ const ChargesPaymentsPage: React.FC = () => {
                       Type
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Destination Org
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Internal Amount
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -958,6 +961,9 @@ const ChargesPaymentsPage: React.FC = () => {
                     <tr key={payment.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {payment.reference_number}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {payment.destination_org?.name || "N/A"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
@@ -1131,38 +1137,6 @@ const ChargesPaymentsPage: React.FC = () => {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Charge Type
-            </label>
-            <SearchableSelect
-              placeholder="Select charge type"
-              value={selectedChargeType}
-              onChange={(value) => setSelectedChargeType(value as ChargeType)}
-              options={[
-                { value: "TAX", label: "Tax" },
-                { value: "COMMISSION", label: "Commission" },
-                { value: "INTERNAL_FEE", label: "Internal Fee" },
-                { value: "OTHER", label: "Other" },
-              ]}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Destination Organisation (Optional)
-            </label>
-            <SearchableSelect
-              placeholder="Select destination organisation"
-              value={destinationOrgId}
-              onChange={setDestinationOrgId}
-              options={organisations.map((org) => ({
-                value: org.id,
-                label: org.name,
-              }))}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
               Notes (Optional)
             </label>
             <Textarea
@@ -1177,6 +1151,10 @@ const ChargesPaymentsPage: React.FC = () => {
             <p className="text-sm text-gray-600">
               <strong>Selected Charges:</strong> {selectedCharges.length}
             </p>
+            <p className="text-sm text-gray-500 mt-1">
+              Charges will be automatically grouped by charge type and
+              destination organization.
+            </p>
           </div>
 
           <div className="flex justify-end space-x-3">
@@ -1185,7 +1163,7 @@ const ChargesPaymentsPage: React.FC = () => {
             </Button>
             <Button
               onClick={handleCreatePayment}
-              disabled={!selectedChargeType || selectedCharges.length === 0}
+              disabled={selectedCharges.length === 0}
             >
               Create Payment
             </Button>
