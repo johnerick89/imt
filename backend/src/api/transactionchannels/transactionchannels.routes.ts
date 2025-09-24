@@ -13,10 +13,10 @@ router.use(auditMiddleware);
 // Get transaction channels with optional search and pagination
 router.get(
   "/",
-  aclMiddleware({
-    errorMessage: "You do not have permission to view transaction channels",
-    resource: "admin.transactionChannels.view",
-  }),
+  // aclMiddleware({
+  //   errorMessage: "You do not have permission to view transaction channels",
+  //   resource: "admin.transactionChannels.view",
+  // }),
   transactionChannelController.getTransactionChannels.bind(
     transactionChannelController
   )
@@ -25,10 +25,10 @@ router.get(
 // Get transaction channel by ID
 router.get(
   "/:id",
-  aclMiddleware({
-    errorMessage: "You do not have permission to view transaction channels",
-    resource: "admin.transactionChannels.view",
-  }),
+  // aclMiddleware({
+  //   errorMessage: "You do not have permission to view transaction channels",
+  //   resource: "admin.transactionChannels.view",
+  // }),
   transactionChannelController.getTransactionChannelById.bind(
     transactionChannelController
   )
@@ -37,10 +37,10 @@ router.get(
 // Create new transaction channel
 router.post(
   "/",
-  aclMiddleware({
-    errorMessage: "You do not have permission to create transaction channels",
-    resource: "admin.transactionChannels.create",
-  }),
+  // aclMiddleware({
+  //   errorMessage: "You do not have permission to create transaction channels",
+  //   resource: "admin.transactionChannels.create",
+  // }),
   transactionChannelController.createTransactionChannel.bind(
     transactionChannelController
   )
@@ -49,10 +49,10 @@ router.post(
 // Update transaction channel
 router.put(
   "/:id",
-  aclMiddleware({
-    errorMessage: "You do not have permission to edit transaction channels",
-    resource: "admin.transactionChannels.edit",
-  }),
+  // aclMiddleware({
+  //   errorMessage: "You do not have permission to edit transaction channels",
+  //   resource: "admin.transactionChannels.edit",
+  // }),
   transactionChannelController.updateTransactionChannel.bind(
     transactionChannelController
   )
@@ -61,10 +61,10 @@ router.put(
 // Delete transaction channel
 router.delete(
   "/:id",
-  aclMiddleware({
-    errorMessage: "You do not have permission to delete transaction channels",
-    resource: "admin.transactionChannels.delete",
-  }),
+  // aclMiddleware({
+  //   errorMessage: "You do not have permission to delete transaction channels",
+  //   resource: "admin.transactionChannels.delete",
+  // }),
   transactionChannelController.deleteTransactionChannel.bind(
     transactionChannelController
   )
@@ -73,10 +73,10 @@ router.delete(
 // Get transaction channel statistics
 router.get(
   "/stats/overview",
-  aclMiddleware({
-    errorMessage: "You do not have permission to view transaction channels",
-    resource: "admin.transactionChannels.view",
-  }),
+  // aclMiddleware({
+  //   errorMessage: "You do not have permission to view transaction channels",
+  //   resource: "admin.transactionChannels.view",
+  // }),
   transactionChannelController.getTransactionChannelStats.bind(
     transactionChannelController
   )
