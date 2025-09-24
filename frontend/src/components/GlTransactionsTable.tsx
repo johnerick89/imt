@@ -106,10 +106,10 @@ const GlTransactionsTable: React.FC<GlTransactionsTableProps> = ({
           const entries = row.original.gl_entries || [];
           const drTotal = entries
             .filter((e) => e.dr_cr === "DR")
-            .reduce((sum, e) => sum + e.amount, 0);
+            .reduce((sum, e) => sum + Number(e.amount), 0);
           const crTotal = entries
             .filter((e) => e.dr_cr === "CR")
-            .reduce((sum, e) => sum + e.amount, 0);
+            .reduce((sum, e) => sum + Number(e.amount), 0);
 
           return (
             <div className="text-sm text-gray-900">

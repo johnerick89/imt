@@ -73,6 +73,7 @@ export class GlTransactionService {
                 user: true,
               },
             },
+            till: true,
             organisation: true,
             customer: true,
             transaction: true,
@@ -151,6 +152,7 @@ export class GlTransactionService {
               user: true,
             },
           },
+          till: true,
           organisation: true,
           customer: true,
           transaction: true,
@@ -308,117 +310,108 @@ export class GlTransactionService {
     data: CreateGlTransactionRequest,
     userId: string
   ): Promise<GlTransactionResponse> {
-    try {
-      const result = await prisma.$transaction(async (tx) => {
-        // Create the GL Transaction
-        const glTransaction = await tx.gLTransaction.create({
-          data: {
-            transaction_type: data.transaction_type,
-            amount: parseFloat(data.amount.toString()),
-            currency_id: data.currency_id,
-            description: data.description,
-            vault_id: data.vault_id,
-            user_till_id: data.user_till_id,
-            customer_id: data.customer_id,
-            transaction_id: data.transaction_id,
-            organisation_id: organisationId,
-            created_by: userId,
-            status: "POSTED", // Auto-post transactions created by services
-          },
-          include: {
-            currency: true,
-            vault: true,
-            user_till: {
-              include: {
-                till: true,
-                user: true,
-              },
+    const result = await prisma.$transaction(async (tx) => {
+      // Create the GL Transaction
+      const glTransaction = await tx.gLTransaction.create({
+        data: {
+          transaction_type: data.transaction_type,
+          amount: parseFloat(data.amount.toString()),
+          currency_id: data.currency_id,
+          description: data.description,
+          vault_id: data.vault_id,
+          till_id: data.till_id,
+          customer_id: data.customer_id,
+          transaction_id: data.transaction_id,
+          organisation_id: organisationId,
+          created_by: userId,
+          status: "POSTED", // Auto-post transactions created by services
+        },
+        include: {
+          currency: true,
+          vault: true,
+          user_till: {
+            include: {
+              till: true,
+              user: true,
             },
-            organisation: true,
-            customer: true,
-            transaction: true,
-            created_by_user: true,
           },
-        });
-
-        // Create GL Entries
-        const glEntries = await Promise.all(
-          data.gl_entries.map((entry) =>
-            tx.glEntry.create({
-              data: {
-                gl_account_id: entry.gl_account_id,
-                gl_transaction_id: glTransaction.id,
-                amount: parseFloat(entry.amount.toString()),
-                dr_cr: entry.dr_cr,
-                description: entry.description,
-                created_by: userId,
-              },
-              include: {
-                gl_account: {
-                  include: {
-                    currency: true,
-                  },
-                },
-              },
-            })
-          )
-        );
-
-        // Update GL Account balances
-        for (const entry of glEntries) {
-          const glAccount = await tx.glAccount.findUnique({
-            where: { id: entry.gl_account_id },
-          });
-
-          if (glAccount) {
-            const currentBalance = glAccount.balance
-              ? parseFloat(glAccount.balance.toString())
-              : 0;
-            const entryAmount = parseFloat(entry.amount.toString());
-            const newBalance =
-              entry.dr_cr === "DR"
-                ? currentBalance + entryAmount
-                : currentBalance - entryAmount;
-
-            await tx.glAccount.update({
-              where: { id: entry.gl_account_id },
-              data: {
-                balance: newBalance,
-              },
-            });
-
-            // Note: Balance history for GL accounts is not tracked in the current schema
-            // GL account balance changes are tracked through GL entries themselves
-          }
-        }
-
-        return {
-          ...glTransaction,
-          amount: parseFloat(glTransaction.amount.toString()),
-          gl_entries: glEntries.map((entry) => ({
-            ...entry,
-            amount: parseFloat(entry.amount.toString()),
-          })),
-        } as unknown as IGlTransaction;
+          till: true,
+          organisation: true,
+          customer: true,
+          transaction: true,
+          created_by_user: true,
+        },
       });
 
+      // Create GL Entries
+      const glEntries = await Promise.all(
+        data.gl_entries.map((entry) =>
+          tx.glEntry.create({
+            data: {
+              gl_account_id: entry.gl_account_id,
+              gl_transaction_id: glTransaction.id,
+              amount: parseFloat(entry.amount.toString()),
+              dr_cr: entry.dr_cr,
+              description: entry.description,
+              created_by: userId,
+            },
+            include: {
+              gl_account: {
+                include: {
+                  currency: true,
+                },
+              },
+            },
+          })
+        )
+      );
+
+      // Update GL Account balances
+      for (const entry of glEntries) {
+        const glAccount = await tx.glAccount.findUnique({
+          where: { id: entry.gl_account_id },
+        });
+
+        if (glAccount) {
+          const currentBalance = glAccount.balance
+            ? parseFloat(glAccount.balance.toString())
+            : 0;
+          const entryAmount = parseFloat(entry.amount.toString());
+          const newBalance =
+            entry.dr_cr === "DR"
+              ? currentBalance + entryAmount
+              : currentBalance - entryAmount;
+
+          await tx.glAccount.update({
+            where: { id: entry.gl_account_id },
+            data: {
+              balance: newBalance,
+            },
+          });
+
+          // Note: Balance history for GL accounts is not tracked in the current schema
+          // GL account balance changes are tracked through GL entries themselves
+        }
+      }
+
       return {
-        success: true,
-        message: "GL Transaction created successfully",
-        data: {
-          ...result,
-          amount: parseFloat(result.amount.toString()),
-        },
-      };
-    } catch (error) {
-      console.error("Error creating GL Transaction:", error);
-      return {
-        success: false,
-        message: "Failed to create GL Transaction",
-        data: {} as IGlTransaction,
-        error: error instanceof Error ? error.message : "Unknown error",
-      };
-    }
+        ...glTransaction,
+        amount: parseFloat(glTransaction.amount.toString()),
+        gl_entries: glEntries.map((entry) => ({
+          ...entry,
+          amount: parseFloat(entry.amount.toString()),
+        })),
+      } as unknown as IGlTransaction;
+    });
+
+    return {
+      success: true,
+      message: "GL Transaction created successfully",
+      data: {
+        ...result,
+        amount: parseFloat(result.amount.toString()),
+      },
+    };
   }
 
   // Reverse GL Transaction
