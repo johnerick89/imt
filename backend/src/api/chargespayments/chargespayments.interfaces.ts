@@ -96,10 +96,8 @@ export interface IChargesPaymentItem {
 
 // Create Charges Payment Request
 export interface CreateChargesPaymentRequest {
-  type: ChargeType;
   transaction_charge_ids: string[];
   notes?: string;
-  destination_org_id?: string;
 }
 
 // Approve Charges Payment Request

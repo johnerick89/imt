@@ -1008,6 +1008,7 @@ enum TransactionChargeStatus {
   REJECTED
   COMPLETED
   FAILED
+  PROCESSING
   PAID
   REVERSED
 }
@@ -1329,6 +1330,7 @@ enum ChargesPaymentStatus {
 model ChargesPayment {
   id                    String               @id @default(uuid()) @db.Uuid
   type                  ChargeType // Matches charge_type from charges table
+  amount                Decimal              @db.Decimal(22, 9) // Aggregated amount
   internal_total_amount Decimal              @db.Decimal(22, 9) // Aggregated internal share (e.g., your org's $3)
   external_total_amount Decimal              @db.Decimal(22, 9) // Aggregated external share (e.g., partner's $2)
   reference_number      String               @unique // e.g., "PAY-2025-09-01-COMMISSION-ORGX"

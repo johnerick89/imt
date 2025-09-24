@@ -3,17 +3,12 @@ import { ChargeType, ChargesPaymentStatus } from "@prisma/client";
 
 // Create Charges Payment Schema
 export const createChargesPaymentSchema = z.object({
-  type: z.enum(Object.values(ChargeType) as [ChargeType, ...ChargeType[]]),
   transaction_charge_ids: z
     .array(z.string().uuid("Invalid transaction charge ID"))
     .min(1, "At least one transaction charge must be selected"),
   notes: z
     .string()
     .max(500, "Notes must be less than 500 characters")
-    .optional(),
-  destination_org_id: z
-    .string()
-    .uuid("Invalid destination organisation ID")
     .optional(),
 });
 

@@ -30,26 +30,7 @@ export const navigationSections: NavigationSection[] = [
         path: "/transactions",
         icon: "💸",
       },
-      // {
-      //   id: "transactions",
-      //   label: "Transactions",
-      //   path: "/transactions",
-      //   icon: "💸",
-      //   children: [
-      //     {
-      //       id: "outbound",
-      //       label: "Outbound",
-      //       path: "/transactions/outbound",
-      //       icon: "📤",
-      //     },
-      //     {
-      //       id: "inbound",
-      //       label: "Inbound",
-      //       path: "/transactions/inbound",
-      //       icon: "📥",
-      //     },
-      //   ],
-      // },
+
       {
         id: "customers",
         label: "Customers",
@@ -57,17 +38,18 @@ export const navigationSections: NavigationSection[] = [
         icon: "👥",
       },
       {
-        id: "organisations.gl-transactions",
-        label: "GL Transactions",
-        path: "/gl-transactions",
-        icon: "📊",
-      },
-      {
         id: "charges-payments",
         label: "Charges Payments",
         path: "/charges-payments",
         icon: "💰",
       },
+      {
+        id: "organisations.gl-transactions",
+        label: "GL Transactions",
+        path: "/gl-transactions",
+        icon: "📊",
+      },
+
       {
         id: "reports",
         label: "Reports",
@@ -92,43 +74,14 @@ export const navigationSections: NavigationSection[] = [
         path: "/connections",
         icon: "🔌",
       },
-      // {
-      //   id: "organisations.corridors",
-      //   label: "Corridors",
-      //   path: "/corridors",
-      //   icon: "🌍",
-      // },
-      // {
-      //   id: "organisations.integrations",
-      //   label: "Integrations",
-      //   path: "/integrations",
-      //   icon: "🔌",
-      // },
+
       {
         id: "organisations.financial-settings",
         label: "Financial Settings",
         path: "/financial-settings",
         icon: "💰",
       },
-      // {
-      //   id: "organisations.charges",
-      //   label: "Charges",
-      //   path: "/charges",
-      //   icon: "💰",
-      // },
-      // {
-      //   id: "exchange-rates",
-      //   label: "Exchange Rates",
-      //   path: "/exchange-rates",
-      //   icon: "💱",
-      // },
 
-      // {
-      //   id: "organisations.balances",
-      //   label: "Organisation Balances",
-      //   path: "/organisation-balances",
-      //   icon: "💰",
-      // },
       {
         id: "organisations.vault",
         label: "Vaults",
