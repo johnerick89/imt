@@ -21,8 +21,14 @@ const GlTransactionDetailsModal: React.FC<GlTransactionDetailsModalProps> = ({
     transaction.gl_entries?.filter((entry) => entry.dr_cr === "DR") || [];
   const crEntries =
     transaction.gl_entries?.filter((entry) => entry.dr_cr === "CR") || [];
-  const drTotal = drEntries.reduce((sum, entry) => sum + entry.amount, 0);
-  const crTotal = crEntries.reduce((sum, entry) => sum + entry.amount, 0);
+  const drTotal = drEntries.reduce(
+    (sum, entry) => sum + Number(entry.amount),
+    0
+  );
+  const crTotal = crEntries.reduce(
+    (sum, entry) => sum + Number(entry.amount),
+    0
+  );
 
   return (
     <Modal
@@ -84,7 +90,8 @@ const GlTransactionDetailsModal: React.FC<GlTransactionDetailsModalProps> = ({
         {(transaction.vault ||
           transaction.user_till ||
           transaction.customer ||
-          transaction.transaction) && (
+          transaction.transaction ||
+          transaction.till) && (
           <div className="bg-gray-50 p-4 rounded-lg">
             <h3 className="text-lg font-medium text-gray-900 mb-4">
               Related Entity
@@ -139,6 +146,18 @@ const GlTransactionDetailsModal: React.FC<GlTransactionDetailsModalProps> = ({
                   </label>
                   <p className="text-sm text-gray-900">
                     {transaction.customer.email}
+                  </p>
+                </div>
+              </div>
+            )}
+            {transaction.till && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-500">
+                    Till
+                  </label>
+                  <p className="text-sm text-gray-900">
+                    {transaction.till.name}
                   </p>
                 </div>
               </div>

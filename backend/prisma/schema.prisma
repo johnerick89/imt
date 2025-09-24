@@ -813,6 +813,7 @@ model Till {
   gl_accounts            GlAccount[]
   balance_histories      BalanceHistory[]
   deleted_at             DateTime?        @db.Timestamp(0)
+  gl_transactions        GLTransaction[]
 
   @@index([created_at])
   @@index([updated_at])
@@ -1163,6 +1164,8 @@ model GLTransaction {
   created_by_user    User?               @relation(fields: [created_by], references: [id])
   balance_history_id String?             @db.Uuid
   balance_history    BalanceHistory?     @relation(fields: [balance_history_id], references: [id])
+  till_id            String?             @db.Uuid
+  till               Till?               @relation(fields: [till_id], references: [id])
 
   @@map("gl_transactions")
 }

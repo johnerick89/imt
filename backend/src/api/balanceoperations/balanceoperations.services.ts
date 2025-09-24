@@ -288,32 +288,34 @@ export class BalanceOperationService {
       );
 
       if (tillGlAccountId && vaultGlAccountId) {
-        await glTransactionService.createGlTransaction(
-          till.organisation_id!,
-          {
-            transaction_type: "TILL_TOPUP",
-            amount: data.amount,
-            currency_id: till.currency_id || undefined,
-            description: `Till topup: ${data.description}`,
-            vault_id: data.source_id,
-            user_till_id: tillId,
-            gl_entries: [
-              {
-                gl_account_id: tillGlAccountId,
-                amount: data.amount,
-                dr_cr: "DR",
-                description: `Till balance increased by ${data.amount}`,
-              },
-              {
-                gl_account_id: vaultGlAccountId,
-                amount: data.amount,
-                dr_cr: "CR",
-                description: `Vault balance decreased by ${data.amount}`,
-              },
-            ],
-          },
-          userId
-        );
+        const glTransactionResponse =
+          await glTransactionService.createGlTransaction(
+            till.organisation_id!,
+            {
+              transaction_type: "TILL_TOPUP",
+              amount: data.amount,
+              currency_id: till.currency_id || undefined,
+              description: `Till topup: ${data.description}`,
+              vault_id: data.source_id,
+              till_id: tillId,
+              gl_entries: [
+                {
+                  gl_account_id: tillGlAccountId,
+                  amount: data.amount,
+                  dr_cr: "DR",
+                  description: `Till balance increased by ${data.amount}`,
+                },
+                {
+                  gl_account_id: vaultGlAccountId,
+                  amount: data.amount,
+                  dr_cr: "CR",
+                  description: `Vault balance decreased by ${data.amount}`,
+                },
+              ],
+            },
+            userId
+          );
+        console.log("glTransactionResponse", glTransactionResponse);
       }
 
       return {
@@ -598,32 +600,34 @@ export class BalanceOperationService {
       );
 
       if (tillGlAccountId && vaultGlAccountId) {
-        await glTransactionService.createGlTransaction(
-          till.organisation_id!,
-          {
-            transaction_type: "TILL_WITHDRAWAL",
-            amount: data.amount,
-            currency_id: till.currency_id || undefined,
-            description: `Till withdrawal: ${data.description}`,
-            vault_id: data.source_id,
-            user_till_id: tillId,
-            gl_entries: [
-              {
-                gl_account_id: vaultGlAccountId,
-                amount: data.amount,
-                dr_cr: "DR",
-                description: `Vault balance increased by ${data.amount}`,
-              },
-              {
-                gl_account_id: tillGlAccountId,
-                amount: data.amount,
-                dr_cr: "CR",
-                description: `Till balance decreased by ${data.amount}`,
-              },
-            ],
-          },
-          userId
-        );
+        const glTransactionResponse =
+          await glTransactionService.createGlTransaction(
+            till.organisation_id!,
+            {
+              transaction_type: "TILL_WITHDRAWAL",
+              amount: data.amount,
+              currency_id: till.currency_id || undefined,
+              description: `Till withdrawal: ${data.description}`,
+              vault_id: data.source_id,
+              user_till_id: tillId,
+              gl_entries: [
+                {
+                  gl_account_id: vaultGlAccountId,
+                  amount: data.amount,
+                  dr_cr: "DR",
+                  description: `Vault balance increased by ${data.amount}`,
+                },
+                {
+                  gl_account_id: tillGlAccountId,
+                  amount: data.amount,
+                  dr_cr: "CR",
+                  description: `Till balance decreased by ${data.amount}`,
+                },
+              ],
+            },
+            userId
+          );
+        console.log("glTransactionResponse", glTransactionResponse);
       }
 
       return {

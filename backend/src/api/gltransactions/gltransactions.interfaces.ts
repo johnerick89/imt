@@ -126,6 +126,7 @@ export interface CreateGlTransactionRequest {
   customer_id?: string;
   transaction_id?: string;
   gl_entries: CreateGlEntryRequest[];
+  till_id?: string;
 }
 
 export interface CreateGlEntryRequest {

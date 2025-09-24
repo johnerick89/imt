@@ -1711,6 +1711,15 @@ export class TransactionService {
     userId: string
   ): Promise<void> {
     const organisationId = transaction.origin_organisation_id;
+    const orgBalance = await prisma.orgBalance.findFirst({
+      where: {
+        base_org_id: organisationId,
+        dest_org_id: transaction.destination_organisation_id,
+      },
+      include: {
+        gl_accounts: true,
+      },
+    });
 
     // Get GL accounts
     const tillGlAccountId = await glTransactionService.getGlAccountForEntity(
@@ -1719,12 +1728,7 @@ export class TransactionService {
       organisationId
     );
 
-    const accountsReceivableGlAccountId =
-      await glTransactionService.getGlAccountForEntity(
-        "ORG_BALANCE",
-        transaction.destination_organisation_id,
-        organisationId
-      );
+    const accountsReceivableGlAccountId = orgBalance?.gl_accounts[0]?.id;
 
     // Get charge GL accounts
     const chargeGlAccounts = await Promise.all(
@@ -1742,15 +1746,15 @@ export class TransactionService {
       const glEntries = [
         {
           gl_account_id: tillGlAccountId,
-          amount: transaction.origin_amount,
-          dr_cr: "CR" as const,
-          description: `Till cash decreased by ${transaction.origin_amount}`,
+          amount: transaction.amount_payable,
+          dr_cr: "DR" as const,
+          description: `Till cash increased by ${transaction.amount_payable}`,
         },
         {
           gl_account_id: accountsReceivableGlAccountId,
-          amount: transaction.dest_amount,
-          dr_cr: "DR" as const,
-          description: `Accounts receivable increased by ${transaction.dest_amount}`,
+          amount: transaction.origin_amount,
+          dr_cr: "CR" as const,
+          description: `Parner/agency liability decreased by ${transaction.origin_amount}`,
         },
       ];
 
@@ -1766,22 +1770,27 @@ export class TransactionService {
         }
       });
 
-      await glTransactionService.createGlTransaction(
-        organisationId,
-        {
-          transaction_type: "OUTBOUND_TRANSACTION",
-          amount: transaction.origin_amount,
-          currency_id: transaction.origin_currency_id,
-          description: `Outbound transaction: ${transaction.transaction_no}`,
-          gl_entries: glEntries.map((entry) => ({
-            gl_account_id: entry.gl_account_id,
-            amount: Number(entry.amount),
-            dr_cr: entry.dr_cr,
-            description: entry.description,
-          })),
-        },
-        userId
-      );
+      const glTransactionResponse =
+        await glTransactionService.createGlTransaction(
+          organisationId,
+          {
+            transaction_type: "OUTBOUND_TRANSACTION",
+            amount: transaction.amount_payable,
+            currency_id: transaction.origin_currency_id,
+            description: `Outbound transaction: ${transaction.transaction_no}`,
+            till_id: transaction.till_id,
+            customer_id: transaction.customer_id,
+            transaction_id: transaction.id,
+            gl_entries: glEntries.map((entry) => ({
+              gl_account_id: entry.gl_account_id,
+              amount: Number(entry.amount),
+              dr_cr: entry.dr_cr,
+              description: entry.description,
+            })),
+          },
+          userId
+        );
+      console.log("glTransactionResponse", glTransactionResponse);
     }
   }
 
@@ -1800,12 +1809,17 @@ export class TransactionService {
       organisationId
     );
 
-    const accountsReceivableGlAccountId =
-      await glTransactionService.getGlAccountForEntity(
-        "ORG_BALANCE",
-        transaction.destination_organisation_id,
-        organisationId
-      );
+    const orgBalance = await prisma.orgBalance.findFirst({
+      where: {
+        base_org_id: organisationId,
+        dest_org_id: transaction.destination_organisation_id,
+      },
+      include: {
+        gl_accounts: true,
+      },
+    });
+
+    const accountsReceivableGlAccountId = orgBalance?.gl_accounts[0]?.id;
 
     // Get reversible charge GL accounts
     const reversibleCharges = transaction.transaction_charges.filter(
@@ -1821,20 +1835,25 @@ export class TransactionService {
         return { ...charge, gl_account_id: glAccountId };
       })
     );
+    const chargesToReverse = reversibleCharges.reduce(
+      (acc: number, charge: any) => acc + charge.amount,
+      0
+    );
+    const totalToreverse = transaction.origin_amount + chargesToReverse;
 
     if (tillGlAccountId && accountsReceivableGlAccountId) {
       const glEntries = [
         {
           gl_account_id: tillGlAccountId,
-          amount: transaction.origin_amount,
+          amount: totalToreverse,
           dr_cr: "DR" as const,
-          description: `Till cash increased by ${transaction.origin_amount} (reversal)`,
+          description: `Till cash decreased by ${totalToreverse} (reversal)`,
         },
         {
           gl_account_id: accountsReceivableGlAccountId,
-          amount: transaction.dest_amount,
+          amount: transaction.origin_amount,
           dr_cr: "CR" as const,
-          description: `Accounts receivable decreased by ${transaction.dest_amount} (reversal)`,
+          description: `Accounts receivable (liability) decreased by ${transaction.origin_amount} (reversal)`,
         },
       ];
 
@@ -1854,9 +1873,12 @@ export class TransactionService {
         organisationId,
         {
           transaction_type: "OUTBOUND_TRANSACTION_REVERSAL",
-          amount: transaction.origin_amount,
+          amount: totalToreverse,
           currency_id: transaction.origin_currency_id,
           description: `Outbound transaction reversal: ${transaction.transaction_no} - ${reason}`,
+          till_id: transaction.till_id,
+          customer_id: transaction.customer_id,
+          transaction_id: transaction.id,
           gl_entries: glEntries.map((entry) => ({
             gl_account_id: entry.gl_account_id,
             amount: Number(entry.amount),

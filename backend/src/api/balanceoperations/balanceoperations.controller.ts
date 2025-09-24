@@ -54,6 +54,7 @@ export class BalanceOperationController {
       }
 
       const validation = tillBalanceOperationSchema.safeParse(req.body);
+
       if (!validation.success) {
         throw new AppError("Validation error", 400);
       }
