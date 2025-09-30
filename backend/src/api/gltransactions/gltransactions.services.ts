@@ -581,7 +581,8 @@ export class GlTransactionService {
       | "BANK_ACCOUNT"
       | "CHARGE"
       | "CUSTOMER"
-      | "ORG_BALANCE",
+      | "ORG_BALANCE"
+      | "INBOUND_BENEFICIARY_PAYMENT",
     entityId: string,
     organisationId: string
   ): Promise<string | null> {
@@ -637,6 +638,15 @@ export class GlTransactionService {
             where: {
               org_balance_id: entityId,
               organisation_id: organisationId,
+            },
+          });
+          break;
+        case "INBOUND_BENEFICIARY_PAYMENT":
+          glAccount = await prisma.glAccount.findFirst({
+            where: {
+              counter_party_organisation_id: entityId,
+              organisation_id: organisationId,
+              type: "LIABILITY",
             },
           });
           break;

@@ -49,6 +49,7 @@ export interface Charge {
   status: ChargeStatus;
   min_amount?: number | null;
   max_amount?: number | null;
+  payment_authority?: string | null;
   currency?: {
     id: string;
     currency_name: string;
@@ -89,6 +90,7 @@ export interface CreateChargeRequest {
   status?: ChargeStatus;
   min_amount?: number;
   max_amount?: number;
+  payment_authority?: string;
 }
 
 export interface UpdateChargeRequest {
@@ -107,6 +109,7 @@ export interface UpdateChargeRequest {
   status?: ChargeStatus;
   min_amount?: number;
   max_amount?: number;
+  payment_authority?: string;
 }
 
 export interface ChargeFilters {

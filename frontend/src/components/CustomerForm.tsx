@@ -303,6 +303,34 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
               />
             </FormItem>
           )}
+          <FormItem
+            label="Currency"
+            invalid={!!errors.currency_id}
+            errorMessage={errors.currency_id?.message}
+            required
+          >
+            <Controller
+              name="currency_id"
+              control={control}
+              rules={{ required: "Currency is required" }}
+              render={({ field }) => (
+                <SearchableSelect
+                  value={field.value}
+                  onChange={field.onChange}
+                  options={
+                    currenciesData?.data?.map((currency) => ({
+                      value: currency.id,
+                      label: `${currency.currency_name} (${currency.currency_code})`,
+                    })) || []
+                  }
+                  placeholder="Select currency"
+                  searchPlaceholder="Search currencies..."
+                  disabled={isLoading}
+                  invalid={!!errors.currency_id}
+                />
+              )}
+            />
+          </FormItem>
 
           {isIndividualCustomer && (
             <FormItem
@@ -397,6 +425,59 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
             </FormItem>
           )}
 
+          {isIndividualCustomer && (
+            <FormItem
+              label="ID Type"
+              invalid={!!errors.id_type}
+              errorMessage={errors.id_type?.message}
+              required
+            >
+              <Controller
+                name="id_type"
+                control={control}
+                rules={{ required: "ID type is required" }}
+                render={({ field }) => (
+                  <Select
+                    {...field}
+                    disabled={isLoading}
+                    invalid={!!errors.id_type}
+                  >
+                    <option value="">Select ID type</option>
+                    <option value="PASSPORT">Passport</option>
+                    <option value="NATIONAL_ID">National ID</option>
+                    <option value="DRIVERS_LICENSE">Driver's License</option>
+                    <option value="ALIEN_CARD">Alien Card</option>
+                    <option value="KRA_PIN">KRA PIN</option>
+                    <option value="OTHER">Other</option>
+                  </Select>
+                )}
+              />
+            </FormItem>
+          )}
+
+          {isIndividualCustomer && (
+            <FormItem
+              label="ID Number"
+              invalid={!!errors.id_number}
+              errorMessage={errors.id_number?.message}
+              required
+            >
+              <Controller
+                name="id_number"
+                control={control}
+                rules={{ required: "ID number is required" }}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    placeholder="Enter ID number"
+                    disabled={isLoading}
+                    invalid={!!errors.id_number}
+                  />
+                )}
+              />
+            </FormItem>
+          )}
+
           {/* <FormItem
             label="Organisation"
             invalid={!!errors.organisation_id}
@@ -460,35 +541,6 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
             )}
           />
         </FormItem> */}
-
-          <FormItem
-            label="Currency"
-            invalid={!!errors.currency_id}
-            errorMessage={errors.currency_id?.message}
-            required
-          >
-            <Controller
-              name="currency_id"
-              control={control}
-              rules={{ required: "Currency is required" }}
-              render={({ field }) => (
-                <SearchableSelect
-                  value={field.value}
-                  onChange={field.onChange}
-                  options={
-                    currenciesData?.data?.map((currency) => ({
-                      value: currency.id,
-                      label: `${currency.currency_name} (${currency.currency_code})`,
-                    })) || []
-                  }
-                  placeholder="Select currency"
-                  searchPlaceholder="Search currencies..."
-                  disabled={isLoading}
-                  invalid={!!errors.currency_id}
-                />
-              )}
-            />
-          </FormItem>
         </div>
       </div>
 
@@ -555,55 +607,6 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
                     placeholder="Enter organization registration number"
                     disabled={isLoading}
                     invalid={!!errors.org_reg_number}
-                  />
-                )}
-              />
-            </FormItem>
-          )}
-
-          {isIndividualCustomer && (
-            <FormItem
-              label="ID Type"
-              invalid={!!errors.id_type}
-              errorMessage={errors.id_type?.message}
-            >
-              <Controller
-                name="id_type"
-                control={control}
-                render={({ field }) => (
-                  <Select
-                    {...field}
-                    disabled={isLoading}
-                    invalid={!!errors.id_type}
-                  >
-                    <option value="">Select ID type</option>
-                    <option value="PASSPORT">Passport</option>
-                    <option value="NATIONAL_ID">National ID</option>
-                    <option value="DRIVERS_LICENSE">Driver's License</option>
-                    <option value="ALIEN_CARD">Alien Card</option>
-                    <option value="KRA_PIN">KRA PIN</option>
-                    <option value="OTHER">Other</option>
-                  </Select>
-                )}
-              />
-            </FormItem>
-          )}
-
-          {isIndividualCustomer && (
-            <FormItem
-              label="ID Number"
-              invalid={!!errors.id_number}
-              errorMessage={errors.id_number?.message}
-            >
-              <Controller
-                name="id_number"
-                control={control}
-                render={({ field }) => (
-                  <Input
-                    {...field}
-                    placeholder="Enter ID number"
-                    disabled={isLoading}
-                    invalid={!!errors.id_number}
                   />
                 )}
               />

@@ -24,15 +24,6 @@ export const authMiddleware = async (
       path.includes("/health") ||
       path.includes("/seed");
 
-    console.log(
-      "authHeader",
-      authHeader,
-      "isPublicPath",
-      isPublicPath,
-      "path",
-      path
-    );
-
     if (isPublicPath) {
       next();
       return;

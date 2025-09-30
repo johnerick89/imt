@@ -5,6 +5,7 @@ import { StatusBadge } from "./ui/StatusBadge";
 import { Button } from "./ui/Button";
 import { Tooltip } from "./ui/Tooltip";
 import { formatToCurrency } from "../utils/textUtils";
+import { ReceiptService } from "../services/ReceiptService";
 import type { Transaction } from "../types/TransactionsTypes";
 import {
   FiEye,
@@ -13,6 +14,7 @@ import {
   FiXCircle,
   FiRotateCcw,
   FiClock,
+  FiDownload,
 } from "react-icons/fi";
 
 interface TransactionsTableProps {
@@ -36,6 +38,14 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
   onUpdate,
   onMarkAsReady,
 }) => {
+  const handleDownloadReceipt = async (transaction: Transaction) => {
+    try {
+      await ReceiptService.downloadReceipt(transaction);
+    } catch (error) {
+      console.error("Error downloading receipt:", error);
+      // You might want to show a toast notification here
+    }
+  };
   const columns: ColumnDef<Transaction>[] = [
     {
       accessorKey: "transaction_no",
@@ -241,6 +251,16 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
                 className="p-2"
               >
                 <FiEye className="h-4 w-4" />
+              </Button>
+            </Tooltip>
+            <Tooltip content="Download receipt">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleDownloadReceipt(transaction)}
+                className="p-2"
+              >
+                <FiDownload className="h-4 w-4" />
               </Button>
             </Tooltip>
             {canUpdate && (

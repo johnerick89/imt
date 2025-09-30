@@ -8,56 +8,108 @@ import type {
   ChargeResponse,
   ChargeStats,
 } from "./charges.interfaces";
+import { AppError, NotFoundError } from "../../utils/AppError";
 
 export class ChargeService {
   async createCharge(
     data: CreateChargeRequest,
     userId: string
   ): Promise<ChargeResponse> {
-    const charge = await prisma.charge.create({
-      data: {
-        ...data,
-        created_by: userId,
-      },
-      include: {
-        currency: {
-          select: {
-            id: true,
-            currency_name: true,
-            currency_code: true,
-            currency_symbol: true,
-          },
-        },
-        origin_organisation: {
-          select: {
-            id: true,
-            name: true,
-            type: true,
-          },
-        },
-        destination_organisation: {
-          select: {
-            id: true,
-            name: true,
-            type: true,
-          },
-        },
-        created_by_user: {
-          select: {
-            id: true,
-            first_name: true,
-            last_name: true,
-            email: true,
-          },
-        },
-      },
-    });
+    return await prisma.$transaction(async (tx) => {
+      //validate source and destination organisations
+      if (data.origin_organisation_id === data.destination_organisation_id) {
+        throw new AppError(
+          "Source and destination organisations cannot be the same",
+          400
+        );
+      }
 
-    return {
-      success: true,
-      message: "Charge created successfully",
-      data: charge as ICharge,
-    };
+      const sourceOrg = await tx.organisation.findUnique({
+        where: { id: data.origin_organisation_id },
+      });
+      const destOrg = await tx.organisation.findUnique({
+        where: { id: data.destination_organisation_id },
+      });
+
+      if (!sourceOrg) {
+        throw new NotFoundError("Source organisation not found");
+      }
+
+      if (!destOrg) {
+        throw new NotFoundError("Destination organisation not found");
+      }
+      if (data?.origin_share_percentage && data?.destination_share_percentage) {
+        if (
+          data?.origin_share_percentage + data?.destination_share_percentage !==
+          100
+        ) {
+          throw new AppError(
+            "Origin and destination share percentages must add up to 100",
+            400
+          );
+        }
+      } else {
+        if (data?.type === "COMMISSION") {
+          data.origin_share_percentage = 60;
+          data.destination_share_percentage = 40;
+        } else if (data?.type === "TAX") {
+          data.origin_share_percentage = 0;
+          data.destination_share_percentage = 100;
+        } else if (data?.type === "INTERNAL_FEE") {
+          data.origin_share_percentage = 100;
+          data.destination_share_percentage = 0;
+        } else {
+          data.origin_share_percentage = 0;
+          data.destination_share_percentage = 0;
+        }
+      }
+
+      const charge = await tx.charge.create({
+        data: {
+          ...data,
+          created_by: userId,
+          status: "ACTIVE",
+        },
+        include: {
+          currency: {
+            select: {
+              id: true,
+              currency_name: true,
+              currency_code: true,
+              currency_symbol: true,
+            },
+          },
+          origin_organisation: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+            },
+          },
+          destination_organisation: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+            },
+          },
+          created_by_user: {
+            select: {
+              id: true,
+              first_name: true,
+              last_name: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      return {
+        success: true,
+        message: "Charge created successfully",
+        data: charge as ICharge,
+      };
+    });
   }
 
   async getCharges(filters: ChargeFilters): Promise<ChargeListResponse> {

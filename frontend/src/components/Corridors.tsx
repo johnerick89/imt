@@ -27,6 +27,11 @@ import type {
 
 const Corridors: React.FC = () => {
   const { user: currentUser } = useSession();
+  const currentOrganisationId = currentUser?.organisation_id || "";
+  const { data: organisationsData } = useOrganisations({ limit: 100 });
+  const currentOrganisation = organisationsData?.data?.organisations.find(
+    (organisation) => organisation.id === currentOrganisationId
+  );
 
   // Filter state
   const [filters, setFilters] = useState<CorridorFilters>({
@@ -34,15 +39,15 @@ const Corridors: React.FC = () => {
     limit: 10,
     search: "",
     status: undefined,
-    base_country_id: "",
+    base_country_id: currentOrganisation?.country_id || "",
     destination_country_id: "",
     base_currency_id: "",
     organisation_id: "",
-    origin_organisation_id: currentUser?.organisation_id || "",
+    origin_organisation_id: currentOrganisationId || "",
   });
 
   const statsFilters: CorridorStatsFilters = {
-    origin_organisation_id: currentUser?.organisation_id || "",
+    origin_organisation_id: currentOrganisationId || "",
   };
 
   // Modal states
@@ -58,12 +63,11 @@ const Corridors: React.FC = () => {
   const { data: statsData } = useCorridorStats(statsFilters);
   const { data: countriesData } = useCountries({ limit: 1000 });
   const { data: currenciesData } = useCurrencies({ limit: 1000 });
-  const { data: organisationsData } = useOrganisations({ limit: 100 });
+
   // Mutations
   const createCorridorMutation = useCreateCorridor();
   const updateCorridorMutation = useUpdateCorridor();
   const deleteCorridorMutation = useDeleteCorridor();
-
   const corridors = corridorsData?.data?.corridors || [];
   const pagination = corridorsData?.data?.pagination;
   const stats = statsData?.data;
@@ -71,8 +75,9 @@ const Corridors: React.FC = () => {
   const currencies = currenciesData?.data?.currencies || [];
   const organisations =
     organisationsData?.data?.organisations.filter(
-      (organisation) => organisation.id !== currentUser?.organisation_id
+      (organisation) => organisation.id !== currentOrganisationId
     ) || [];
+
   // Filter options
   const statusOptions = [
     { value: "", label: "All Statuses" },
@@ -197,6 +202,8 @@ const Corridors: React.FC = () => {
     updateCorridorMutation.isPending ||
     deleteCorridorMutation.isPending;
 
+  console.log("stats", stats);
+
   return (
     <>
       {/* Header */}
@@ -209,7 +216,7 @@ const Corridors: React.FC = () => {
         </div>
         <button
           onClick={openCreateModal}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2 hidden"
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2"
         >
           <FiPlus className="h-4 w-4" />
           Create Corridor
@@ -221,25 +228,25 @@ const Corridors: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="text-2xl font-bold text-gray-900">
-              {stats.total}
+              {stats.totalCorridors}
             </div>
             <div className="text-sm text-gray-600">Total Corridors</div>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="text-2xl font-bold text-green-600">
-              {stats.active}
+              {stats.activeCorridors}
             </div>
             <div className="text-sm text-gray-600">Active</div>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="text-2xl font-bold text-red-600">
-              {stats.inactive}
+              {stats.inactiveCorridors}
             </div>
             <div className="text-sm text-gray-600">Inactive</div>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="text-2xl font-bold text-orange-600">
-              {stats.pending}
+              {stats.pendingCorridors}
             </div>
             <div className="text-sm text-gray-600">Pending</div>
           </div>
@@ -248,51 +255,109 @@ const Corridors: React.FC = () => {
 
       {/* Filters */}
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-          <div className="relative">
-            <FiSearch className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-            <Input
-              type="text"
-              placeholder="Search corridors..."
-              value={filters.search || ""}
-              onChange={(e) => handleFilterChange("search", e.target.value)}
-              className="pl-10"
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Filters</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Status
+            </label>
+            <SearchableSelect
+              value={filters.status || ""}
+              onChange={(value) => handleFilterChange("status", value)}
+              options={statusOptions}
+              placeholder="Select status..."
             />
           </div>
-          <SearchableSelect
-            value={filters.status || ""}
-            onChange={(value) => handleFilterChange("status", value)}
-            options={statusOptions}
-            placeholder="Filter by status"
-          />
-          <SearchableSelect
-            value={filters.base_country_id || ""}
-            onChange={(value) => handleFilterChange("base_country_id", value)}
-            options={countryOptions}
-            placeholder="Filter by origin country"
-          />
-          <SearchableSelect
-            value={filters.destination_country_id || ""}
-            onChange={(value) =>
-              handleFilterChange("destination_country_id", value)
-            }
-            options={countryOptions}
-            placeholder="Filter by destination country"
-          />
+
+          {/* <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Origin Country
+            </label>
+            <SearchableSelect
+              value={filters.base_country_id || ""}
+              onChange={(value) => handleFilterChange("base_country_id", value)}
+              options={countryOptions}
+              placeholder="Select origin country..."
+            />
+          </div> */}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Destination Country
+            </label>
+            <SearchableSelect
+              value={filters.destination_country_id || ""}
+              onChange={(value) =>
+                handleFilterChange("destination_country_id", value)
+              }
+              options={countryOptions}
+              placeholder="Select destination country..."
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Destination Currency
+            </label>
+            <SearchableSelect
+              value={filters.base_currency_id || ""}
+              onChange={(value) =>
+                handleFilterChange("base_currency_id", value)
+              }
+              options={currencyOptions}
+              placeholder="Select origin currency..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Organisation
+            </label>
+            <SearchableSelect
+              value={filters.organisation_id || ""}
+              onChange={(value) => handleFilterChange("organisation_id", value)}
+              options={organisationOptions}
+              placeholder="Select organisation..."
+            />
+          </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <SearchableSelect
-            value={filters.base_currency_id || ""}
-            onChange={(value) => handleFilterChange("base_currency_id", value)}
-            options={currencyOptions}
-            placeholder="Filter by origin currency"
-          />
-          <SearchableSelect
-            value={filters.organisation_id || ""}
-            onChange={(value) => handleFilterChange("organisation_id", value)}
-            options={organisationOptions}
-            placeholder="Filter by organisation"
-          />
+
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Search
+            </label>
+            <div className="relative">
+              <FiSearch className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Search corridors..."
+                value={filters.search || ""}
+                onChange={(e) => handleFilterChange("search", e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end mt-4">
+          <button
+            onClick={() =>
+              setFilters({
+                page: 1,
+                limit: 10,
+                search: "",
+                status: undefined,
+                base_country_id: "",
+                destination_country_id: "",
+                base_currency_id: "",
+                organisation_id: "",
+                origin_organisation_id: currentOrganisationId || "",
+              })
+            }
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            Clear Filters
+          </button>
         </div>
       </div>
 

@@ -67,7 +67,7 @@ const OutboundTransactions: React.FC = () => {
   const { data: statsData, isLoading: isLoadingStats } = useTransactionStats(
     effectiveOrganisationId || ""
   );
-  const { data: currenciesData } = useCurrencies();
+  const { data: currenciesData } = useCurrencies({ limit: 1000 });
   const { data: corridorsData } = useCorridors({
     organisation_id: effectiveOrganisationId || "",
   });

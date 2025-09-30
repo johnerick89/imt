@@ -470,6 +470,7 @@ export class GlAccountService {
         generate_for_charges,
         generate_for_org_balances,
         generate_for_charges_payments,
+        generate_for_inbound_beneficiary_payments,
       } = data;
 
       const generatedAccounts: IGlAccount[] = [];
@@ -696,19 +697,22 @@ export class GlAccountService {
 
             // Generate EXPENSE accounts for charges_payment
             if (generate_for_charges_payments) {
-              const existingExpenseAccount = await tx.glAccount.findFirst({
+              const existingLiabilityAccount = await tx.glAccount.findFirst({
                 where: {
                   charge_id: charge.id,
                   organisation_id,
-                  type: GlAccountType.EXPENSE,
+                  type: GlAccountType.LIABILITY,
                 },
               });
 
-              if (!existingExpenseAccount) {
-                const expenseGlAccount = await tx.glAccount.create({
+              if (!existingLiabilityAccount) {
+                const paymentAuthority = charge.payment_authority
+                  ? charge.payment_authority
+                  : "N/A";
+                const liabilityGlAccount = await tx.glAccount.create({
                   data: {
-                    name: `Charge Payment - ${charge.name}`,
-                    type: "EXPENSE",
+                    name: `Charge Payment - ${charge.name} - ${paymentAuthority}`,
+                    type: "LIABILITY",
                     balance: 0,
                     currency_id: charge.currency_id,
                     organisation_id,
@@ -724,18 +728,18 @@ export class GlAccountService {
                 });
 
                 generatedAccounts.push({
-                  ...expenseGlAccount,
-                  balance: expenseGlAccount.balance
-                    ? parseFloat(expenseGlAccount.balance.toString())
+                  ...liabilityGlAccount,
+                  balance: liabilityGlAccount.balance
+                    ? parseFloat(liabilityGlAccount.balance.toString())
                     : null,
-                  locked_balance: expenseGlAccount.locked_balance
-                    ? parseFloat(expenseGlAccount.locked_balance.toString())
+                  locked_balance: liabilityGlAccount.locked_balance
+                    ? parseFloat(liabilityGlAccount.locked_balance.toString())
                     : null,
-                  max_balance: expenseGlAccount.max_balance
-                    ? parseFloat(expenseGlAccount.max_balance.toString())
+                  max_balance: liabilityGlAccount.max_balance
+                    ? parseFloat(liabilityGlAccount.max_balance.toString())
                     : null,
-                  min_balance: expenseGlAccount.min_balance
-                    ? parseFloat(expenseGlAccount.min_balance.toString())
+                  min_balance: liabilityGlAccount.min_balance
+                    ? parseFloat(liabilityGlAccount.min_balance.toString())
                     : null,
                 });
               }
@@ -773,6 +777,68 @@ export class GlAccountService {
                   organisation: true,
                   opened_by_user: true,
                   org_balance: true,
+                },
+              });
+
+              generatedAccounts.push({
+                ...glAccount,
+                balance: glAccount.balance
+                  ? parseFloat(glAccount.balance.toString())
+                  : null,
+                locked_balance: glAccount.locked_balance
+                  ? parseFloat(glAccount.locked_balance.toString())
+                  : null,
+                max_balance: glAccount.max_balance
+                  ? parseFloat(glAccount.max_balance.toString())
+                  : null,
+                min_balance: glAccount.min_balance
+                  ? parseFloat(glAccount.min_balance.toString())
+                  : null,
+              });
+            }
+          }
+        }
+
+        // Generate for Inbound Beneficiary Payments
+        if (generate_for_inbound_beneficiary_payments) {
+          // Find all organisations that have this organisation as destination
+
+          const orgBalances = await tx.orgBalance.findMany({
+            where: {
+              dest_org_id: organisation_id,
+            },
+            include: { currency: true, base_org: true, dest_org: true },
+          });
+
+          for (const orgBalance of orgBalances) {
+            // Create Beneficiary Payments account for each source organisation
+            const sourceOrg = orgBalance.base_org;
+            const existingAccount = await tx.glAccount.findFirst({
+              where: {
+                organisation_id,
+                counter_party_organisation_id: sourceOrg.id,
+                type: "LIABILITY",
+                name: {
+                  contains: "Beneficiary Payments",
+                },
+              },
+            });
+
+            if (!existingAccount) {
+              const glAccount = await tx.glAccount.create({
+                data: {
+                  name: `Beneficiary Payments - ${sourceOrg.name}`,
+                  type: "LIABILITY",
+                  balance: 0,
+                  organisation_id,
+                  counter_party_organisation_id: sourceOrg.id,
+                  opened_by: userId,
+                },
+                include: {
+                  currency: true,
+                  organisation: true,
+                  opened_by_user: true,
+                  counter_party_organisation: true,
                 },
               });
 

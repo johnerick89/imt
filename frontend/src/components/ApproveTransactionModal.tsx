@@ -30,17 +30,37 @@ export const ApproveTransactionModal: React.FC<
 
   if (!transaction) return null;
 
+  const approveTitle =
+    transaction.direction === "OUTBOUND"
+      ? "Approve Transaction"
+      : "Pay Recipient";
+  const approveDescription =
+    transaction.direction === "OUTBOUND"
+      ? "Are you sure you want to approve this transaction?"
+      : "Are you sure you want to pay this recipient?";
+
+  const sender =
+    transaction.direction === "OUTBOUND"
+      ? transaction.customer?.full_name
+      : transaction.sender_trasaction_party?.name;
+
+  const receiver =
+    transaction.direction === "OUTBOUND"
+      ? transaction.beneficiary?.name
+      : transaction.receiver_trasaction_party?.name;
+
+  const approveButtonText = isLoading
+    ? transaction.direction === "OUTBOUND"
+      ? "Approving..."
+      : "Paying..."
+    : transaction.direction === "OUTBOUND"
+    ? "Approve Transaction"
+    : "Pay Recipient";
+
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={handleClose}
-      title="Approve Transaction"
-      size="md"
-    >
+    <Modal isOpen={isOpen} onClose={handleClose} title={approveTitle} size="md">
       <div className="space-y-4">
-        <p className="text-sm text-gray-600">
-          Are you sure you want to approve this transaction?
-        </p>
+        <p className="text-sm text-gray-600">{approveDescription}</p>
 
         {transaction && (
           <div className="bg-gray-50 p-4 rounded-lg">
@@ -53,19 +73,19 @@ export const ApproveTransactionModal: React.FC<
               {transaction.origin_currency?.currency_code}
             </p>
             <p>
-              <strong>Sender:</strong>{" "}
-              {transaction.customer?.full_name || "Unknown Sender"}
+              <strong>Sender:</strong> {sender || "Unknown Sender"}
             </p>
             <p>
-              <strong>Receiver:</strong>{" "}
-              {transaction.beneficiary?.name || "Unknown Receiver"}
+              <strong>Recipient:</strong> {receiver || "Unknown Recipient"}
             </p>
           </div>
         )}
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Approval Remarks (Optional)
+            {transaction.direction === "OUTBOUND"
+              ? "Approval Remarks (Optional)"
+              : "Payment Remarks (Optional)"}
           </label>
           <Textarea
             placeholder="Enter any remarks for this approval..."
@@ -84,7 +104,7 @@ export const ApproveTransactionModal: React.FC<
             disabled={isLoading}
             className="bg-green-600 hover:bg-green-700 text-white"
           >
-            {isLoading ? "Approving..." : "Approve Transaction"}
+            {approveButtonText}
           </Button>
         </div>
       </div>

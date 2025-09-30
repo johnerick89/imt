@@ -1,34 +1,17 @@
 import React, { useState, useMemo } from "react";
 import { FiDownload, FiEye, FiRefreshCw } from "react-icons/fi";
-import { Modal } from "../components/ui/Modal";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { SearchableSelect } from "../components/ui/SearchableSelect";
 import { useSession, useCurrencies, useOrganisations } from "../hooks";
 import {
-  useOutboundTransactionsReport,
-  useInboundTransactionsReport,
-  useCommissionsReport,
-  useTaxesReport,
-  useUserTillsReport,
-  useBalancesHistoryReport,
-  useGlAccountsReport,
-  useProfitLossReport,
-  useBalanceSheetReport,
-  usePartnerBalancesReport,
-  useComplianceReport,
-  useExchangeRatesReport,
-  useAuditTrailReport,
-  useCorridorPerformanceReport,
-  useUserPerformanceReport,
-  useIntegrationStatusReport,
-  useCashPositionReport,
   useExportReportToCSV,
   useExportReportToPDF,
 } from "../hooks/useReports";
 import { ReportType, REPORT_METADATA } from "../types/ReportsTypes";
 import { formatToCurrency } from "../utils/textUtils";
 import type { ReportItem } from "../types/ReportsTypes";
+import { ReportsService } from "../services/ReportsService";
 
 const ReportsPage: React.FC = () => {
   const { user } = useSession();
@@ -36,12 +19,18 @@ const ReportsPage: React.FC = () => {
   const [selectedReport, setSelectedReport] = useState<ReportType>(
     ReportType.OUTBOUND_TRANSACTIONS
   );
-  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [showData, setShowData] = useState(false);
+  const [previewFilters, setPreviewFilters] = useState<Record<string, unknown>>(
+    {}
+  );
   const [filters, setFilters] = useState<Record<string, unknown>>({
-    organisation_id: user?.organisation_id || "",
     page: 1,
-    limit: 10,
+    limit: 1000,
   });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [reportData, setReportData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Data fetching
   const { data: currenciesData } = useCurrencies({ limit: 1000 });
@@ -53,151 +42,20 @@ const ReportsPage: React.FC = () => {
       (org) => org.id !== userOrganisationid
     ) || [];
 
-  // Report queries - only execute the query for the selected report type
-  const outboundTransactionsQuery = useOutboundTransactionsReport(
-    selectedReport === ReportType.OUTBOUND_TRANSACTIONS
-      ? filters
-      : { organisation_id: "" }
-  );
-  const inboundTransactionsQuery = useInboundTransactionsReport(
-    selectedReport === ReportType.INBOUND_TRANSACTIONS
-      ? filters
-      : { organisation_id: "" }
-  );
-  const commissionsQuery = useCommissionsReport(
-    selectedReport === ReportType.COMMISSIONS
-      ? filters
-      : { organisation_id: "" }
-  );
-  const taxesQuery = useTaxesReport(
-    selectedReport === ReportType.TAXES ? filters : { organisation_id: "" }
-  );
-  const userTillsQuery = useUserTillsReport(
-    selectedReport === ReportType.USER_TILLS ? filters : { organisation_id: "" }
-  );
-  const balancesHistoryQuery = useBalancesHistoryReport(
-    selectedReport === ReportType.BALANCES_HISTORY
-      ? filters
-      : { organisation_id: "" }
-  );
-  const glAccountsQuery = useGlAccountsReport(
-    selectedReport === ReportType.GL_ACCOUNTS
-      ? filters
-      : { organisation_id: "" }
-  );
-  const profitLossQuery = useProfitLossReport(
-    selectedReport === ReportType.PROFIT_LOSS
-      ? filters
-      : { organisation_id: "" }
-  );
-  const balanceSheetQuery = useBalanceSheetReport(
-    selectedReport === ReportType.BALANCE_SHEET
-      ? filters
-      : { organisation_id: "" }
-  );
-  const partnerBalancesQuery = usePartnerBalancesReport(
-    selectedReport === ReportType.PARTNER_BALANCES
-      ? filters
-      : { organisation_id: "" }
-  );
-  const complianceQuery = useComplianceReport(
-    selectedReport === ReportType.COMPLIANCE ? filters : { organisation_id: "" }
-  );
-  const exchangeRatesQuery = useExchangeRatesReport(
-    selectedReport === ReportType.EXCHANGE_RATES
-      ? filters
-      : { organisation_id: "" }
-  );
-  const auditTrailQuery = useAuditTrailReport(
-    selectedReport === ReportType.AUDIT_TRAIL
-      ? filters
-      : { organisation_id: "" }
-  );
-  const corridorPerformanceQuery = useCorridorPerformanceReport(
-    selectedReport === ReportType.CORRIDOR_PERFORMANCE
-      ? filters
-      : { organisation_id: "" }
-  );
-  const userPerformanceQuery = useUserPerformanceReport(
-    selectedReport === ReportType.USER_PERFORMANCE
-      ? filters
-      : { organisation_id: "" }
-  );
-  const integrationStatusQuery = useIntegrationStatusReport(
-    selectedReport === ReportType.INTEGRATION_STATUS
-      ? filters
-      : { organisation_id: "" }
-  );
-  const cashPositionQuery = useCashPositionReport(
-    selectedReport === ReportType.CASH_POSITION
-      ? filters
-      : { organisation_id: "" }
-  );
+  // Data fetching will be done directly from service when preview is clicked
 
   // Export mutations
   const exportCSVMutation = useExportReportToCSV();
   const exportPDFMutation = useExportReportToPDF();
 
-  // Get current report data
+  // Get current report data from state
   const currentReportData = useMemo(() => {
-    switch (selectedReport) {
-      case ReportType.OUTBOUND_TRANSACTIONS:
-        return outboundTransactionsQuery;
-      case ReportType.INBOUND_TRANSACTIONS:
-        return inboundTransactionsQuery;
-      case ReportType.COMMISSIONS:
-        return commissionsQuery;
-      case ReportType.TAXES:
-        return taxesQuery;
-      case ReportType.USER_TILLS:
-        return userTillsQuery;
-      case ReportType.BALANCES_HISTORY:
-        return balancesHistoryQuery;
-      case ReportType.GL_ACCOUNTS:
-        return glAccountsQuery;
-      case ReportType.PROFIT_LOSS:
-        return profitLossQuery;
-      case ReportType.BALANCE_SHEET:
-        return balanceSheetQuery;
-      case ReportType.PARTNER_BALANCES:
-        return partnerBalancesQuery;
-      case ReportType.COMPLIANCE:
-        return complianceQuery;
-      case ReportType.EXCHANGE_RATES:
-        return exchangeRatesQuery;
-      case ReportType.AUDIT_TRAIL:
-        return auditTrailQuery;
-      case ReportType.CORRIDOR_PERFORMANCE:
-        return corridorPerformanceQuery;
-      case ReportType.USER_PERFORMANCE:
-        return userPerformanceQuery;
-      case ReportType.INTEGRATION_STATUS:
-        return integrationStatusQuery;
-      case ReportType.CASH_POSITION:
-        return cashPositionQuery;
-      default:
-        return outboundTransactionsQuery;
-    }
-  }, [
-    selectedReport,
-    outboundTransactionsQuery,
-    inboundTransactionsQuery,
-    commissionsQuery,
-    taxesQuery,
-    userTillsQuery,
-    balancesHistoryQuery,
-    glAccountsQuery,
-    profitLossQuery,
-    balanceSheetQuery,
-    partnerBalancesQuery,
-    complianceQuery,
-    exchangeRatesQuery,
-    auditTrailQuery,
-    corridorPerformanceQuery,
-    userPerformanceQuery,
-    integrationStatusQuery,
-    cashPositionQuery,
-  ]);
+    return {
+      data: reportData,
+      isLoading: isLoading,
+      error: error,
+    };
+  }, [reportData, isLoading, error]);
 
   const currentReportMetadata = REPORT_METADATA[selectedReport];
 
@@ -233,12 +91,91 @@ const ReportsPage: React.FC = () => {
   // Handle report type change
   const handleReportTypeChange = (reportType: ReportType) => {
     setSelectedReport(reportType);
+    setShowData(false);
+    setReportData(null);
+    setError(null);
     // Reset filters when changing report type
     setFilters({
       organisation_id: user?.organisation_id || "",
       page: 1,
-      limit: 10,
+      limit: 1000,
     });
+  };
+
+  // Handle preview report
+  const previewReport = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      setPreviewFilters(filters);
+
+      let data;
+      switch (selectedReport) {
+        case ReportType.OUTBOUND_TRANSACTIONS:
+          data = await ReportsService.getOutboundTransactionsReport(filters);
+          break;
+        case ReportType.INBOUND_TRANSACTIONS:
+          data = await ReportsService.getInboundTransactionsReport(filters);
+          break;
+        case ReportType.COMMISSIONS:
+          data = await ReportsService.getCommissionsReport(filters);
+          break;
+        case ReportType.TAXES:
+          data = await ReportsService.getTaxesReport(filters);
+          break;
+        case ReportType.USER_TILLS:
+          data = await ReportsService.getUserTillsReport(filters);
+          break;
+        case ReportType.BALANCES_HISTORY:
+          data = await ReportsService.getBalancesHistoryReport(filters);
+          break;
+        case ReportType.GL_ACCOUNTS:
+          data = await ReportsService.getGlAccountsReport(filters);
+          break;
+        case ReportType.PROFIT_LOSS:
+          data = await ReportsService.getProfitLossReport(filters);
+          break;
+        case ReportType.BALANCE_SHEET:
+          data = await ReportsService.getBalanceSheetReport(filters);
+          break;
+        case ReportType.PARTNER_BALANCES:
+          data = await ReportsService.getPartnerBalancesReport(filters);
+          break;
+        case ReportType.COMPLIANCE:
+          data = await ReportsService.getComplianceReport(filters);
+          break;
+        case ReportType.EXCHANGE_RATES:
+          data = await ReportsService.getExchangeRatesReport(filters);
+          break;
+        case ReportType.AUDIT_TRAIL:
+          data = await ReportsService.getAuditTrailReport(filters);
+          break;
+        case ReportType.CORRIDOR_PERFORMANCE:
+          data = await ReportsService.getCorridorPerformanceReport(filters);
+          break;
+        case ReportType.USER_PERFORMANCE:
+          data = await ReportsService.getUserPerformanceReport(filters);
+          break;
+        case ReportType.INTEGRATION_STATUS:
+          data = await ReportsService.getIntegrationStatusReport(filters);
+          break;
+        case ReportType.CASH_POSITION:
+          data = await ReportsService.getCashPositionReport(filters);
+          break;
+        default:
+          throw new Error("Invalid report type");
+      }
+
+      setReportData(data);
+      setShowData(true);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch report data"
+      );
+      console.error("Error fetching report data:", err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Handle export
@@ -251,13 +188,13 @@ const ReportsPage: React.FC = () => {
       if (format === "csv") {
         await exportCSVMutation.mutateAsync({
           reportType: selectedReport,
-          filters,
+          filters: previewFilters,
           filename,
         });
       } else {
         await exportPDFMutation.mutateAsync({
           reportType: selectedReport,
-          filters,
+          filters: previewFilters,
           filename,
         });
       }
@@ -462,7 +399,9 @@ const ReportsPage: React.FC = () => {
           "Status",
           "Customer",
           "Beneficiary",
-          "Corridor",
+          "Destination Org",
+          "Currency",
+          "Destination Country",
           "Date",
         ];
       case ReportType.INBOUND_TRANSACTIONS:
@@ -472,7 +411,9 @@ const ReportsPage: React.FC = () => {
           "Status",
           "Customer",
           "Beneficiary",
-          "Corridor",
+          "Origin Org",
+          "Currency",
+          "Origin Country",
           "Date",
         ];
       case ReportType.COMMISSIONS:
@@ -536,16 +477,19 @@ const ReportsPage: React.FC = () => {
   };
 
   // Get table row cells based on report type
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const getTableRowCells = (item: any) => {
     switch (selectedReport) {
       case ReportType.OUTBOUND_TRANSACTIONS:
         return [
-          item.transaction_id,
+          item.transaction_no,
           formatToCurrency(item.origin_amount),
           item.status,
-          `${item.customer?.first_name} ${item.customer?.last_name}`,
-          `${item.beneficiary?.first_name} ${item.beneficiary?.last_name}`,
-          item.corridor?.name,
+          `${item.customer?.full_name}`,
+          `${item.beneficiary?.name}`,
+          item.destination_organisation?.name,
+          item.origin_currency?.currency_code,
+          item.origin_country?.name,
           new Date(item.created_at).toLocaleDateString(),
         ];
       case ReportType.INBOUND_TRANSACTIONS:
@@ -638,7 +582,8 @@ const ReportsPage: React.FC = () => {
           item.transactions?.length || 0,
           formatToCurrency(
             item.transactions?.reduce(
-              (sum: number, t: any) => sum + t.origin_amount,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (sum: number, t: any) => sum + (t.origin_amount || 0),
               0
             ) || 0
           ),
@@ -781,21 +726,16 @@ const ReportsPage: React.FC = () => {
       {/* Actions */}
       <div className="flex justify-between items-center mb-6">
         <div className="flex space-x-3">
-          <Button
-            onClick={() => setShowPreviewModal(true)}
-            disabled={currentReportData.isLoading}
-          >
+          <Button onClick={previewReport} disabled={isLoading}>
             <FiEye className="h-4 w-4 mr-2" />
-            Preview Report
+            {isLoading ? "Loading..." : "Preview Report"}
           </Button>
         </div>
         <div className="flex space-x-3">
           <Button
             variant="outline"
             onClick={() => handleExport("csv")}
-            disabled={
-              currentReportData.isLoading || exportCSVMutation.isPending
-            }
+            disabled={!showData || isLoading || exportCSVMutation.isPending}
           >
             <FiDownload className="h-4 w-4 mr-2" />
             Export CSV
@@ -803,9 +743,7 @@ const ReportsPage: React.FC = () => {
           <Button
             variant="outline"
             onClick={() => handleExport("pdf")}
-            disabled={
-              currentReportData.isLoading || exportPDFMutation.isPending
-            }
+            disabled={!showData || isLoading || exportPDFMutation.isPending}
           >
             <FiDownload className="h-4 w-4 mr-2" />
             Export PDF
@@ -813,25 +751,17 @@ const ReportsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Report Preview Modal */}
-      <Modal
-        isOpen={showPreviewModal}
-        onClose={() => setShowPreviewModal(false)}
-        title={currentReportMetadata.name}
-        size="xl"
-      >
-        <div className="max-h-96 overflow-y-auto">{renderReportData()}</div>
-      </Modal>
-
       {/* Report Data */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            {currentReportMetadata.name}
-          </h2>
-          {renderReportData()}
+      {showData && (
+        <div className="bg-white rounded-lg shadow">
+          <div className="p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              {currentReportMetadata.name}
+            </h2>
+            {renderReportData()}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

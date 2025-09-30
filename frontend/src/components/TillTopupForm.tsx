@@ -4,7 +4,7 @@ import { FormItem } from "./ui/FormItem";
 import { Input } from "./ui/Input";
 import { Textarea } from "./ui/Textarea";
 import { Button } from "./ui/Button";
-import { useVaults } from "../hooks";
+import { useVaults, useSession } from "../hooks";
 import type { TillTopupRequest } from "../types/BalanceOperationsTypes";
 
 interface TillTopupFormProps {
@@ -20,7 +20,13 @@ export const TillTopupForm: React.FC<TillTopupFormProps> = ({
   operation,
   tillCurrencyId,
 }) => {
-  const { data: vaultsData } = useVaults({ limit: 100 });
+  const { user } = useSession();
+  const organisationId = user?.organisation_id;
+  const { data: vaultsData } = useVaults({
+    limit: 100,
+    organisation_id: organisationId || "",
+    currency_id: tillCurrencyId || "",
+  });
   const allVaults = vaultsData?.data?.vaults || [];
 
   // Filter vaults by currency_id matching till's currency_id

@@ -94,11 +94,11 @@ export interface CorridorResponse {
 }
 
 export interface CorridorStats {
-  total: number;
-  active: number;
-  inactive: number;
-  pending: number;
-  blocked: number;
+  totalCorridors: number;
+  activeCorridors: number;
+  inactiveCorridors: number;
+  pendingCorridors: number;
+  blockedCorridors: number;
 }
 
 export interface CorridorStatsResponse {

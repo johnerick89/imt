@@ -303,6 +303,9 @@ const ChargesPaymentDetailsPage: React.FC = () => {
                   External Amount
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Amount Settled
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date
                 </th>
               </tr>
@@ -332,6 +335,9 @@ const ChargesPaymentDetailsPage: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {formatToCurrency(item.external_amount_settled)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {formatToCurrency(item.amount_settled)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {item.created_at

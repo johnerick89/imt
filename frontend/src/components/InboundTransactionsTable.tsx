@@ -1,11 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "./ui/DataTable";
 import { StatusBadge } from "./ui/StatusBadge";
 import { Button } from "./ui/Button";
 import { Tooltip } from "./ui/Tooltip";
 import { formatToCurrency } from "../utils/textUtils";
-import { FiEye, FiCheckCircle, FiRotateCcw, FiXCircle } from "react-icons/fi";
+import { ReceiptService } from "../services/ReceiptService";
+import { UpdateReceiverDetailsForm } from "./UpdateReceiverDetailsForm";
+import { FiEye, FiCheckCircle, FiDownload, FiEdit3 } from "react-icons/fi";
 import type { Transaction } from "../types/TransactionsTypes";
 
 interface InboundTransactionsTableProps {
@@ -13,20 +15,24 @@ interface InboundTransactionsTableProps {
   isLoading?: boolean;
   onView?: (transaction: Transaction) => void;
   onApprove?: (transaction: Transaction) => void;
-  onReverse?: (transaction: Transaction) => void;
-  onCancel?: (transaction: Transaction) => void;
+  onUpdate?: (transaction: Transaction) => void;
 }
 
 export const InboundTransactionsTable: React.FC<
   InboundTransactionsTableProps
-> = ({
-  transactions,
-  isLoading = false,
-  onView,
-  onApprove,
-  onReverse,
-  onCancel,
-}) => {
+> = ({ transactions, isLoading = false, onView, onApprove, onUpdate }) => {
+  const [selectedTransaction, setSelectedTransaction] =
+    useState<Transaction | null>(null);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const handleDownloadReceipt = async (transaction: Transaction) => {
+    try {
+      await ReceiptService.downloadReceipt(transaction);
+    } catch (error) {
+      console.error("Error downloading receipt:", error);
+      // You might want to show a toast notification here
+    }
+  };
+
   const getCounterPartyEmail = (metadata: Record<string, unknown>) => {
     return metadata.email as string;
   };
@@ -128,7 +134,7 @@ export const InboundTransactionsTable: React.FC<
     },
     {
       accessorKey: "amount_payable",
-      header: "Amount Payable",
+      header: "Amount Paid by Sender",
       cell: ({ row }) => (
         <div className="text-right">
           <div className="font-medium text-gray-900">
@@ -181,24 +187,7 @@ export const InboundTransactionsTable: React.FC<
         </div>
       ),
     },
-    {
-      accessorKey: "status",
-      header: "Status",
-      cell: ({ row }) => (
-        <div className="space-y-1">
-          <StatusBadge
-            status={row.original.status}
-            type={"status"}
-            title="Transaction Status"
-          />
-          <StatusBadge
-            status={row.original.remittance_status}
-            type={"status"}
-            title="Remittance Status"
-          />
-        </div>
-      ),
-    },
+
     {
       accessorKey: "created_at",
       header: "Created",
@@ -216,10 +205,8 @@ export const InboundTransactionsTable: React.FC<
       cell: ({ row }) => {
         const transaction = row.original;
         const canApprove = transaction.status === "PENDING_APPROVAL";
-        const canReverse = transaction.status === "APPROVED";
-        const canCancel = ["PENDING", "PENDING_APPROVAL"].includes(
-          transaction.status
-        );
+
+        const canEdit = transaction.status === "PENDING_APPROVAL";
 
         return (
           <div className="flex items-center space-x-1">
@@ -233,6 +220,31 @@ export const InboundTransactionsTable: React.FC<
                 <FiEye className="h-4 w-4" />
               </Button>
             </Tooltip>
+            <Tooltip content="Download receipt">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleDownloadReceipt(transaction)}
+                className="p-2"
+              >
+                <FiDownload className="h-4 w-4" />
+              </Button>
+            </Tooltip>
+            {canEdit && (
+              <Tooltip content="Update receiver details">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedTransaction(transaction);
+                    setIsUpdateModalOpen(true);
+                  }}
+                  className="p-2"
+                >
+                  <FiEdit3 className="h-4 w-4" />
+                </Button>
+              </Tooltip>
+            )}
             {canApprove && (
               <Tooltip content="Approve transaction">
                 <Button
@@ -245,30 +257,6 @@ export const InboundTransactionsTable: React.FC<
                 </Button>
               </Tooltip>
             )}
-            {canCancel && (
-              <Tooltip content="Cancel transaction">
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={() => onCancel?.(transaction)}
-                  className="p-2 bg-red-600 hover:bg-red-700 text-white border-red-600"
-                >
-                  <FiXCircle className="h-4 w-4" />
-                </Button>
-              </Tooltip>
-            )}
-            {canReverse && (
-              <Tooltip content="Reverse transaction">
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={() => onReverse?.(transaction)}
-                  className="p-2 bg-red-600 hover:bg-red-700 text-white border-red-600"
-                >
-                  <FiRotateCcw className="h-4 w-4" />
-                </Button>
-              </Tooltip>
-            )}
           </div>
         );
       },
@@ -276,12 +264,28 @@ export const InboundTransactionsTable: React.FC<
   ];
 
   return (
-    <DataTable
-      columns={columns}
-      data={transactions}
-      loading={isLoading}
-      searchKey="transaction_no"
-    />
+    <>
+      <DataTable
+        columns={columns}
+        data={transactions}
+        loading={isLoading}
+        searchKey="transaction_no"
+      />
+
+      <UpdateReceiverDetailsForm
+        isOpen={isUpdateModalOpen}
+        onClose={() => {
+          setIsUpdateModalOpen(false);
+          setSelectedTransaction(null);
+        }}
+        onSuccess={(updatedTransaction) => {
+          onUpdate?.(updatedTransaction);
+          setIsUpdateModalOpen(false);
+          setSelectedTransaction(null);
+        }}
+        transaction={selectedTransaction}
+      />
+    </>
   );
 };
 

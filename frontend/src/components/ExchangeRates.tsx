@@ -16,7 +16,6 @@ import {
   useApproveExchangeRate,
   useSession,
   useCurrencies,
-  useCountries,
 } from "../hooks";
 import {
   ExchangeRateStatus,
@@ -60,7 +59,6 @@ const ExchangeRates: React.FC = () => {
   const { data: exchangeRatesData, isLoading } = useExchangeRates(filters);
   const { data: statsData } = useExchangeRateStats();
   const { data: currenciesData } = useCurrencies({ limit: 1000 });
-  const { data: countriesData } = useCountries({ limit: 1000 });
 
   // Mutations
   const createExchangeRateMutation = useCreateExchangeRate();
@@ -72,7 +70,6 @@ const ExchangeRates: React.FC = () => {
   const pagination = exchangeRatesData?.data?.pagination;
   const stats = statsData?.data;
   const currencies = currenciesData?.data?.currencies || [];
-  const countries = countriesData?.data?.countries || [];
 
   // Filter options
   const statusOptions = [
@@ -84,29 +81,11 @@ const ExchangeRates: React.FC = () => {
     { value: ExchangeRateStatus.REJECTED, label: "Rejected" },
   ];
 
-  const operatorStatusOptions = [
-    { value: "", label: "All Operator Statuses" },
-    {
-      value: ExchangeRateOperatorStatus.PENDING_APPROVAL,
-      label: "Pending Approval",
-    },
-    { value: ExchangeRateOperatorStatus.APPROVED, label: "Approved" },
-    { value: ExchangeRateOperatorStatus.REJECTED, label: "Rejected" },
-  ];
-
   const currencyOptions = [
     { value: "", label: "All Currencies" },
     ...currencies.map((currency) => ({
       value: currency.id,
       label: `${currency.currency_code} - ${currency.currency_name}`,
-    })),
-  ];
-
-  const countryOptions = [
-    { value: "", label: "All Countries" },
-    ...countries.map((country) => ({
-      value: country.id,
-      label: country.name,
     })),
   ];
 
@@ -288,56 +267,61 @@ const ExchangeRates: React.FC = () => {
       {/* Filters */}
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-          <div className="relative">
-            <FiSearch className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-            <Input
-              type="text"
-              placeholder="Search exchange rates..."
-              value={filters.search || ""}
-              onChange={(e) => handleFilterChange("search", e.target.value)}
-              className="pl-10"
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Search
+            </label>
+
+            <div className="relative">
+              <FiSearch className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Search exchange rates..."
+                value={filters.search || ""}
+                onChange={(e) => handleFilterChange("search", e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Status
+            </label>
+
+            <SearchableSelect
+              value={filters.status || ""}
+              onChange={(value) => handleFilterChange("status", value)}
+              options={statusOptions}
+              placeholder="Filter by status"
             />
           </div>
-          <SearchableSelect
-            value={filters.status || ""}
-            onChange={(value) => handleFilterChange("status", value)}
-            options={statusOptions}
-            placeholder="Filter by status"
-          />
-          <SearchableSelect
-            value={filters.operator_status || ""}
-            onChange={(value) => handleFilterChange("operator_status", value)}
-            options={operatorStatusOptions}
-            placeholder="Filter by operator status"
-          />
-          <SearchableSelect
-            value={filters.from_currency_id || ""}
-            onChange={(value) => handleFilterChange("from_currency_id", value)}
-            options={currencyOptions}
-            placeholder="Filter by from currency"
-          />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <SearchableSelect
-            value={filters.to_currency_id || ""}
-            onChange={(value) => handleFilterChange("to_currency_id", value)}
-            options={currencyOptions}
-            placeholder="Filter by to currency"
-          />
-          <SearchableSelect
-            value={filters.origin_country_id || ""}
-            onChange={(value) => handleFilterChange("origin_country_id", value)}
-            options={countryOptions}
-            placeholder="Filter by origin country"
-          />
-          <SearchableSelect
-            value={filters.destination_country_id || ""}
-            onChange={(value) =>
-              handleFilterChange("destination_country_id", value)
-            }
-            options={countryOptions}
-            placeholder="Filter by destination country"
-          />
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              From Currency
+            </label>
+
+            <SearchableSelect
+              value={filters.from_currency_id || ""}
+              onChange={(value) =>
+                handleFilterChange("from_currency_id", value)
+              }
+              options={currencyOptions}
+              placeholder="Filter by from currency"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              To Currency
+            </label>
+
+            <SearchableSelect
+              value={filters.to_currency_id || ""}
+              onChange={(value) => handleFilterChange("to_currency_id", value)}
+              options={currencyOptions}
+              placeholder="Filter by to currency"
+            />
+          </div>
         </div>
       </div>
 

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { useForm, Controller } from "react-hook-form";
 import { FormItem } from "./ui/FormItem";
 import { Input } from "./ui/Input";
@@ -13,7 +13,8 @@ import type {
   UpdateBeneficiaryRequest,
   Beneficiary,
 } from "../types/BeneficiariesTypes";
-import { useOrganisation } from "../hooks/useOrganisations";
+import type { IParameter } from "../types/ParametersTypes";
+import type { Country } from "../types/CountriesTypes";
 
 interface BeneficiaryFormProps {
   initialData?: Beneficiary;
@@ -21,6 +22,7 @@ interface BeneficiaryFormProps {
   isLoading?: boolean;
   customerId: string;
   organisationId: string;
+  useBeneficiaryDefaultCountryCode?: IParameter;
 }
 
 const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
@@ -29,20 +31,28 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
   isLoading = false,
   customerId,
   organisationId,
+  useBeneficiaryDefaultCountryCode,
 }) => {
   const isEdit = !!initialData;
   const { data: countriesData } = useAllCountries();
   const { data: occupationsData } = useOccupations({ limit: 100 });
   const { data: industriesData } = useIndustries({ limit: 100 });
-  const { data: organisationData } = useOrganisation(organisationId);
-  const userOrganisation = organisationData?.data;
 
+  const getBeneficiaryDefaultCountryId = () => {
+    if (useBeneficiaryDefaultCountryCode?.value === "true") {
+      return countriesData?.data?.countries?.find(
+        (c: Country) => c.code === useBeneficiaryDefaultCountryCode?.value_2
+      )?.id;
+    }
+
+    return "";
+  };
+  const countryId = getBeneficiaryDefaultCountryId();
   const {
     control,
     handleSubmit,
     watch,
     formState: { errors },
-    setValue,
   } = useForm<CreateBeneficiaryRequest>({
     defaultValues: {
       name: initialData?.name || "",
@@ -53,7 +63,7 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
       date_of_birth: initialData?.date_of_birth
         ? new Date(initialData.date_of_birth).toISOString().split("T")[0]
         : "",
-      nationality_id: initialData?.nationality_id || "",
+      nationality_id: initialData?.nationality_id || countryId,
       address: initialData?.address || "",
       customer_id: customerId,
       organisation_id: organisationId,
@@ -63,8 +73,8 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
       reg_number: "",
       occupation_id: "",
       industry_id: "",
-      residence_country_id: "",
-      incorporation_country_id: "",
+      residence_country_id: countryId,
+      incorporation_country_id: countryId,
       bank_name: initialData?.bank_name || "",
       bank_address: initialData?.bank_address || "",
       bank_city: initialData?.bank_city || "",
@@ -76,17 +86,6 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
   });
 
   const watchedType = watch("type");
-
-  const isIndividualBeneficiary = watchedType === "INDIVIDUAL";
-
-  useEffect(() => {
-    if (userOrganisation && isIndividualBeneficiary) {
-      setValue("organisation_id", userOrganisation.id || "");
-      setValue("nationality_id", userOrganisation.country_id || "");
-      setValue("residence_country_id", userOrganisation.country_id || "");
-      setValue("incorporation_country_id", userOrganisation.country_id || "");
-    }
-  }, [userOrganisation, setValue, isIndividualBeneficiary]);
 
   const handleFormSubmit = (data: CreateBeneficiaryRequest) => {
     try {
@@ -375,7 +374,26 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
               />
             </FormItem>
           )}
-
+          {watchedType !== "INDIVIDUAL" && (
+            <FormItem
+              label="Registration Number"
+              invalid={!!errors.reg_number}
+              errorMessage={errors.reg_number?.message}
+            >
+              <Controller
+                name="reg_number"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    placeholder="Enter registration number"
+                    disabled={isLoading}
+                    invalid={!!errors.reg_number}
+                  />
+                )}
+              />
+            </FormItem>
+          )}
           <FormItem
             label="Tax Number Type"
             invalid={!!errors.tax_number_type}
@@ -450,26 +468,6 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
                 />
               </FormItem>
             </>
-          )}
-          {watchedType !== "INDIVIDUAL" && (
-            <FormItem
-              label="Registration Number"
-              invalid={!!errors.reg_number}
-              errorMessage={errors.reg_number?.message}
-            >
-              <Controller
-                name="reg_number"
-                control={control}
-                render={({ field }) => (
-                  <Input
-                    {...field}
-                    placeholder="Enter registration number"
-                    disabled={isLoading}
-                    invalid={!!errors.reg_number}
-                  />
-                )}
-              />
-            </FormItem>
           )}
 
           <FormItem

@@ -4,7 +4,7 @@ import { FormItem } from "./ui/FormItem";
 import { Input } from "./ui/Input";
 import { Textarea } from "./ui/Textarea";
 import { Button } from "./ui/Button";
-import { useBankAccounts } from "../hooks";
+import { useBankAccounts, useSession } from "../hooks";
 import type { VaultTopupRequest } from "../types/BalanceOperationsTypes";
 
 interface VaultTopupFormProps {
@@ -22,7 +22,13 @@ export const VaultTopupForm: React.FC<VaultTopupFormProps> = ({
   vaultCurrencyId,
   onSuccess,
 }) => {
-  const { data: bankAccountsData } = useBankAccounts({ limit: 100 });
+  const { user } = useSession();
+  const organisationId = user?.organisation_id;
+  const { data: bankAccountsData } = useBankAccounts({
+    limit: 100,
+    organisation_id: organisationId,
+    currency_id: vaultCurrencyId,
+  });
   const allBankAccounts = bankAccountsData?.data?.bankAccounts || [];
 
   // Filter bank accounts by currency_id matching vault's currency_id

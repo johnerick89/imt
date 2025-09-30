@@ -1,13 +1,9 @@
 import React, { useState } from "react";
-import { useForm, Controller } from "react-hook-form";
-import { FiPlus, FiFilter, FiRefreshCw } from "react-icons/fi";
-import { Modal } from "../components/ui/Modal";
+import { FiFilter, FiRefreshCw } from "react-icons/fi";
 import { SearchableSelect } from "../components/ui/SearchableSelect";
 import { Input } from "../components/ui/Input";
-import { Textarea } from "../components/ui/Textarea";
-import { FormItem } from "../components/ui/FormItem";
 import { Button } from "../components/ui/Button";
-import { DataTable } from "../components/ui/DataTable";
+import OrgBalancesTable from "./dataTables/OrgBalancesTable";
 import {
   useSession,
   useCurrencies,
@@ -21,12 +17,10 @@ import {
 } from "../hooks/useBalanceOperations";
 import { formatToCurrency } from "../utils/textUtils";
 import type {
-  OrgBalance,
   OrgBalanceFilters,
   PrefundRequest,
 } from "../types/BalanceOperationsTypes";
-import type { ColumnDef } from "@tanstack/react-table";
-import type { BankAccount } from "../types/BankAccountsTypes";
+import PrefundModal from "./modals/PrefundModal";
 
 const OrgBalances: React.FC = () => {
   const { user } = useSession();
@@ -50,7 +44,7 @@ const OrgBalances: React.FC = () => {
     useOrgBalances(filters);
   const { data: statsData } = useOrgBalanceStats(user?.organisation_id);
   const { data: currenciesData } = useCurrencies({ limit: 1000 });
-  const { data: organisationsData } = useOrganisations({ limit: 1000 });
+  const { data: organisationsData } = useOrganisations({ limit: 100 });
   const { data: bankAccountsData } = useBankAccounts({
     limit: 1000,
     organisation_id: user?.organisation_id,
@@ -59,7 +53,10 @@ const OrgBalances: React.FC = () => {
   const balances = balancesData?.data?.balances || [];
   const stats = statsData?.data;
   const currencies = currenciesData?.data?.currencies || [];
-  const organisations = organisationsData?.data?.organisations || [];
+  const organisations =
+    organisationsData?.data?.organisations.filter(
+      (organisation) => organisation.id !== user?.organisation_id
+    ) || [];
   const bankAccounts = bankAccountsData?.data?.bankAccounts || [];
 
   // Mutations
@@ -96,94 +93,6 @@ const OrgBalances: React.FC = () => {
     setSelectedOrganisation(orgId);
     setShowPrefundModal(true);
   };
-
-  // Table columns
-  const columns: ColumnDef<OrgBalance>[] = [
-    {
-      accessorKey: "base_org",
-      header: "Base Organisation",
-      cell: ({ row }) => (
-        <div>
-          <div className="font-medium text-gray-900">
-            {row.original.base_org.name}
-          </div>
-          <div className="text-sm text-gray-500">
-            {row.original.base_org.type}
-          </div>
-        </div>
-      ),
-    },
-    {
-      accessorKey: "dest_org",
-      header: "Destination Organisation",
-      cell: ({ row }) => (
-        <div>
-          <div className="font-medium text-gray-900">
-            {row.original.dest_org.name}
-          </div>
-          <div className="text-sm text-gray-500">
-            {row.original.dest_org.type}
-          </div>
-        </div>
-      ),
-    },
-    {
-      accessorKey: "currency",
-      header: "Currency",
-      cell: ({ row }) => (
-        <div className="text-sm text-gray-900">
-          {row.original.currency.currency_code}
-        </div>
-      ),
-    },
-    {
-      accessorKey: "balance",
-      header: "Balance",
-      cell: ({ row }) => (
-        <div className="text-sm text-gray-900">
-          <div className="font-medium">
-            {formatToCurrency(row.original.balance) +
-              " " +
-              row.original.currency.currency_code}
-          </div>
-          {row.original.locked_balance && row.original.locked_balance > 0 && (
-            <div className="text-xs text-gray-500">
-              Locked:{" "}
-              {formatToCurrency(row.original.locked_balance) +
-                " " +
-                row.original.currency.currency_code}
-            </div>
-          )}
-        </div>
-      ),
-    },
-    {
-      accessorKey: "created_at",
-      header: "Created",
-      cell: ({ row }) => (
-        <div className="text-sm text-gray-900">
-          {new Date(row.original.created_at).toLocaleDateString()}
-        </div>
-      ),
-    },
-    {
-      id: "actions",
-      header: "Actions",
-      cell: ({ row }) => (
-        <div className="flex items-center space-x-2">
-          <Button
-            onClick={() => openPrefundModal(row.original.base_org_id)}
-            size="sm"
-            variant="outline"
-            className="text-green-600 hover:text-green-700"
-          >
-            <FiPlus className="h-4 w-4 mr-1" />
-            Prefund
-          </Button>
-        </div>
-      ),
-    },
-  ];
 
   return (
     <>
@@ -286,16 +195,16 @@ const OrgBalances: React.FC = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Base Organisation
+              Destiantion Organisation
             </label>
             <SearchableSelect
-              value={filters.base_org_id || ""}
-              onChange={(value) => handleFilterChange("base_org_id", value)}
+              value={filters.dest_org_id || ""}
+              onChange={(value) => handleFilterChange("dest_org_id", value)}
               options={organisations.map((org) => ({
                 value: org.id,
                 label: `${org.name} (${org.type})`,
               }))}
-              placeholder="Filter by base organisation"
+              placeholder="Filter by destination organisation"
             />
           </div>
 
@@ -336,14 +245,11 @@ const OrgBalances: React.FC = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg shadow">
-        <DataTable
-          columns={columns}
-          data={balances}
-          loading={balancesLoading}
-          emptyMessage="No organisation balances found"
-        />
-      </div>
+      <OrgBalancesTable
+        data={balances}
+        loading={balancesLoading}
+        onPrefund={openPrefundModal}
+      />
 
       {/* Pagination */}
       {balancesData?.data?.pagination && (
@@ -391,150 +297,9 @@ const OrgBalances: React.FC = () => {
         onSubmit={handlePrefundOrganisation}
         isLoading={prefundOrganisationMutation.isPending}
         bankAccounts={bankAccounts}
+        currencies={currencies}
       />
     </>
-  );
-};
-
-// Prefund Modal Component
-interface PrefundModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (data: PrefundRequest) => void;
-  isLoading?: boolean;
-  bankAccounts: BankAccount[];
-}
-
-const PrefundModal: React.FC<PrefundModalProps> = ({
-  isOpen,
-  onClose,
-  onSubmit,
-  isLoading = false,
-  bankAccounts,
-}) => {
-  const {
-    control,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<PrefundRequest>({
-    defaultValues: {
-      amount: 0,
-      source_type: "BANK_ACCOUNT",
-      source_id: "",
-      description: "",
-    },
-  });
-
-  const handleFormSubmit = (data: PrefundRequest) => {
-    onSubmit(data);
-    reset();
-  };
-
-  const handleClose = () => {
-    reset();
-    onClose();
-  };
-
-  return (
-    <Modal
-      isOpen={isOpen}
-      onClose={handleClose}
-      title="Prefund Organisation"
-      size="md"
-    >
-      <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
-        <FormItem
-          label="Amount"
-          required
-          invalid={!!errors.amount}
-          errorMessage={errors.amount?.message}
-        >
-          <Controller
-            name="amount"
-            control={control}
-            rules={{
-              required: "Amount is required",
-              min: { value: 0.01, message: "Amount must be greater than 0" },
-            }}
-            render={({ field }) => (
-              <Input
-                {...field}
-                type="number"
-                step="0.01"
-                placeholder="Enter amount"
-                disabled={isLoading}
-                onChange={(e) =>
-                  field.onChange(parseFloat(e.target.value) || 0)
-                }
-              />
-            )}
-          />
-        </FormItem>
-
-        <FormItem
-          label="Source Bank Account"
-          required
-          invalid={!!errors.source_id}
-          errorMessage={errors.source_id?.message}
-        >
-          <Controller
-            name="source_id"
-            control={control}
-            rules={{ required: "Source bank account is required" }}
-            render={({ field }) => (
-              <SearchableSelect
-                {...field}
-                options={bankAccounts.map((account) => ({
-                  value: account.id,
-                  label: `${account.name} - ${account.bank_name} (${account.currency.currency_code})`,
-                }))}
-                placeholder="Select source bank account"
-                disabled={isLoading}
-                invalid={!!errors.source_id}
-              />
-            )}
-          />
-        </FormItem>
-
-        <FormItem
-          label="Description"
-          invalid={!!errors.description}
-          errorMessage={errors.description?.message}
-        >
-          <Controller
-            name="description"
-            control={control}
-            render={({ field }) => (
-              <Textarea
-                {...field}
-                placeholder="Enter description (optional)"
-                rows={3}
-                disabled={isLoading}
-              />
-            )}
-          />
-        </FormItem>
-
-        <div className="flex justify-end space-x-3 pt-4">
-          <button
-            type="button"
-            onClick={handleClose}
-            disabled={isLoading}
-            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? "Processing..." : "Prefund"}
-          </button>
-        </div>
-      </form>
-    </Modal>
   );
 };
 

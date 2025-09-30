@@ -79,7 +79,7 @@ const ChargesPaymentsPage: React.FC = () => {
     financialOrganisationId
   );
   const { data: organisationsData } = useOrganisations();
-  const { data: currenciesData } = useCurrencies();
+  const { data: currenciesData } = useCurrencies({ limit: 1000 });
 
   // Mutations
   const createChargesPaymentMutation = useCreateChargesPayment();
@@ -107,8 +107,11 @@ const ChargesPaymentsPage: React.FC = () => {
   const paymentsStats = paymentsStatsData?.data;
 
   const organisations = useMemo(
-    () => organisationsData?.data?.organisations || [],
-    [organisationsData]
+    () =>
+      organisationsData?.data?.organisations.filter(
+        (org) => org.id !== financialOrganisationId
+      ) || [],
+    [organisationsData, financialOrganisationId]
   );
 
   const currencies = useMemo(

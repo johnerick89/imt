@@ -426,3 +426,12 @@ export type InboundTransactionStats = TransactionStats;
 
 // Inbound Transaction Stats Response
 export type InboundTransactionStatsResponse = TransactionStatsResponse;
+
+// Update Inbound Transaction Receiver Details Request
+export interface UpdateInboundTransactionReceiverDetailsRequest {
+  id_type?: IndividualIDType;
+  id_number?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+}

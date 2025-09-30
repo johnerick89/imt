@@ -109,4 +109,5 @@ export const generateAccountsSchema = z.object({
   generate_for_charges: z.boolean().default(true),
   generate_for_org_balances: z.boolean().default(true),
   generate_for_charges_payments: z.boolean().default(true),
+  generate_for_inbound_beneficiary_payments: z.boolean().default(false),
 });

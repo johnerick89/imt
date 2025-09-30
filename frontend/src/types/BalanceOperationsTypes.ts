@@ -71,6 +71,7 @@ export interface PrefundRequest {
   amount: number;
   source_type: "BANK_ACCOUNT";
   source_id: string;
+  currency_id?: string;
   description?: string;
 }
 

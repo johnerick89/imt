@@ -34,6 +34,7 @@ interface OrganisationFormData {
   integration_mode: IntegrationMode;
   contact_person: string;
   contact_email: string;
+  contact_password: string;
   contact_phone: string;
   contact_address: string;
   contact_city: string;
@@ -83,6 +84,7 @@ const OrganisationForm: React.FC<OrganisationFormProps> = ({
       integration_mode: "INTERNAL" as IntegrationMode,
       contact_person: "",
       contact_email: "",
+      contact_password: "",
       contact_phone: "",
       contact_address: "",
       contact_city: "",
@@ -114,6 +116,7 @@ const OrganisationForm: React.FC<OrganisationFormProps> = ({
         integration_mode: org.integration_mode,
         contact_person: org.contact_person || "",
         contact_email: org.contact_email || "",
+        contact_password: "", // Don't populate password for security
         contact_phone: org.contact_phone || "",
         contact_address: org.contact_address || "",
         contact_city: org.contact_city || "",
@@ -296,6 +299,35 @@ const OrganisationForm: React.FC<OrganisationFormProps> = ({
             )}
           />
         </FormItem>
+
+        {/* Contact Password - Only for create mode */}
+        {!isEditMode && (
+          <FormItem
+            label="Contact Password"
+            invalid={Boolean(errors.contact_password)}
+            errorMessage={errors.contact_password?.message}
+          >
+            <Controller
+              name="contact_password"
+              control={control}
+              rules={{
+                required: "Contact password is required",
+                minLength: {
+                  value: 6,
+                  message: "Password must be at least 6 characters",
+                },
+              }}
+              render={({ field }) => (
+                <Input
+                  type="password"
+                  placeholder="Enter password for contact person"
+                  invalid={Boolean(errors.contact_password)}
+                  {...field}
+                />
+              )}
+            />
+          </FormItem>
+        )}
 
         {/* Contact Phone */}
         <FormItem label="Contact Phone">

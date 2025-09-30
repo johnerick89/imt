@@ -10,6 +10,7 @@ import {
   reverseTransactionSchema,
   markAsReadySchema,
   reassignTransactionSchema,
+  updateInboundTransactionReceiverDetailsSchema,
 } from "./transactions.validation";
 import type CustomRequest from "../../types/CustomReq.type";
 import { AppError } from "../../utils/AppError";
@@ -343,6 +344,35 @@ export class TransactionController {
 
       const result = await transactionService.getInboundTransactionStats(orgId);
       res.status(200).json(result);
+    }
+  );
+
+  // Update Inbound Transaction Receiver Details
+  updateInboundTransactionReceiverDetails = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
+      const { transactionId } = req.params;
+
+      if (!transactionId) {
+        throw new AppError("Transaction ID is required", 400);
+      }
+
+      const validation =
+        updateInboundTransactionReceiverDetailsSchema.safeParse(req.body);
+      if (!validation.success) {
+        throw new AppError("Validation error", 400);
+      }
+
+      const result =
+        await transactionService.updateInboundTransactionReceiverDetails(
+          transactionId,
+          validation.data
+        );
+
+      res.status(200).json({
+        success: true,
+        message: "Receiver details updated successfully",
+        data: result,
+      });
     }
   );
 }

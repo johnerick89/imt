@@ -5,6 +5,7 @@ import {
   RemittanceStatus,
   RequestStatus,
   ChargeType,
+  IndividualIDType,
 } from "@prisma/client";
 
 export const transactionChargeCalculationSchema = z.object({
@@ -292,4 +293,15 @@ export const reverseTransactionSchema = z.object({
     .string()
     .max(500, "Remarks must be less than 500 characters")
     .optional(),
+});
+
+// Update Inbound Transaction Receiver Details Schema
+export const updateInboundTransactionReceiverDetailsSchema = z.object({
+  id_type: z.enum(
+    Object.values(IndividualIDType) as [IndividualIDType, ...IndividualIDType[]]
+  ),
+  id_number: z.string().min(1, "ID number is required"),
+  email: z.string().email("Invalid email"),
+  phone: z.string().min(1, "Phone is required"),
+  address: z.string().min(1, "Address is required"),
 });

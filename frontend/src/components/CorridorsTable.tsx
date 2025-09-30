@@ -56,7 +56,7 @@ const CorridorsTable: React.FC<CorridorsTableProps> = ({
       },
       {
         accessorKey: "base_currency",
-        header: "Base Currency",
+        header: "Dest. Currency",
         cell: ({ row }) => (
           <span className="text-sm text-gray-900">
             {row.original.base_currency?.currency_code || "N/A"}

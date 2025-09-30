@@ -59,6 +59,7 @@ export default function ChargeForm({
     handleSubmit,
     formState: { errors },
     setValue,
+    watch,
   } = useForm<CreateChargeRequest>({
     defaultValues: initialData
       ? {
@@ -87,6 +88,7 @@ export default function ChargeForm({
           status: initialData.status,
           min_amount: initialData.min_amount || undefined,
           max_amount: initialData.max_amount || undefined,
+          payment_authority: initialData.payment_authority || undefined,
         }
       : {
           name: "",
@@ -96,19 +98,42 @@ export default function ChargeForm({
             currentOrganisation?.base_currency_id ||
             userOrganisation?.base_currency_id ||
             "",
-          type: "TAX",
+          type: "COMMISSION",
           rate: 0,
           origin_organisation_id: userOrganisationId || "",
           destination_organisation_id: currentOrganisationId || "",
           is_reversible: false,
           direction: "OUTBOUND",
-          origin_share_percentage: undefined,
-          destination_share_percentage: undefined,
+          origin_share_percentage: 60,
+          destination_share_percentage: 40,
           status: "ACTIVE",
           min_amount: undefined,
           max_amount: undefined,
+          payment_authority: undefined,
         },
   });
+
+  const watchedType = watch("type");
+
+  useEffect(() => {
+    if (watchedType === "COMMISSION") {
+      setValue("origin_share_percentage", 60);
+      setValue("destination_share_percentage", 40);
+      setValue("payment_authority", undefined);
+    } else if (watchedType === "TAX") {
+      setValue("origin_share_percentage", 0);
+      setValue("destination_share_percentage", 100);
+      // Keep payment_authority as is for TAX type
+    } else if (watchedType === "INTERNAL_FEE") {
+      setValue("origin_share_percentage", 100);
+      setValue("destination_share_percentage", 0);
+      setValue("payment_authority", undefined);
+    } else if (watchedType === "OTHER") {
+      setValue("origin_share_percentage", 0);
+      setValue("destination_share_percentage", 0);
+      setValue("payment_authority", undefined);
+    }
+  }, [watchedType, setValue]);
 
   useEffect(() => {
     if (
@@ -117,24 +142,17 @@ export default function ChargeForm({
       organisationsData?.data?.organisations?.length > 0
     ) {
       const customerOrganisation = organisationsData?.data?.organisations?.find(
-        (org: Organisation) => org.type === "CUSTOMER"
+        (org: Organisation) => org.id === userOrganisationId
       );
       setValue("origin_organisation_id", customerOrganisation?.id || "");
       setValue("destination_organisation_id", currentOrganisationId || "");
     }
-  }, [organisationsData, setValue, currentOrganisationId]);
+  }, [organisationsData, setValue, currentOrganisationId, userOrganisationId]);
 
   const handleFormSubmit = (data: CreateChargeRequest) => {
     const { origin_organisation_id, destination_organisation_id, ...rest } =
       data;
-    console.log(
-      "data",
-      data,
-      "origin_organisation_id",
-      origin_organisation_id,
-      "destination_organisation_id",
-      destination_organisation_id
-    );
+
     onSubmit({
       origin_organisation_id:
         origin_organisation_id || userOrganisationId || "",
@@ -361,6 +379,20 @@ export default function ChargeForm({
             rules={{
               min: { value: 0, message: "Percentage must be non-negative" },
               max: { value: 100, message: "Percentage cannot exceed 100" },
+              validate: (value) => {
+                const originShare = value;
+                const destinationShare = watch("destination_share_percentage");
+                if (
+                  originShare !== undefined &&
+                  destinationShare !== undefined
+                ) {
+                  const total = originShare + destinationShare;
+                  if (total !== 100) {
+                    return "Origin and destination percentages must sum to 100";
+                  }
+                }
+                return true;
+              },
             }}
             render={({ field }) => (
               <Input
@@ -385,6 +417,20 @@ export default function ChargeForm({
             rules={{
               min: { value: 0, message: "Percentage must be non-negative" },
               max: { value: 100, message: "Percentage cannot exceed 100" },
+              validate: (value) => {
+                const destinationShare = value;
+                const originShare = watch("origin_share_percentage");
+                if (
+                  originShare !== undefined &&
+                  destinationShare !== undefined
+                ) {
+                  const total = originShare + destinationShare;
+                  if (total !== 100) {
+                    return "Origin and destination percentages must sum to 100";
+                  }
+                }
+                return true;
+              },
             }}
             render={({ field }) => (
               <Input
@@ -401,14 +447,12 @@ export default function ChargeForm({
 
       <FormItem
         label="Description"
-        required
         invalid={!!errors.description}
         errorMessage={errors.description?.message}
       >
         <Controller
           name="description"
           control={control}
-          rules={{ required: "Description is required" }}
           render={({ field }) => (
             <Textarea
               {...field}
@@ -419,6 +463,33 @@ export default function ChargeForm({
           )}
         />
       </FormItem>
+
+      {/* Payment Authority - Only show for TAX type */}
+      {watchedType === "TAX" && (
+        <FormItem
+          label="Payment Authority"
+          invalid={!!errors.payment_authority}
+          errorMessage={errors.payment_authority?.message}
+        >
+          <Controller
+            name="payment_authority"
+            control={control}
+            rules={{
+              required:
+                watchedType === "TAX"
+                  ? "Payment authority is required for TAX charges"
+                  : false,
+            }}
+            render={({ field }) => (
+              <Input
+                {...field}
+                placeholder="Enter payment authority (e.g., government agency)"
+                disabled={isLoading}
+              />
+            )}
+          />
+        </FormItem>
+      )}
 
       <div className="flex items-center space-x-4">
         <Controller
