@@ -1,17 +1,17 @@
 import React, { useState, useMemo } from "react";
 import { FiDownload, FiEye, FiRefreshCw } from "react-icons/fi";
+// @ts-expect-error - react-csv doesn't have TypeScript declarations
+import { CSVLink } from "react-csv";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { SearchableSelect } from "../components/ui/SearchableSelect";
 import { useSession, useCurrencies, useOrganisations } from "../hooks";
-import {
-  useExportReportToCSV,
-  useExportReportToPDF,
-} from "../hooks/useReports";
+// Removed unused export hooks since we're implementing direct export
 import { ReportType, REPORT_METADATA } from "../types/ReportsTypes";
 import { formatToCurrency } from "../utils/textUtils";
 import type { ReportItem } from "../types/ReportsTypes";
 import { ReportsService } from "../services/ReportsService";
+import { ReportsPDFService } from "../services/ReportsPDFService";
 
 const ReportsPage: React.FC = () => {
   const { user } = useSession();
@@ -43,10 +43,6 @@ const ReportsPage: React.FC = () => {
     ) || [];
 
   // Data fetching will be done directly from service when preview is clicked
-
-  // Export mutations
-  const exportCSVMutation = useExportReportToCSV();
-  const exportPDFMutation = useExportReportToPDF();
 
   // Get current report data from state
   const currentReportData = useMemo(() => {
@@ -96,9 +92,20 @@ const ReportsPage: React.FC = () => {
     setError(null);
     // Reset filters when changing report type
     setFilters({
-      organisation_id: user?.organisation_id || "",
       page: 1,
       limit: 1000,
+      ...(typeof filters.date_from !== "undefined"
+        ? { date_from: filters.date_from }
+        : {}),
+      ...(typeof filters.date_to !== "undefined"
+        ? { date_to: filters.date_to }
+        : {}),
+      ...(typeof filters.organisation_id !== "undefined"
+        ? { organisation_id: filters.organisation_id }
+        : {}),
+      ...(typeof filters.currency_id !== "undefined"
+        ? { currency_id: filters.currency_id }
+        : {}),
     });
   };
 
@@ -113,9 +120,11 @@ const ReportsPage: React.FC = () => {
       switch (selectedReport) {
         case ReportType.OUTBOUND_TRANSACTIONS:
           data = await ReportsService.getOutboundTransactionsReport(filters);
+          console.log("getOutboundTransactionsReport data", data);
           break;
         case ReportType.INBOUND_TRANSACTIONS:
           data = await ReportsService.getInboundTransactionsReport(filters);
+          console.log("getInboundTransactionsReport data", data);
           break;
         case ReportType.COMMISSIONS:
           data = await ReportsService.getCommissionsReport(filters);
@@ -123,45 +132,48 @@ const ReportsPage: React.FC = () => {
         case ReportType.TAXES:
           data = await ReportsService.getTaxesReport(filters);
           break;
-        case ReportType.USER_TILLS:
-          data = await ReportsService.getUserTillsReport(filters);
-          break;
-        case ReportType.BALANCES_HISTORY:
-          data = await ReportsService.getBalancesHistoryReport(filters);
-          break;
+        // case ReportType.USER_TILLS:
+        //   data = await ReportsService.getUserTillsReport(filters);
+        //   break;
+        // case ReportType.BALANCES_HISTORY:
+        //   data = await ReportsService.getBalancesHistoryReport(filters);
+        //   break;
         case ReportType.GL_ACCOUNTS:
           data = await ReportsService.getGlAccountsReport(filters);
           break;
-        case ReportType.PROFIT_LOSS:
-          data = await ReportsService.getProfitLossReport(filters);
-          break;
-        case ReportType.BALANCE_SHEET:
-          data = await ReportsService.getBalanceSheetReport(filters);
-          break;
+        // case ReportType.PROFIT_LOSS:
+        //   data = await ReportsService.getProfitLossReport(filters);
+        //   break;
+        // case ReportType.BALANCE_SHEET:
+        //   data = await ReportsService.getBalanceSheetReport(filters);
+        //   break;
         case ReportType.PARTNER_BALANCES:
           data = await ReportsService.getPartnerBalancesReport(filters);
+          console.log("getPartnerBalancesReport data", data);
           break;
-        case ReportType.COMPLIANCE:
-          data = await ReportsService.getComplianceReport(filters);
-          break;
-        case ReportType.EXCHANGE_RATES:
-          data = await ReportsService.getExchangeRatesReport(filters);
-          break;
-        case ReportType.AUDIT_TRAIL:
-          data = await ReportsService.getAuditTrailReport(filters);
-          break;
+        // case ReportType.COMPLIANCE:
+        //   data = await ReportsService.getComplianceReport(filters);
+        //   break;
+        // case ReportType.EXCHANGE_RATES:
+        //   data = await ReportsService.getExchangeRatesReport(filters);
+        //   break;
+        // case ReportType.AUDIT_TRAIL:
+        //   data = await ReportsService.getAuditTrailReport(filters);
+        //   break;
         case ReportType.CORRIDOR_PERFORMANCE:
           data = await ReportsService.getCorridorPerformanceReport(filters);
+
+          console.log("getCorridorPerformanceReport data", data);
           break;
-        case ReportType.USER_PERFORMANCE:
-          data = await ReportsService.getUserPerformanceReport(filters);
-          break;
-        case ReportType.INTEGRATION_STATUS:
-          data = await ReportsService.getIntegrationStatusReport(filters);
-          break;
-        case ReportType.CASH_POSITION:
-          data = await ReportsService.getCashPositionReport(filters);
-          break;
+        // case ReportType.USER_PERFORMANCE:
+        //   data = await ReportsService.getUserPerformanceReport(filters);
+        //   break;
+        // case ReportType.INTEGRATION_STATUS:
+        //   data = await ReportsService.getIntegrationStatusReport(filters);
+        //   break;
+        // case ReportType.CASH_POSITION:
+        //   data = await ReportsService.getCashPositionReport(filters);
+        //   break;
         default:
           throw new Error("Invalid report type");
       }
@@ -178,28 +190,72 @@ const ReportsPage: React.FC = () => {
     }
   };
 
-  // Handle export
-  const handleExport = async (format: "csv" | "pdf") => {
+  const getData = () => {
+    switch (selectedReport) {
+      case ReportType.OUTBOUND_TRANSACTIONS:
+        return reportData?.data.transactions;
+      case ReportType.INBOUND_TRANSACTIONS:
+        return reportData?.data.transactions;
+      default:
+        return [];
+    }
+  };
+
+  // Prepare CSV data
+  const prepareCSVData = () => {
+    if (!reportData?.data) return [];
+
+    const headers = getTableHeaders();
+
+    const data = getData();
+    console.log("prepareCSVData data", data);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const csvData = data.map((item: any) => {
+      const row: Record<string, string> = {};
+      const cells = getTableRowCells(item);
+
+      headers.forEach((header, index) => {
+        row[header] = cells[index] || "";
+      });
+
+      return row;
+    });
+
+    return csvData;
+  };
+
+  // Handle CSV export
+  const handleCSVExport = () => {
+    const csvData = prepareCSVData();
+    return csvData;
+  };
+
+  // Handle PDF export
+  const handlePDFExport = async () => {
     try {
+      if (!reportData?.data) {
+        throw new Error("No data available for PDF export");
+      }
+
+      const data = getData();
+      if (!data || data.length === 0) {
+        throw new Error("No data available for PDF export");
+      }
+
       const filename = `${currentReportMetadata.name.replace(/\s+/g, "_")}_${
         new Date().toISOString().split("T")[0]
-      }`;
+      }.pdf`;
 
-      if (format === "csv") {
-        await exportCSVMutation.mutateAsync({
-          reportType: selectedReport,
-          filters: previewFilters,
-          filename,
-        });
-      } else {
-        await exportPDFMutation.mutateAsync({
-          reportType: selectedReport,
-          filters: previewFilters,
-          filename,
-        });
-      }
+      await ReportsPDFService.downloadReportPDF(
+        selectedReport,
+        data,
+        previewFilters,
+        currentReportMetadata,
+        filename
+      );
     } catch (error) {
-      console.error(`Error exporting ${format.toUpperCase()}:`, error);
+      console.error("Error generating PDF:", error);
+      alert("Failed to generate PDF. Please try again.");
     }
   };
 
@@ -232,12 +288,12 @@ const ReportsPage: React.FC = () => {
     }
 
     // Handle different report types
-    if (
-      selectedReport === ReportType.PROFIT_LOSS ||
-      selectedReport === ReportType.BALANCE_SHEET
-    ) {
-      return renderSummaryReport(data);
-    }
+    // if (
+    //   selectedReport === ReportType.PROFIT_LOSS ||
+    //   selectedReport === ReportType.BALANCE_SHEET
+    // ) {
+    //   return renderSummaryReport(data);
+    // }
 
     // Handle paginated reports
     const items =
@@ -313,164 +369,196 @@ const ReportsPage: React.FC = () => {
   };
 
   // Render summary reports (P&L, Balance Sheet)
-  const renderSummaryReport = (data: Record<string, unknown>) => {
-    if (selectedReport === ReportType.PROFIT_LOSS) {
-      return (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Total Revenue
-              </h3>
-              <p className="text-2xl font-bold text-green-600">
-                {formatToCurrency(data.totalRevenue as number)}
-              </p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Total Expenses
-              </h3>
-              <p className="text-2xl font-bold text-red-600">
-                {formatToCurrency(data.totalExpenses as number)}
-              </p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Net Profit
-              </h3>
-              <p
-                className={`text-2xl font-bold ${
-                  (data.netProfit as number) >= 0
-                    ? "text-green-600"
-                    : "text-red-600"
-                }`}
-              >
-                {formatToCurrency(data.netProfit as number)}
-              </p>
-            </div>
-          </div>
-        </div>
-      );
-    }
+  // const renderSummaryReport = (data: Record<string, unknown>) => {
+  //   if (selectedReport === ReportType.PROFIT_LOSS) {
+  //     return (
+  //       <div className="space-y-6">
+  //         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+  //           <div className="bg-white p-6 rounded-lg shadow">
+  //             <h3 className="text-lg font-semibold text-gray-900 mb-2">
+  //               Total Revenue
+  //             </h3>
+  //             <p className="text-2xl font-bold text-green-600">
+  //               {formatToCurrency(data.totalRevenue as number)}
+  //             </p>
+  //           </div>
+  //           <div className="bg-white p-6 rounded-lg shadow">
+  //             <h3 className="text-lg font-semibold text-gray-900 mb-2">
+  //               Total Expenses
+  //             </h3>
+  //             <p className="text-2xl font-bold text-red-600">
+  //               {formatToCurrency(data.totalExpenses as number)}
+  //             </p>
+  //           </div>
+  //           <div className="bg-white p-6 rounded-lg shadow">
+  //             <h3 className="text-lg font-semibold text-gray-900 mb-2">
+  //               Net Profit
+  //             </h3>
+  //             <p
+  //               className={`text-2xl font-bold ${
+  //                 (data.netProfit as number) >= 0
+  //                   ? "text-green-600"
+  //                   : "text-red-600"
+  //               }`}
+  //             >
+  //               {formatToCurrency(data.netProfit as number)}
+  //             </p>
+  //           </div>
+  //         </div>
+  //       </div>
+  //     );
+  //   }
 
-    if (selectedReport === ReportType.BALANCE_SHEET) {
-      return (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Total Assets
-              </h3>
-              <p className="text-2xl font-bold text-blue-600">
-                {formatToCurrency(data.totalAssets as number)}
-              </p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Total Liabilities
-              </h3>
-              <p className="text-2xl font-bold text-orange-600">
-                {formatToCurrency(data.totalLiabilities as number)}
-              </p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Total Equity
-              </h3>
-              <p className="text-2xl font-bold text-purple-600">
-                {formatToCurrency(data.totalEquity as number)}
-              </p>
-            </div>
-          </div>
-        </div>
-      );
-    }
+  //   if (selectedReport === ReportType.BALANCE_SHEET) {
+  //     return (
+  //       <div className="space-y-6">
+  //         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+  //           <div className="bg-white p-6 rounded-lg shadow">
+  //             <h3 className="text-lg font-semibold text-gray-900 mb-2">
+  //               Total Assets
+  //             </h3>
+  //             <p className="text-2xl font-bold text-blue-600">
+  //               {formatToCurrency(data.totalAssets as number)}
+  //             </p>
+  //           </div>
+  //           <div className="bg-white p-6 rounded-lg shadow">
+  //             <h3 className="text-lg font-semibold text-gray-900 mb-2">
+  //               Total Liabilities
+  //             </h3>
+  //             <p className="text-2xl font-bold text-orange-600">
+  //               {formatToCurrency(data.totalLiabilities as number)}
+  //             </p>
+  //           </div>
+  //           <div className="bg-white p-6 rounded-lg shadow">
+  //             <h3 className="text-lg font-semibold text-gray-900 mb-2">
+  //               Total Equity
+  //             </h3>
+  //             <p className="text-2xl font-bold text-purple-600">
+  //               {formatToCurrency(data.totalEquity as number)}
+  //             </p>
+  //           </div>
+  //         </div>
+  //       </div>
+  //     );
+  //   }
 
-    return null;
-  };
+  //   return null;
+  // };
 
   // Get table headers based on report type
   const getTableHeaders = () => {
     switch (selectedReport) {
       case ReportType.OUTBOUND_TRANSACTIONS:
         return [
-          "Transaction ID",
-          "Amount",
-          "Status",
-          "Customer",
-          "Beneficiary",
-          "Destination Org",
+          "Transaction No",
+          "Amount To Send",
+          "Total Received",
+          "Total Charges",
           "Currency",
+          "Status",
+          "Sender",
+          "Receiver",
+          "Destination Org",
           "Destination Country",
           "Date",
         ];
       case ReportType.INBOUND_TRANSACTIONS:
         return [
-          "Transaction ID",
-          "Amount",
-          "Status",
-          "Customer",
-          "Beneficiary",
-          "Origin Org",
+          "Transaction No",
+          "Amount To Receive",
+          "Total Paid",
+          "Total Charges",
           "Currency",
+          "Status",
+          "Sender",
+          "Receiver",
+          "Origin Org",
           "Origin Country",
           "Date",
         ];
       case ReportType.COMMISSIONS:
-        return ["Charge Type", "Amount", "Transaction", "Corridor", "Date"];
-      case ReportType.TAXES:
-        return ["Tax Type", "Amount", "Transaction", "Corridor", "Date"];
-      case ReportType.USER_TILLS:
         return [
-          "User",
-          "Till",
-          "Opening Balance",
-          "Closing Balance",
-          "Net Transactions",
-          "Status",
-          "Date",
-        ];
-      case ReportType.BALANCES_HISTORY:
-        return [
-          "Entity Type",
-          "Entity ID",
-          "Old Balance",
-          "New Balance",
-          "Change",
+          "Name",
+          "Charge Type",
+          "Transaction",
+          "External Organisation",
+          "Amount",
+          "Internal Amount",
+          "External Amount",
           "Currency",
           "Date",
         ];
+      case ReportType.TAXES:
+        return [
+          "Name",
+          "Tax Type",
+          "Transaction",
+          "External Organisation",
+          "Amount",
+          "Internal Amount",
+          "External Amount",
+          "Currency",
+          "Date",
+        ];
+      // case ReportType.USER_TILLS:
+      //   return [
+      //     "User",
+      //     "Till",
+      //     "Opening Balance",
+      //     "Closing Balance",
+      //     "Net Transactions",
+      //     "Status",
+      //     "Date",
+      //   ];
+      // case ReportType.BALANCES_HISTORY:
+      //   return [
+      //     "Entity Type",
+      //     "Entity ID",
+      //     "Old Balance",
+      //     "New Balance",
+      //     "Change",
+      //     "Currency",
+      //     "Date",
+      //   ];
       case ReportType.GL_ACCOUNTS:
         return ["Account Name", "Type", "Balance", "Currency", "Date"];
       case ReportType.PARTNER_BALANCES:
         return ["Partner Org", "Balance", "Currency", "Date"];
-      case ReportType.COMPLIANCE:
-        return [
-          "Customer",
-          "Risk Rating",
-          "Type",
-          "Nationality",
-          "Transaction Count",
-          "Date",
-        ];
-      case ReportType.EXCHANGE_RATES:
-        return ["Corridor", "Currency Pair", "Rate", "Date"];
-      case ReportType.AUDIT_TRAIL:
-        return ["Action", "Entity", "User", "Date"];
+      // case ReportType.COMPLIANCE:
+      //   return [
+      //     "Customer",
+      //     "Risk Rating",
+      //     "Type",
+      //     "Nationality",
+      //     "Transaction Count",
+      //     "Date",
+      //   ];
+      // case ReportType.EXCHANGE_RATES:
+      //   return ["Corridor", "Currency Pair", "Rate", "Date"];
+      // case ReportType.AUDIT_TRAIL:
+      //   return ["Action", "Entity", "User", "Date"];
       case ReportType.CORRIDOR_PERFORMANCE:
-        return ["Corridor", "Transaction Count", "Total Amount", "Date"];
-      case ReportType.USER_PERFORMANCE:
-        return ["User", "Till", "Net Transactions", "Date"];
-      case ReportType.INTEGRATION_STATUS:
         return [
-          "Integration Type",
-          "Partner",
-          "Status",
-          "Success Rate",
+          "Corridor",
+          "Agency/Partner",
+          "Transaction Count",
+          "Total Amount Paid",
+          "Total Amount to Send",
+          "Total Charges",
           "Date",
         ];
-      case ReportType.CASH_POSITION:
-        return ["Entity Type", "Entity ID", "Balance", "Currency", "Date"];
+      // case ReportType.USER_PERFORMANCE:
+      //   return ["User", "Till", "Net Transactions", "Date"];
+      // case ReportType.INTEGRATION_STATUS:
+      //   return [
+      //     "Integration Type",
+      //     "Partner",
+      //     "Status",
+      //     "Success Rate",
+      //     "Date",
+      //   ];
+      // case ReportType.CASH_POSITION:
+      //   return ["Entity Type", "Entity ID", "Balance", "Currency", "Date"];
       default:
         return [];
     }
@@ -484,60 +572,74 @@ const ReportsPage: React.FC = () => {
         return [
           item.transaction_no,
           formatToCurrency(item.origin_amount),
-          item.status,
+          formatToCurrency(item.amount_payable),
+          formatToCurrency(item.total_all_charges),
+          item.origin_currency?.currency_code,
+          `${item.status} - ${item.remittance_status}`,
           `${item.customer?.full_name}`,
           `${item.beneficiary?.name}`,
-          item.destination_organisation?.name,
-          item.origin_currency?.currency_code,
-          item.origin_country?.name,
+          item.corridor?.organisation?.name,
+          item.corridor?.destination_country?.name,
           new Date(item.created_at).toLocaleDateString(),
         ];
       case ReportType.INBOUND_TRANSACTIONS:
         return [
-          item.transaction_id,
+          item.transaction_no,
           formatToCurrency(item.dest_amount),
-          item.status,
-          `${item.customer?.first_name} ${item.customer?.last_name}`,
-          `${item.beneficiary?.first_name} ${item.beneficiary?.last_name}`,
-          item.corridor?.name,
+          formatToCurrency(item.amount_payable),
+          formatToCurrency(item.total_all_charges),
+          item.dest_currency?.currency_code,
+          `${item.status} - ${item.remittance_status}`,
+          `${item.sender_trasaction_party?.name}`,
+          `${item.receiver_trasaction_party?.name}`,
+          item.origin_organisation?.name,
+          item.corridor?.base_country?.name,
           new Date(item.created_at).toLocaleDateString(),
         ];
       case ReportType.COMMISSIONS:
         return [
-          item.charge_type,
+          item.charge.name,
+          item.type,
+          item.transaction?.transaction_no,
+          item.transaction?.corridor?.organisation?.name,
           formatToCurrency(item.amount),
-          item.transaction?.transaction_id,
-          item.transaction?.corridor?.name,
+          formatToCurrency(item.internal_amount),
+          formatToCurrency(item.external_amount),
+          item.transaction?.origin_currency?.currency_code,
           new Date(item.created_at).toLocaleDateString(),
         ];
       case ReportType.TAXES:
         return [
-          item.charge_type,
+          item.charge.name,
+          item.type,
+          item.transaction?.transaction_no,
+          item.transaction?.corridor?.organisation?.name,
           formatToCurrency(item.amount),
-          item.transaction?.transaction_id,
-          item.transaction?.corridor?.name,
+          formatToCurrency(item.internal_amount),
+          formatToCurrency(item.external_amount),
+          item.transaction?.origin_currency?.currency_code,
           new Date(item.created_at).toLocaleDateString(),
         ];
-      case ReportType.USER_TILLS:
-        return [
-          `${item.user?.first_name} ${item.user?.last_name}`,
-          item.till?.name,
-          formatToCurrency(item.opening_balance),
-          formatToCurrency(item.closing_balance),
-          formatToCurrency(item.net_transactions_total),
-          item.status,
-          new Date(item.created_at).toLocaleDateString(),
-        ];
-      case ReportType.BALANCES_HISTORY:
-        return [
-          item.entity_type,
-          item.entity_id,
-          formatToCurrency(item.old_balance),
-          formatToCurrency(item.new_balance),
-          formatToCurrency(item.change_amount),
-          item.currency?.currency_code,
-          new Date(item.created_at).toLocaleDateString(),
-        ];
+      // case ReportType.USER_TILLS:
+      //   return [
+      //     `${item.user?.first_name} ${item.user?.last_name}`,
+      //     item.till?.name,
+      //     formatToCurrency(item.opening_balance),
+      //     formatToCurrency(item.closing_balance),
+      //     formatToCurrency(item.net_transactions_total),
+      //     item.status,
+      //     new Date(item.created_at).toLocaleDateString(),
+      //   ];
+      // case ReportType.BALANCES_HISTORY:
+      //   return [
+      //     item.entity_type,
+      //     item.entity_id,
+      //     formatToCurrency(item.old_balance),
+      //     formatToCurrency(item.new_balance),
+      //     formatToCurrency(item.change_amount),
+      //     item.currency?.currency_code,
+      //     new Date(item.created_at).toLocaleDateString(),
+      //   ];
       case ReportType.GL_ACCOUNTS:
         return [
           item.name,
@@ -548,70 +650,85 @@ const ReportsPage: React.FC = () => {
         ];
       case ReportType.PARTNER_BALANCES:
         return [
-          item.organisation?.name,
+          item.dest_org?.name,
           formatToCurrency(item.balance),
           item.currency?.currency_code,
           new Date(item.created_at).toLocaleDateString(),
         ];
-      case ReportType.COMPLIANCE:
-        return [
-          `${item.first_name} ${item.last_name}`,
-          item.risk_rating,
-          item.type,
-          item.nationality,
-          item.transactions?.length || 0,
-          new Date(item.created_at).toLocaleDateString(),
-        ];
-      case ReportType.EXCHANGE_RATES:
-        return [
-          item.corridor?.name,
-          item.currency_pair,
-          item.rate,
-          new Date(item.created_at).toLocaleDateString(),
-        ];
-      case ReportType.AUDIT_TRAIL:
-        return [
-          item.action,
-          `${item.entity_type}: ${item.entity_id}`,
-          `${item.user?.first_name} ${item.user?.last_name}`,
-          new Date(item.created_at).toLocaleDateString(),
-        ];
+      // case ReportType.COMPLIANCE:
+      //   return [
+      //     `${item.first_name} ${item.last_name}`,
+      //     item.risk_rating,
+      //     item.type,
+      //     item.nationality,
+      //     item.transactions?.length || 0,
+      //     new Date(item.created_at).toLocaleDateString(),
+      //   ];
+      // case ReportType.EXCHANGE_RATES:
+      //   return [
+      //     item.corridor?.name,
+      //     item.currency_pair,
+      //     item.rate,
+      //     new Date(item.created_at).toLocaleDateString(),
+      //   ];
+      // case ReportType.AUDIT_TRAIL:
+      //   return [
+      //     item.action,
+      //     `${item.entity_type}: ${item.entity_id}`,
+      //     `${item.user?.first_name} ${item.user?.last_name}`,
+      //     new Date(item.created_at).toLocaleDateString(),
+      //   ];
       case ReportType.CORRIDOR_PERFORMANCE:
         return [
           item.name,
+          item.organisation?.name,
           item.transactions?.length || 0,
           formatToCurrency(
             item.transactions?.reduce(
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              (sum: number, t: any) => sum + (t.origin_amount || 0),
+              (sum: number, t: any) => sum + (Number(t.amount_payable) || 0),
+              0
+            ) || 0
+          ),
+          formatToCurrency(
+            item.transactions?.reduce(
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (sum: number, t: any) => sum + (Number(t.dest_amount) || 0),
+              0
+            ) || 0
+          ),
+          formatToCurrency(
+            item.transactions?.reduce(
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (sum: number, t: any) => sum + (Number(t.total_all_charges) || 0),
               0
             ) || 0
           ),
           new Date(item.created_at).toLocaleDateString(),
         ];
-      case ReportType.USER_PERFORMANCE:
-        return [
-          `${item.user?.first_name} ${item.user?.last_name}`,
-          item.till?.name,
-          formatToCurrency(item.net_transactions_total),
-          new Date(item.created_at).toLocaleDateString(),
-        ];
-      case ReportType.INTEGRATION_STATUS:
-        return [
-          item.type,
-          item.partner_organisation?.name,
-          item.status,
-          `${item.success_rate}%`,
-          new Date(item.created_at).toLocaleDateString(),
-        ];
-      case ReportType.CASH_POSITION:
-        return [
-          item.entity_type,
-          item.entity_id,
-          formatToCurrency(item.balance),
-          item.currency?.currency_code,
-          new Date(item.created_at).toLocaleDateString(),
-        ];
+      // case ReportType.USER_PERFORMANCE:
+      //   return [
+      //     `${item.user?.first_name} ${item.user?.last_name}`,
+      //     item.till?.name,
+      //     formatToCurrency(item.net_transactions_total),
+      //     new Date(item.created_at).toLocaleDateString(),
+      //   ];
+      // case ReportType.INTEGRATION_STATUS:
+      //   return [
+      //     item.type,
+      //     item.partner_organisation?.name,
+      //     item.status,
+      //     `${item.success_rate}%`,
+      //     new Date(item.created_at).toLocaleDateString(),
+      //   ];
+      // case ReportType.CASH_POSITION:
+      //   return [
+      //     item.entity_type,
+      //     item.entity_id,
+      //     formatToCurrency(item.balance),
+      //     item.currency?.currency_code,
+      //     new Date(item.created_at).toLocaleDateString(),
+      //   ];
       default:
         return [];
     }
@@ -732,18 +849,22 @@ const ReportsPage: React.FC = () => {
           </Button>
         </div>
         <div className="flex space-x-3">
-          <Button
-            variant="outline"
-            onClick={() => handleExport("csv")}
-            disabled={!showData || isLoading || exportCSVMutation.isPending}
+          <CSVLink
+            data={handleCSVExport()}
+            filename={`${currentReportMetadata.name.replace(/\s+/g, "_")}_${
+              new Date().toISOString().split("T")[0]
+            }.csv`}
+            headers={getTableHeaders()}
           >
-            <FiDownload className="h-4 w-4 mr-2" />
-            Export CSV
-          </Button>
+            <Button variant="outline" disabled={!showData || isLoading}>
+              <FiDownload className="h-4 w-4 mr-2" />
+              Export CSV
+            </Button>
+          </CSVLink>
           <Button
             variant="outline"
-            onClick={() => handleExport("pdf")}
-            disabled={!showData || isLoading || exportPDFMutation.isPending}
+            onClick={handlePDFExport}
+            disabled={!showData || isLoading}
           >
             <FiDownload className="h-4 w-4 mr-2" />
             Export PDF

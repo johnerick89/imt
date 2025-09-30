@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { ReportsService } from "../services/ReportsService";
 import type {
   BaseReportFilters,
@@ -183,34 +183,5 @@ export const useCashPositionReport = (filters: CashPositionReportFilters) => {
     queryKey: ["cashPositionReport", filters],
     queryFn: () => ReportsService.getCashPositionReport(filters),
     enabled: !!filters.organisation_id,
-  });
-};
-
-// Export mutations
-export const useExportReportToCSV = () => {
-  return useMutation({
-    mutationFn: ({
-      reportType,
-      filters,
-      filename,
-    }: {
-      reportType: string;
-      filters: Record<string, unknown>;
-      filename?: string;
-    }) => ReportsService.exportReportToCSV(reportType, filters, filename),
-  });
-};
-
-export const useExportReportToPDF = () => {
-  return useMutation({
-    mutationFn: ({
-      reportType,
-      filters,
-      filename,
-    }: {
-      reportType: string;
-      filters: Record<string, unknown>;
-      filename?: string;
-    }) => ReportsService.exportReportToPDF(reportType, filters, filename),
   });
 };
