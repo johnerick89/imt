@@ -206,25 +206,25 @@ const CorridorsPage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="text-2xl font-bold text-gray-900">
-              {stats.total}
+              {stats.totalCorridors}
             </div>
             <div className="text-sm text-gray-600">Total Corridors</div>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="text-2xl font-bold text-green-600">
-              {stats.active}
+              {stats.activeCorridors}
             </div>
             <div className="text-sm text-gray-600">Active</div>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="text-2xl font-bold text-red-600">
-              {stats.inactive}
+              {stats.inactiveCorridors}
             </div>
             <div className="text-sm text-gray-600">Inactive</div>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="text-2xl font-bold text-orange-600">
-              {stats.pending}
+              {stats.pendingCorridors}
             </div>
             <div className="text-sm text-gray-600">Pending</div>
           </div>
