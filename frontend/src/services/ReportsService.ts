@@ -171,36 +171,4 @@ export class ReportsService {
     });
     return response.data;
   }
-
-  // Export report to CSV
-  static async exportReportToCSV(
-    reportType: string,
-    filters: Record<string, unknown>,
-    filename?: string
-  ) {
-    const response = await AxiosBase.get(
-      `/api/v1/reports/${reportType}/export/csv`,
-      {
-        params: { ...filters, filename },
-        responseType: "blob",
-      }
-    );
-    return response.data;
-  }
-
-  // Export report to PDF
-  static async exportReportToPDF(
-    reportType: string,
-    filters: Record<string, unknown>,
-    filename?: string
-  ) {
-    const response = await AxiosBase.get(
-      `/api/v1/reports/${reportType}/export/pdf`,
-      {
-        params: { ...filters, filename },
-        responseType: "blob",
-      }
-    );
-    return response.data;
-  }
 }

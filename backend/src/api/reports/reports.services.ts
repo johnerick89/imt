@@ -25,6 +25,9 @@ class ReportsService {
     const where: any = {
       origin_organisation_id: user_organisation_id,
       direction: "OUTBOUND",
+      status: {
+        in: ["APPROVED", "COMPLETED"],
+      },
     };
 
     if (date_from || date_to) {
@@ -49,6 +52,8 @@ class ReportsService {
         corridor: {
           include: {
             base_currency: true,
+            destination_country: true,
+            organisation: true,
           },
         },
         transaction_charges: {
@@ -115,18 +120,15 @@ class ReportsService {
     if (organisation_id) where.origin_organisation_id = organisation_id;
     if (currency_id) where.destination_currency_id = currency_id;
 
+    console.log("where", where, "filters", filters);
+
     const transactions = await prisma.transaction.findMany({
       where,
       include: {
-        customer: true,
-        beneficiary: true,
         dest_currency: true,
-        origin_currency: true,
         corridor: {
           include: {
-            base_currency: true,
-            destination_country: true,
-            organisation: true,
+            base_country: true,
           },
         },
         transaction_charges: {
@@ -134,7 +136,9 @@ class ReportsService {
             charge: true,
           },
         },
-        destination_organisation: true,
+        origin_organisation: true,
+        sender_trasaction_party: true,
+        receiver_trasaction_party: true,
       },
       orderBy: { created_at: "desc" },
       skip: (page - 1) * limit,
@@ -178,7 +182,15 @@ class ReportsService {
 
     const where: any = {
       transaction: {
+        status: {
+          in: ["APPROVED", "COMPLETED"],
+        },
         origin_organisation_id: user_organisation_id,
+      },
+      charge: {
+        type: {
+          in: ["COMMISSION", "INTERNAL_FEE"],
+        },
       },
     };
 
@@ -200,9 +212,15 @@ class ReportsService {
         charge: true,
         transaction: {
           include: {
-            corridor: true,
+            corridor: {
+              include: {
+                organisation: true,
+              },
+            },
+            origin_currency: true,
           },
         },
+        destination_organisation: true,
       },
       orderBy: { created_at: "desc" },
       skip: (page - 1) * limit,
@@ -244,9 +262,14 @@ class ReportsService {
     } = filters;
 
     const where: any = {
-      charge_type: "TAX",
       transaction: {
+        status: {
+          in: ["APPROVED", "COMPLETED"],
+        },
         origin_organisation_id: user_organisation_id,
+      },
+      charge: {
+        type: "TAX",
       },
     };
 
@@ -267,9 +290,15 @@ class ReportsService {
         charge: true,
         transaction: {
           include: {
-            corridor: true,
+            corridor: {
+              include: {
+                organisation: true,
+              },
+            },
+            origin_currency: true,
           },
         },
+        destination_organisation: true,
       },
       orderBy: { created_at: "desc" },
       skip: (page - 1) * limit,
@@ -956,6 +985,7 @@ class ReportsService {
             base_currency: true,
           },
         },
+        organisation: true,
         transactions: {
           where,
           include: {

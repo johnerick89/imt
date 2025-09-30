@@ -34,6 +34,7 @@ export class ReportsController {
         filters: validatedFilters,
         user_organisation_id: req.user?.organisation_id || "",
       });
+
       res.status(200).json(result);
     }
   );
@@ -46,6 +47,7 @@ export class ReportsController {
         filters: validatedFilters,
         user_organisation_id: req.user?.organisation_id || "",
       });
+      console.log("getInboundTransactionsReport result", result);
       res.status(200).json(result);
     }
   );
