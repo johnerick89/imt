@@ -2,6 +2,10 @@ import {
   OrganisationType,
   OrganisationStatus,
   IntegrationMethod,
+  Currency,
+  Country,
+  User,
+  Integration,
 } from "@prisma/client";
 
 export interface IOrganisation {
@@ -24,37 +28,11 @@ export interface IOrganisation {
   created_at: Date;
   updated_at: Date;
   // Relations
-  base_currency?: {
-    id: string;
-    currency_name: string;
-    currency_code: string;
-    currency_symbol: string;
-  } | null;
-  country?: {
-    id: string;
-    name: string;
-    code: string;
-  } | null;
-  created_by_user?: {
-    id: string;
-    email: string;
-    first_name: string;
-    last_name: string;
-  } | null;
-  users?: Array<{
-    id: string;
-    email: string;
-    first_name: string;
-    last_name: string;
-    role: string;
-    status: string;
-  }>;
-  integrations?: Array<{
-    id: string;
-    name: string;
-    type: string;
-    status: string;
-  }>;
+  base_currency?: Currency | null;
+  country?: Country | null;
+  created_by_user?: User | null;
+  users?: User[] | null;
+  integrations?: Integration[] | null;
 }
 
 export interface ICreateOrganisationRequest {
@@ -71,6 +49,7 @@ export interface ICreateOrganisationRequest {
   contact_zip?: string;
   base_currency_id?: string | null | undefined;
   country_id?: string | null | undefined;
+  contact_password: string;
 }
 
 export interface IUpdateOrganisationRequest {

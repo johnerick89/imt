@@ -1,8 +1,14 @@
+import {
+  ApplicationMethod,
+  ChargeType,
+  ChargeStatus,
+  ApplicableDirection,
+} from "@prisma/client";
 export interface ICharge {
   id: string;
   name: string;
   description: string;
-  application_method: "PERCENTAGE" | "FIXED";
+  application_method: ApplicationMethod;
   currency_id?: string | null;
   currency?: {
     id: string;
@@ -10,7 +16,7 @@ export interface ICharge {
     currency_code: string;
     currency_symbol: string;
   } | null;
-  type: "TAX" | "INTERNAL_FEE" | "COMMISSION" | "OTHER";
+  type: ChargeType;
   rate: number;
   origin_organisation_id?: string | null;
   origin_organisation?: {
@@ -25,13 +31,13 @@ export interface ICharge {
     type: string;
   } | null;
   is_reversible: boolean;
-  direction: "OUTBOUND" | "INBOUND" | "BOTH";
+  direction: ApplicableDirection;
   origin_share_percentage?: number | null;
   destination_share_percentage?: number | null;
   created_at: Date;
   created_by?: string | null;
   updated_at: Date;
-  status: "ACTIVE" | "INACTIVE" | "PENDING" | "BLOCKED";
+  status: ChargeStatus;
   min_amount?: number | null;
   max_amount?: number | null;
   created_by_user?: {
@@ -40,52 +46,55 @@ export interface ICharge {
     last_name: string;
     email: string;
   } | null;
+  payment_authority?: string | null;
 }
 
 export interface CreateChargeRequest {
   name: string;
   description: string;
-  application_method: "PERCENTAGE" | "FIXED";
+  application_method: ApplicationMethod;
   currency_id?: string;
-  type: "TAX" | "INTERNAL_FEE" | "COMMISSION" | "OTHER";
+  type: ChargeType;
   rate: number;
   origin_organisation_id?: string;
   destination_organisation_id?: string;
   is_reversible?: boolean;
-  direction: "OUTBOUND" | "INBOUND" | "BOTH";
+  direction: ApplicableDirection;
   origin_share_percentage?: number;
   destination_share_percentage?: number;
-  status?: "ACTIVE" | "INACTIVE" | "PENDING" | "BLOCKED";
+  status?: ChargeStatus;
   min_amount?: number;
   max_amount?: number;
+  payment_authority?: string;
 }
 
 export interface UpdateChargeRequest {
   name?: string;
   description?: string;
-  application_method?: "PERCENTAGE" | "FIXED";
+  application_method?: ApplicationMethod;
   currency_id?: string;
-  type?: "TAX" | "INTERNAL_FEE" | "COMMISSION" | "OTHER";
+  type?: ChargeType;
   rate?: number;
   origin_organisation_id?: string;
   destination_organisation_id?: string;
   is_reversible?: boolean;
-  direction?: "OUTBOUND" | "INBOUND" | "BOTH";
+  direction?: ApplicableDirection;
   origin_share_percentage?: number;
   destination_share_percentage?: number;
-  status?: "ACTIVE" | "INACTIVE" | "PENDING" | "BLOCKED";
+  status?: ChargeStatus;
   min_amount?: number;
   max_amount?: number;
+  payment_authority?: string;
 }
 
 export interface ChargeFilters {
   page?: number;
   limit?: number;
   search?: string;
-  type?: "TAX" | "INTERNAL_FEE" | "COMMISSION" | "OTHER";
-  status?: "ACTIVE" | "INACTIVE" | "PENDING" | "BLOCKED";
-  application_method?: "PERCENTAGE" | "FIXED";
-  direction?: "OUTBOUND" | "INBOUND" | "BOTH";
+  type?: ChargeType;
+  status?: ChargeStatus;
+  application_method?: ApplicationMethod;
+  direction?: ApplicableDirection;
   currency_id?: string;
   origin_organisation_id?: string;
   destination_organisation_id?: string;

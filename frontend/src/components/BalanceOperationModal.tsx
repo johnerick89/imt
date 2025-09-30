@@ -145,7 +145,9 @@ const BalanceOperationModal: React.FC<BalanceOperationModalProps> = ({
             <FormItem
               label="Source"
               required
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               invalid={!!(errors as any).source_id}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               errorMessage={(errors as any).source_id?.message}
             >
               <Controller
@@ -158,6 +160,7 @@ const BalanceOperationModal: React.FC<BalanceOperationModalProps> = ({
                     options={sourceOptions}
                     placeholder="Select source"
                     disabled={isLoading}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     invalid={!!(errors as any).source_id}
                   />
                 )}
@@ -187,7 +190,9 @@ const BalanceOperationModal: React.FC<BalanceOperationModalProps> = ({
             <FormItem
               label="Destination"
               required
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               invalid={!!(errors as any).destination_id}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               errorMessage={(errors as any).destination_id?.message}
             >
               <Controller
@@ -200,6 +205,7 @@ const BalanceOperationModal: React.FC<BalanceOperationModalProps> = ({
                     options={destinationOptions}
                     placeholder="Select destination"
                     disabled={isLoading}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     invalid={!!(errors as any).destination_id}
                   />
                 )}

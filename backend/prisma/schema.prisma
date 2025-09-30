@@ -211,7 +211,7 @@ model Organisation {
   origin_corridors                    Corridor[]          @relation("OriginOrganisation")
   destination_corridors               Corridor[]          @relation("DestinationOrganisation")
   vaults                              Vault[]
-  gl_accounts                         GlAccount[]
+  gl_accounts                         GlAccount[]         @relation("Organisation")
   transaction_charges                 TransactionCharge[] @relation("Organisation")
   destination_transaction_charges     TransactionCharge[] @relation("DestinationOrganisation")
   gl_transactions                     GLTransaction[]
@@ -226,6 +226,7 @@ model Organisation {
   destination_charges_payments        ChargesPayment[]    @relation("DestinationOrganisation")
   amount_to_send_base_currency        Decimal?            @db.Decimal(18, 9)
   amount_to_send_destination_currency Decimal?            @db.Decimal(18, 9)
+  counter_party_organisation          GlAccount[]         @relation("CounterPartyOrganisation")
 
   @@index([id])
   @@index([description])
@@ -486,6 +487,7 @@ model Charge {
   max_amount                   Float?
   gl_accounts                  GlAccount[]
   transaction_charges          TransactionCharge[]
+  payment_authority            String?
 
   @@index([name])
   @@index([currency_id])
@@ -696,7 +698,6 @@ model Beneficiary {
   bank_account_number       String?
   bank_account_name         String?
 
-  @@unique([customer_id, organisation_id])
   @@index([customer_id])
   @@index([organisation_id])
   @@index([deleted_at])
@@ -853,6 +854,7 @@ model UserTill {
   closed_by_user         User?           @relation("UserTillClosedByUser", fields: [closed_by], references: [id])
   organisation_id        String?         @db.Uuid
   organisation           Organisation?   @relation(fields: [organisation_id], references: [id])
+  moving_balance         Decimal?        @db.Decimal(22, 9)
 
   @@index([user_id])
   @@index([till_id])
@@ -1038,7 +1040,7 @@ model TransactionCharge {
   organisation                Organisation?           @relation("Organisation", fields: [organisation_id], references: [id])
   destination_organisation_id String?                 @db.Uuid
   destination_organisation    Organisation?           @relation("DestinationOrganisation", fields: [destination_organisation_id], references: [id])
-  ChargesPaymentItem          ChargesPaymentItem[]
+  charges_payment_items       ChargesPaymentItem[]
 
   @@index([transaction_id])
   @@index([type])
@@ -1080,36 +1082,38 @@ enum GlAccountType {
 }
 
 model GlAccount {
-  id              String        @id @default(uuid()) @db.Uuid
-  name            String
-  type            GlAccountType
-  balance         Decimal?      @db.Decimal(22, 9)
-  currency_id     String?       @db.Uuid
-  currency        Currency?     @relation(fields: [currency_id], references: [id])
-  locked_balance  Decimal?      @db.Decimal(22, 9)
-  max_balance     Decimal?      @db.Decimal(22, 9)
-  min_balance     Decimal?      @db.Decimal(22, 9)
-  closed_at       DateTime?     @db.Timestamp(0)
-  close_reason    String?       @db.VarChar(256)
-  frozen_at       DateTime?     @db.Timestamp(0)
-  frozen_reason   String?       @db.VarChar(256)
-  created_at      DateTime      @default(now())
-  updated_at      DateTime      @updatedAt
-  opened_by       String?       @db.Uuid
-  opened_by_user  User?         @relation(fields: [opened_by], references: [id])
-  organisation_id String?       @db.Uuid
-  organisation    Organisation? @relation(fields: [organisation_id], references: [id])
-  bank_account_id String?       @db.Uuid
-  bank_account    BankAccount?  @relation(fields: [bank_account_id], references: [id])
-  charge_id       String?       @db.Uuid
-  charge          Charge?       @relation(fields: [charge_id], references: [id])
-  vault_id        String?       @db.Uuid
-  vault           Vault?        @relation(fields: [vault_id], references: [id])
-  till_id         String?       @db.Uuid
-  till            Till?         @relation(fields: [till_id], references: [id])
-  org_balance_id  String?       @db.Uuid
-  org_balance     OrgBalance?   @relation(fields: [org_balance_id], references: [id])
-  gl_entries      GlEntry[]
+  id                            String        @id @default(uuid()) @db.Uuid
+  name                          String
+  type                          GlAccountType
+  balance                       Decimal?      @db.Decimal(22, 9)
+  currency_id                   String?       @db.Uuid
+  currency                      Currency?     @relation(fields: [currency_id], references: [id])
+  locked_balance                Decimal?      @db.Decimal(22, 9)
+  max_balance                   Decimal?      @db.Decimal(22, 9)
+  min_balance                   Decimal?      @db.Decimal(22, 9)
+  closed_at                     DateTime?     @db.Timestamp(0)
+  close_reason                  String?       @db.VarChar(256)
+  frozen_at                     DateTime?     @db.Timestamp(0)
+  frozen_reason                 String?       @db.VarChar(256)
+  created_at                    DateTime      @default(now())
+  updated_at                    DateTime      @updatedAt
+  opened_by                     String?       @db.Uuid
+  opened_by_user                User?         @relation(fields: [opened_by], references: [id])
+  organisation_id               String?       @db.Uuid
+  organisation                  Organisation? @relation("Organisation", fields: [organisation_id], references: [id])
+  bank_account_id               String?       @db.Uuid
+  bank_account                  BankAccount?  @relation(fields: [bank_account_id], references: [id])
+  charge_id                     String?       @db.Uuid
+  charge                        Charge?       @relation(fields: [charge_id], references: [id])
+  vault_id                      String?       @db.Uuid
+  vault                         Vault?        @relation(fields: [vault_id], references: [id])
+  till_id                       String?       @db.Uuid
+  till                          Till?         @relation(fields: [till_id], references: [id])
+  org_balance_id                String?       @db.Uuid
+  org_balance                   OrgBalance?   @relation(fields: [org_balance_id], references: [id])
+  gl_entries                    GlEntry[]
+  counter_party_organisation_id String?       @db.Uuid
+  counter_party_organisation    Organisation? @relation("CounterPartyOrganisation", fields: [counter_party_organisation_id], references: [id])
 
   @@index([created_at])
   @@index([updated_at])
@@ -1130,6 +1134,8 @@ enum GLTransactionType {
   INBOUND_TRANSACTION
   INBOUND_TRANSACTION_REVERSAL
   ORG_BALANCE_TOPUP
+  CHARGES_PAYMENT
+  CHARGES_PAYMENT_REVERSAL
 }
 
 enum GLTransactionStatus {
@@ -1370,6 +1376,7 @@ model ChargesPaymentItem {
   internal_amount_settled Decimal           @db.Decimal(22, 9) // Portion of internal_amount marked paid in this batch
   external_amount_settled Decimal           @db.Decimal(22, 9) // Portion of external_amount marked paid
   created_at              DateTime          @default(now())
+  amount_settled          Decimal           @default(0) @db.Decimal(22, 9) // Portion of amount marked paid in this batch
 
   @@unique([charges_payment_id, transaction_charges_id]) // One item per transaction_charge per payment
   @@index([charges_payment_id])

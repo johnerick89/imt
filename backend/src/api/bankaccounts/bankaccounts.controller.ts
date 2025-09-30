@@ -8,29 +8,22 @@ import {
   withdrawalSchema,
 } from "./bankaccounts.validation";
 import type CustomRequest from "../../types/CustomReq.type";
+import { AppError } from "../../utils/AppError";
+import { asyncHandler } from "../../middlewares/error.middleware";
 
 const bankAccountService = new BankAccountService();
 
 export class BankAccountController {
-  async createBankAccount(req: CustomRequest, res: Response): Promise<void> {
-    try {
+  createBankAccount = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const validation = createBankAccountSchema.safeParse(req.body);
       if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: "Validation error",
-          error: validation.error.issues,
-        });
-        return;
+        throw new AppError("Validation error", 400);
       }
 
       const userId = req.user?.id;
       if (!userId) {
-        res.status(401).json({
-          success: false,
-          message: "User not authenticated",
-        });
-        return;
+        throw new AppError("User not authenticated", 401);
       }
 
       const result = await bankAccountService.createBankAccount(
@@ -38,76 +31,45 @@ export class BankAccountController {
         userId
       );
       res.status(201).json(result);
-    } catch (error: any) {
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to create bank account",
-      });
     }
-  }
+  );
 
-  async getBankAccounts(req: CustomRequest, res: Response): Promise<void> {
-    try {
+  getBankAccounts = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const validation = bankAccountFiltersSchema.safeParse(req.query);
       if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: "Validation error",
-          error: validation.error.issues,
-        });
-        return;
+        throw new AppError("Validation error", 400);
       }
 
       const result = await bankAccountService.getBankAccounts(validation.data);
       res.json(result);
-    } catch (error: any) {
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to fetch bank accounts",
-      });
     }
-  }
+  );
 
-  async getBankAccountById(req: CustomRequest, res: Response): Promise<void> {
-    try {
+  getBankAccountById = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { id } = req.params;
       if (!id) {
-        res.status(400).json({
-          success: false,
-          message: "Bank account ID is required",
-        });
-        return;
+        throw new AppError("Bank account ID is required", 400);
       }
 
       const result = await bankAccountService.getBankAccountById(id);
       res.json(result);
-    } catch (error: any) {
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to fetch bank account",
-      });
     }
-  }
+  );
 
-  async updateBankAccount(req: CustomRequest, res: Response): Promise<void> {
-    try {
+  updateBankAccount = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { id } = req.params;
       if (!id) {
-        res.status(400).json({
-          success: false,
-          message: "Bank account ID is required",
-        });
-        return;
+        throw new AppError("Bank account ID is required", 400);
       }
 
       const validation = updateBankAccountSchema.safeParse(req.body);
       if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: "Validation error",
-          error: validation.error.issues,
-        });
-        return;
+        console.log("validation error", validation.error, "body", req.body);
+
+        throw new AppError("Validation error", 400);
       }
 
       const result = await bankAccountService.updateBankAccount(
@@ -115,76 +77,46 @@ export class BankAccountController {
         validation.data
       );
       res.json(result);
-    } catch (error: any) {
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to update bank account",
-      });
     }
-  }
+  );
 
-  async deleteBankAccount(req: CustomRequest, res: Response): Promise<void> {
-    try {
+  deleteBankAccount = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { id } = req.params;
       if (!id) {
-        res.status(400).json({
-          success: false,
-          message: "Bank account ID is required",
-        });
-        return;
+        throw new AppError("Bank account ID is required", 400);
       }
 
       const result = await bankAccountService.deleteBankAccount(id);
       res.json(result);
-    } catch (error: any) {
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to delete bank account",
-      });
     }
-  }
+  );
 
-  async getBankAccountStats(req: CustomRequest, res: Response): Promise<void> {
-    try {
+  getBankAccountStats = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const organisationId = req.query.organisation_id as string;
-      const result = await bankAccountService.getBankAccountStats(organisationId);
+      const result = await bankAccountService.getBankAccountStats(
+        organisationId
+      );
       res.json(result);
-    } catch (error: any) {
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to fetch bank account stats",
-      });
     }
-  }
+  );
 
-  async topupBankAccount(req: CustomRequest, res: Response): Promise<void> {
-    try {
+  topupBankAccount = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { id } = req.params;
       if (!id) {
-        res.status(400).json({
-          success: false,
-          message: "Bank account ID is required",
-        });
-        return;
+        throw new AppError("Bank account ID is required", 400);
       }
 
       const validation = topupSchema.safeParse(req.body);
       if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: "Validation error",
-          error: validation.error.issues,
-        });
-        return;
+        throw new AppError("Validation error", 400);
       }
 
       const userId = req.user?.id;
       if (!userId) {
-        res.status(401).json({
-          success: false,
-          message: "User not authenticated",
-        });
-        return;
+        throw new AppError("User not authenticated", 401);
       }
 
       const result = await bankAccountService.topupBankAccount(
@@ -193,42 +125,24 @@ export class BankAccountController {
         userId
       );
       res.json(result);
-    } catch (error: any) {
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to top up bank account",
-      });
     }
-  }
+  );
 
-  async withdrawFromBankAccount(req: CustomRequest, res: Response): Promise<void> {
-    try {
+  withdrawFromBankAccount = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
       const { id } = req.params;
       if (!id) {
-        res.status(400).json({
-          success: false,
-          message: "Bank account ID is required",
-        });
-        return;
+        throw new AppError("Bank account ID is required", 400);
       }
 
       const validation = withdrawalSchema.safeParse(req.body);
       if (!validation.success) {
-        res.status(400).json({
-          success: false,
-          message: "Validation error",
-          error: validation.error.issues,
-        });
-        return;
+        throw new AppError("Validation error", 400);
       }
 
       const userId = req.user?.id;
       if (!userId) {
-        res.status(401).json({
-          success: false,
-          message: "User not authenticated",
-        });
-        return;
+        throw new AppError("User not authenticated", 401);
       }
 
       const result = await bankAccountService.withdrawFromBankAccount(
@@ -237,11 +151,6 @@ export class BankAccountController {
         userId
       );
       res.json(result);
-    } catch (error: any) {
-      res.status(500).json({
-        success: false,
-        message: error.message || "Failed to withdraw from bank account",
-      });
     }
-  }
+  );
 }

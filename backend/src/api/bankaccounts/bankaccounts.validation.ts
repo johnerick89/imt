@@ -55,7 +55,7 @@ export const updateBankAccountSchema = z.object({
       return isNaN(parsed) ? undefined : parsed;
     }
     return val;
-  }, z.number().positive().optional()),
+  }, z.number().nonnegative().optional()),
   locked_balance: z.preprocess((val) => {
     if (typeof val === "string") {
       if (val === "") return undefined;
@@ -63,7 +63,7 @@ export const updateBankAccountSchema = z.object({
       return isNaN(parsed) ? undefined : parsed;
     }
     return val;
-  }, z.number().positive().optional()),
+  }, z.number().nonnegative().optional()),
 });
 
 export const bankAccountFiltersSchema = z.object({

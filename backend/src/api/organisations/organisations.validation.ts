@@ -55,6 +55,9 @@ export const createOrganisationSchema = z.object({
     .optional()
     .nullable()
     .transform((val) => (val === "" ? undefined : val)),
+  contact_password: z
+    .string()
+    .max(100, "Password must be less than 100 characters"),
 });
 
 export const updateOrganisationSchema = z.object({

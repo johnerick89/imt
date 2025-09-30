@@ -1,5 +1,6 @@
 import { UserStatus } from "@prisma/client";
 import { prisma } from "../../lib/prisma.lib";
+import type { Prisma } from "@prisma/client";
 import {
   IUser,
   ICreateUserRequest,
@@ -18,10 +19,20 @@ import {
   ValidationError,
 } from "../../utils/AppError";
 
+type Tx = Omit<
+  Prisma.TransactionClient,
+  "$connect" | "$disconnect" | "$on" | "$transaction" | "$extends"
+>;
+
 export class UsersService {
-  async createUser(userData: ICreateUserRequest): Promise<IUserResponse> {
+  async createUser(
+    userData: ICreateUserRequest,
+    tx?: Tx
+  ): Promise<IUserResponse> {
+    const db = tx || prisma;
+
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await db.user.findUnique({
       where: { email: userData.email },
     });
 
@@ -33,7 +44,7 @@ export class UsersService {
     const hashedPassword = await hashPassword(userData.password);
 
     // Create user
-    const user = await prisma.user.create({
+    const user = await db.user.create({
       data: {
         email: userData.email,
         password: hashedPassword,

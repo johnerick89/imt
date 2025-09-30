@@ -15,13 +15,12 @@ import {
   useUpdateCharge,
   useDeleteCharge,
   useSession,
-  useCurrencies,
   useBankAccounts,
+  useCurrencies,
 } from "../hooks";
 import {
-  useOrgBalanceHistory,
-  useSetOpeningBalance,
   usePrefundOrganisation,
+  useOrgBalances,
 } from "../hooks/useBalanceOperations";
 import { StatusBadge } from "../components/ui/StatusBadge";
 // import { ActionCell } from "../components/ActionCell";
@@ -33,6 +32,8 @@ import CorridorForm from "../components/CorridorForm";
 import CorridorsTable from "../components/CorridorsTable";
 import ChargeForm from "../components/ChargeForm";
 import ChargesTable from "../components/ChargesTable";
+import OrgBalancesTable from "../components/dataTables/OrgBalancesTable";
+import PrefundModal from "../components/modals/PrefundModal";
 import type {
   Integration,
   CreateIntegrationRequest,
@@ -49,17 +50,8 @@ import type {
   CreateChargeRequest,
   UpdateChargeRequest,
 } from "../types/ChargesTypes";
-import type {
-  OpeningBalanceRequest,
-  PrefundRequest,
-  BalanceHistoryFilters,
-} from "../types/BalanceOperationsTypes";
+import type { PrefundRequest } from "../types/BalanceOperationsTypes";
 import { Button } from "../components/ui/Button";
-import { Input } from "../components/ui/Input";
-import { Textarea } from "../components/ui/Textarea";
-import { SearchableSelect } from "../components/ui/SearchableSelect";
-import { FormItem } from "../components/ui/FormItem";
-import { formatToCurrency } from "../utils/textUtils";
 
 const OrganisationProfilePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -68,22 +60,7 @@ const OrganisationProfilePage: React.FC = () => {
   const { user } = useSession();
 
   // Balance-related state
-  const [showOpeningBalanceModal, setShowOpeningBalanceModal] = useState(false);
   const [showPrefundModal, setShowPrefundModal] = useState(false);
-  const [openingBalanceForm, setOpeningBalanceForm] = useState({
-    amount: "",
-    currency_id: "",
-    description: "",
-  });
-  const [prefundForm, setPrefundForm] = useState({
-    amount: "",
-    source_id: "",
-    description: "",
-  });
-  const [balanceHistoryFilters] = useState<BalanceHistoryFilters>({
-    page: 1,
-    limit: 10,
-  });
   // Integration state
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -157,23 +134,28 @@ const OrganisationProfilePage: React.FC = () => {
   const deleteChargeMutation = useDeleteCharge();
 
   // Balance hooks
-  const { data: currenciesData } = useCurrencies({ limit: 1000 });
   const { data: bankAccountsData } = useBankAccounts({
     organisation_id: user?.organisation_id || "",
     limit: 100,
   });
-  const { data: balanceHistoryData, isLoading: balanceHistoryLoading } =
-    useOrgBalanceHistory(id || "", balanceHistoryFilters);
-  const setOpeningBalanceMutation = useSetOpeningBalance();
+  const { data: currenciesData } = useCurrencies({ limit: 1000 });
+  const { data: orgBalancesData, isLoading: orgBalancesLoading } =
+    useOrgBalances({
+      page: 1,
+      limit: 100,
+      base_org_id: user?.organisation_id || "",
+      dest_org_id: id || "",
+    });
+
   const prefundMutation = usePrefundOrganisation();
 
   const organisation = organisationData?.data || null;
   const integrations = integrationsData?.data?.integrations || [];
   const corridors = corridorsData?.data?.corridors || [];
   const charges = chargesData?.data?.charges || [];
-  const currencies = currenciesData?.data?.currencies || [];
   const bankAccounts = bankAccountsData?.data?.bankAccounts || [];
-  const balanceHistory = balanceHistoryData?.data?.histories || [];
+  const currencies = currenciesData?.data?.currencies || [];
+  const orgBalances = orgBalancesData?.data?.balances || [];
 
   // Integration handlers
   const handleCreateIntegration = async (
@@ -327,32 +309,10 @@ const OrganisationProfilePage: React.FC = () => {
     }
   };
 
-  // Balance handlers
-  const handleSetOpeningBalance = async (data: OpeningBalanceRequest) => {
-    try {
-      await setOpeningBalanceMutation.mutateAsync({ orgId: id || "", data });
-      setShowOpeningBalanceModal(false);
-      // Reset form
-      setOpeningBalanceForm({
-        amount: "",
-        currency_id: "",
-        description: "",
-      });
-    } catch (error) {
-      console.error("Error setting opening balance:", error);
-    }
-  };
-
   const handlePrefund = async (data: PrefundRequest) => {
     try {
       await prefundMutation.mutateAsync({ orgId: id || "", data });
       setShowPrefundModal(false);
-      // Reset form
-      setPrefundForm({
-        amount: "",
-        source_id: "",
-        description: "",
-      });
     } catch (error) {
       console.error("Error prefunding organisation:", error);
     }
@@ -387,13 +347,7 @@ const OrganisationProfilePage: React.FC = () => {
       .slice(0, 2);
   };
 
-  if (
-    isLoading ||
-    integrationsLoading ||
-    corridorsLoading ||
-    chargesLoading ||
-    balanceHistoryLoading
-  ) {
+  if (isLoading || integrationsLoading || corridorsLoading || chargesLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
@@ -567,66 +521,20 @@ const OrganisationProfilePage: React.FC = () => {
                 Balance Management
               </h3>
               <div className="flex space-x-2">
-                <Button
-                  onClick={() => setShowOpeningBalanceModal(true)}
-                  variant="outline"
-                >
-                  Set Opening Balance
-                </Button>
-                <Button onClick={() => setShowPrefundModal(true)}>
-                  Prefund Organisation
-                </Button>
+                {orgBalances && orgBalances.length === 0 && (
+                  <Button onClick={() => setShowPrefundModal(true)}>
+                    Set up Balance
+                  </Button>
+                )}
               </div>
             </div>
 
-            {/* Balance History */}
-            <div className="bg-white rounded-lg shadow">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h4 className="text-lg font-medium text-gray-900">
-                  Balance History
-                </h4>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Currency
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Balance
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Locked Balance
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Updated
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {balanceHistory.map((balance) => (
-                      <tr key={balance.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {balance.currency?.currency_code || "N/A"}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {formatToCurrency(balance.balance)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {balance.locked_balance
-                            ? formatToCurrency(balance.locked_balance)
-                            : "N/A"}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(balance.updated_at).toLocaleDateString()}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            {/* Organisation Balances Table */}
+            <OrgBalancesTable
+              data={orgBalances}
+              loading={orgBalancesLoading}
+              onPrefund={() => setShowPrefundModal(true)}
+            />
           </div>
         );
 
@@ -961,203 +869,17 @@ const OrganisationProfilePage: React.FC = () => {
         isLoading={deleteChargeMutation.isPending}
       />
 
-      {/* Opening Balance Modal */}
-      <Modal
-        isOpen={showOpeningBalanceModal}
-        onClose={() => {
-          setShowOpeningBalanceModal(false);
-          // Reset form
-          setOpeningBalanceForm({
-            amount: "",
-            currency_id: "",
-            description: "",
-          });
-        }}
-        title="Set Opening Balance"
-        size="md"
-      >
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            const data: OpeningBalanceRequest = {
-              amount: parseFloat(openingBalanceForm.amount),
-              currency_id: openingBalanceForm.currency_id,
-              description: openingBalanceForm.description,
-            };
-            handleSetOpeningBalance(data);
-          }}
-          className="space-y-4"
-        >
-          <FormItem label="Amount" required>
-            <Input
-              type="number"
-              step="0.01"
-              placeholder="Enter opening balance amount"
-              value={openingBalanceForm.amount}
-              onChange={(e) =>
-                setOpeningBalanceForm((prev) => ({
-                  ...prev,
-                  amount: e.target.value,
-                }))
-              }
-              required
-            />
-          </FormItem>
-
-          <FormItem label="Currency" required>
-            <SearchableSelect
-              value={openingBalanceForm.currency_id}
-              onChange={(value) =>
-                setOpeningBalanceForm((prev) => ({
-                  ...prev,
-                  currency_id: value,
-                }))
-              }
-              placeholder="Select currency"
-              options={currencies.map((currency) => ({
-                value: currency.id,
-                label: `${currency.currency_code} - ${currency.currency_name}`,
-              }))}
-            />
-          </FormItem>
-
-          <FormItem label="Description">
-            <Textarea
-              placeholder="Enter description (optional)"
-              rows={3}
-              value={openingBalanceForm.description}
-              onChange={(e) =>
-                setOpeningBalanceForm((prev) => ({
-                  ...prev,
-                  description: e.target.value,
-                }))
-              }
-            />
-          </FormItem>
-
-          <div className="flex justify-end space-x-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setShowOpeningBalanceModal(false);
-                // Reset form
-                setOpeningBalanceForm({
-                  amount: "",
-                  currency_id: "",
-                  description: "",
-                });
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={setOpeningBalanceMutation.isPending}
-            >
-              Set Opening Balance
-            </Button>
-          </div>
-        </form>
-      </Modal>
-
       {/* Prefund Modal */}
-      <Modal
+      <PrefundModal
         isOpen={showPrefundModal}
-        onClose={() => {
-          setShowPrefundModal(false);
-          // Reset form
-          setPrefundForm({
-            amount: "",
-            source_id: "",
-            description: "",
-          });
-        }}
-        title="Prefund Organisation"
-        size="md"
-      >
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            const data: PrefundRequest = {
-              amount: parseFloat(prefundForm.amount),
-              source_type: "BANK_ACCOUNT",
-              source_id: prefundForm.source_id,
-              description: prefundForm.description,
-            };
-            handlePrefund(data);
-          }}
-          className="space-y-4"
-        >
-          <FormItem label="Amount" required>
-            <Input
-              type="number"
-              step="0.01"
-              placeholder="Enter prefund amount"
-              value={prefundForm.amount}
-              onChange={(e) =>
-                setPrefundForm((prev) => ({
-                  ...prev,
-                  amount: e.target.value,
-                }))
-              }
-              required
-            />
-          </FormItem>
-
-          <FormItem label="Source Bank Account" required>
-            <SearchableSelect
-              value={prefundForm.source_id}
-              onChange={(value) =>
-                setPrefundForm((prev) => ({
-                  ...prev,
-                  source_id: value,
-                }))
-              }
-              placeholder="Select bank account"
-              options={bankAccounts.map((account) => ({
-                value: account.id,
-                label: `${account.name} - ${account.account_number}`,
-              }))}
-            />
-          </FormItem>
-
-          <FormItem label="Description">
-            <Textarea
-              placeholder="Enter description (optional)"
-              rows={3}
-              value={prefundForm.description}
-              onChange={(e) =>
-                setPrefundForm((prev) => ({
-                  ...prev,
-                  description: e.target.value,
-                }))
-              }
-            />
-          </FormItem>
-
-          <div className="flex justify-end space-x-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setShowPrefundModal(false);
-                // Reset form
-                setPrefundForm({
-                  amount: "",
-                  source_id: "",
-                  description: "",
-                });
-              }}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={prefundMutation.isPending}>
-              Prefund Organisation
-            </Button>
-          </div>
-        </form>
-      </Modal>
+        onClose={() => setShowPrefundModal(false)}
+        onSubmit={handlePrefund}
+        isLoading={prefundMutation.isPending}
+        bankAccounts={bankAccounts}
+        currencies={currencies}
+        defaultCurrencyId={organisation?.base_currency_id || undefined}
+        balanceExists={orgBalances.length > 0}
+      />
     </div>
   );
 };

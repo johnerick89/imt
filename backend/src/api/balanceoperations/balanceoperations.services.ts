@@ -29,6 +29,29 @@ export class BalanceOperationService {
     baseOrgId: string
   ): Promise<BalanceOperationResponse> {
     return await prisma.$transaction(async (tx) => {
+      //validate source and destination organisations
+      if (baseOrgId === orgId) {
+        throw new AppError(
+          "Source and destination organisations cannot be the same",
+          400
+        );
+      }
+
+      const sourceOrg = await tx.organisation.findUnique({
+        where: { id: baseOrgId },
+      });
+      const destOrg = await tx.organisation.findUnique({
+        where: { id: orgId },
+      });
+
+      if (!sourceOrg) {
+        throw new NotFoundError("Source organisation not found");
+      }
+
+      if (!destOrg) {
+        throw new NotFoundError("Destination organisation not found");
+      }
+
       // Get source bank account
       const sourceBankAccount = await tx.bankAccount.findUnique({
         where: { id: data.source_id },

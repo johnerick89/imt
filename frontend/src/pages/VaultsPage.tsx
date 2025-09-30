@@ -8,6 +8,7 @@ import {
   useUpdateVault,
   useDeleteVault,
 } from "../hooks/useVaults";
+import { useCurrencies } from "../hooks/useCurrencies";
 import { useTopupVault, useWithdrawVault } from "../hooks/useBalanceOperations";
 import VaultsTable from "../components/VaultsTable";
 import VaultForm from "../components/VaultForm";
@@ -18,15 +19,24 @@ import type {
   Vault,
   CreateVaultRequest,
   UpdateVaultRequest,
+  VaultFilters,
 } from "../types/VaultsTypes";
 import type { VaultTopupRequest } from "../types/BalanceOperationsTypes";
 import { useSession } from "../hooks";
+import { SearchableSelect } from "../components/ui/SearchableSelect";
 
 const VaultsPage: React.FC = () => {
   const { user: currentUser } = useSession();
   const organisationId = currentUser?.organisation_id;
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
+  const [filters, setFilters] = useState<VaultFilters>({
+    page: 1,
+    limit: 10,
+    search: "",
+    organisation_id: organisationId,
+    currency_id: "",
+  });
   const [page, setPage] = useState(1);
   const limit = 100;
 
@@ -48,11 +58,15 @@ const VaultsPage: React.FC = () => {
     limit,
     search: searchTerm,
     organisation_id: organisationId,
+    currency_id: filters.currency_id,
   });
 
   const { data: statsData } = useVaultStats({
     organisation_id: organisationId,
   });
+
+  const { data: currenciesData } = useCurrencies({ limit: 1000 });
+  const currencies = currenciesData?.data?.currencies || [];
 
   const createVaultMutation = useCreateVault();
   const updateVaultMutation = useUpdateVault();
@@ -231,16 +245,38 @@ const VaultsPage: React.FC = () => {
       )}
 
       {/* Search and Filters */}
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6">
-        <div className="flex items-center space-x-4">
-          <div className="flex-1 relative">
-            <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <input
-              type="text"
-              placeholder="Search vaults..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+      <div className="bg-white p-6 rounded-lg shadow">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Search...
+            </label>
+            <div className="flex-1 relative">
+              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <input
+                type="text"
+                placeholder="Search vaults..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Currency
+            </label>
+            <SearchableSelect
+              value={filters.currency_id || ""}
+              onChange={(value) =>
+                setFilters({ ...filters, currency_id: value })
+              }
+              options={currencies.map((currency) => ({
+                value: currency.id,
+                label: `${currency.currency_code} - ${currency.currency_name}`,
+              }))}
+              placeholder="Filter by currency"
             />
           </div>
         </div>

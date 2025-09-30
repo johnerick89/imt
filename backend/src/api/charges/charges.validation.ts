@@ -43,27 +43,40 @@ export const createChargeSchema = z.object({
     })
     .default(false),
   direction: z.enum(Direction).default("OUTBOUND"),
-  origin_share_percentage: z
-    .string()
-    .transform((val) => (val === "" ? undefined : parseFloat(val)))
-    .pipe(z.number().min(0).max(100))
-    .optional(),
-  destination_share_percentage: z
-    .string()
-    .transform((val) => (val === "" ? undefined : parseFloat(val)))
-    .pipe(z.number().min(0).max(100))
-    .optional(),
+  origin_share_percentage: z.preprocess((val) => {
+    if (typeof val === "string") {
+      if (val === "") return undefined;
+      const parsed = parseFloat(val);
+      return isNaN(parsed) ? undefined : parsed;
+    }
+    return val;
+  }, z.number().nonnegative().optional()),
+  destination_share_percentage: z.preprocess((val) => {
+    if (typeof val === "string") {
+      if (val === "") return undefined;
+      const parsed = parseFloat(val);
+      return isNaN(parsed) ? undefined : parsed;
+    }
+    return val;
+  }, z.number().nonnegative().optional()),
   status: z.enum(ChargeStatus).default("ACTIVE"),
-  min_amount: z
-    .string()
-    .transform((val) => (val === "" ? undefined : parseFloat(val)))
-    .pipe(z.number().min(0))
-    .optional(),
-  max_amount: z
-    .string()
-    .transform((val) => (val === "" ? undefined : parseFloat(val)))
-    .pipe(z.number().min(0))
-    .optional(),
+  min_amount: z.preprocess((val) => {
+    if (typeof val === "string") {
+      if (val === "") return undefined;
+      const parsed = parseFloat(val);
+      return isNaN(parsed) ? undefined : parsed;
+    }
+    return val;
+  }, z.number().nonnegative().optional()),
+  max_amount: z.preprocess((val) => {
+    if (typeof val === "string") {
+      if (val === "") return undefined;
+      const parsed = parseFloat(val);
+      return isNaN(parsed) ? undefined : parsed;
+    }
+    return val;
+  }, z.number().nonnegative().optional()),
+  payment_authority: z.string().optional(),
 });
 
 export const updateChargeSchema = z.object({
@@ -103,27 +116,40 @@ export const updateChargeSchema = z.object({
     })
     .optional(),
   direction: z.enum(Direction).optional(),
-  origin_share_percentage: z
-    .string()
-    .transform((val) => (val === "" ? undefined : parseFloat(val)))
-    .pipe(z.number().min(0).max(100))
-    .optional(),
-  destination_share_percentage: z
-    .string()
-    .transform((val) => (val === "" ? undefined : parseFloat(val)))
-    .pipe(z.number().min(0).max(100))
-    .optional(),
+  origin_share_percentage: z.preprocess((val) => {
+    if (typeof val === "string") {
+      if (val === "") return undefined;
+      const parsed = parseFloat(val);
+      return isNaN(parsed) ? undefined : parsed;
+    }
+    return val;
+  }, z.number().nonnegative().optional()),
+  destination_share_percentage: z.preprocess((val) => {
+    if (typeof val === "string") {
+      if (val === "") return undefined;
+      const parsed = parseFloat(val);
+      return isNaN(parsed) ? undefined : parsed;
+    }
+    return val;
+  }, z.number().nonnegative().optional()),
   status: z.enum(ChargeStatus).optional(),
-  min_amount: z
-    .string()
-    .transform((val) => (val === "" ? undefined : parseFloat(val)))
-    .pipe(z.number().min(0))
-    .optional(),
-  max_amount: z
-    .string()
-    .transform((val) => (val === "" ? undefined : parseFloat(val)))
-    .pipe(z.number().min(0))
-    .optional(),
+  min_amount: z.preprocess((val) => {
+    if (typeof val === "string") {
+      if (val === "") return undefined;
+      const parsed = parseFloat(val);
+      return isNaN(parsed) ? undefined : parsed;
+    }
+    return val;
+  }, z.number().nonnegative().optional()),
+  max_amount: z.preprocess((val) => {
+    if (typeof val === "string") {
+      if (val === "") return undefined;
+      const parsed = parseFloat(val);
+      return isNaN(parsed) ? undefined : parsed;
+    }
+    return val;
+  }, z.number().nonnegative().optional()),
+  payment_authority: z.string().optional(),
 });
 
 export const chargeFiltersSchema = z.object({

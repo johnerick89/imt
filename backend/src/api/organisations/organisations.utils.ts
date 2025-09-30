@@ -7,9 +7,12 @@ const DEFAULT_PASSWORD = "admin1234";
 const usersService = new UsersService();
 const createContactPerson = async (
   organisationData: ICreateOrganisationRequest,
-  organisationId: string
+  organisationId: string,
+  tx?: any
 ) => {
-  const adminRole = await prisma.role.findFirst({
+  const db = tx || prisma;
+
+  const adminRole = await db.role.findFirst({
     where: { name: "Admin" },
   });
 
@@ -19,15 +22,18 @@ const createContactPerson = async (
 
   const firstName = organisationData.contact_person.split(" ")[0];
   const lastName = organisationData.contact_person.split(" ")[1];
-  const contactPerson = await usersService.createUser({
-    email: organisationData.contact_email,
-    first_name: firstName,
-    last_name: lastName,
-    role: adminRole?.name,
-    role_id: adminRole?.id,
-    password: DEFAULT_PASSWORD,
-    organisation_id: organisationId,
-  });
+  const contactPerson = await usersService.createUser(
+    {
+      email: organisationData.contact_email,
+      first_name: firstName,
+      last_name: lastName,
+      role: adminRole?.name,
+      role_id: adminRole?.id,
+      password: organisationData.contact_password || DEFAULT_PASSWORD,
+      organisation_id: organisationId,
+    },
+    tx
+  );
 
   return contactPerson;
 };

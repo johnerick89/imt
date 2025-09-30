@@ -18,6 +18,7 @@ import {
   Charge,
   Country,
   TransactionAudit,
+  IndividualIDType,
 } from "@prisma/client";
 
 // Base Transaction Interface
@@ -308,3 +309,11 @@ export interface OutboundTransactionResult {
 export type ChargeWithNegotiatedRate = Charge & {
   negotiated_rate: number | null;
 };
+
+export interface UpdateInboundTransactionReceiverDetailsRequest {
+  id_type?: IndividualIDType;
+  id_number?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+}

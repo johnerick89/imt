@@ -13,14 +13,26 @@ import type {
 export class UserTillService {
   async createUserTill(data: CreateUserTillRequest): Promise<UserTillResponse> {
     try {
+      const till = await prisma.till.findUnique({
+        where: { id: data.till_id },
+      });
+      if (!till) {
+        throw new Error("Till not found");
+      }
+      const user = await prisma.user.findUnique({
+        where: { id: data.user_id },
+      });
+      if (!user) {
+        throw new Error("User not found");
+      }
       const userTill = await prisma.userTill.create({
         data: {
           user_id: data.user_id,
           till_id: data.till_id,
-          opening_balance: data.opening_balance || 0,
-          closing_balance: data.closing_balance || 0,
+          opening_balance: till.balance?.toNumber() || 0,
           date: new Date(data.date || new Date()),
           status: data.status || UserTillStatus.OPEN,
+          organisation_id: till.organisation_id,
         },
         include: {
           user: {

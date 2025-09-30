@@ -1,4 +1,4 @@
-const toHumanFriendly = (text: string): string => {
+const toHumanFriendly = (text?: string): string => {
   if (!text) {
     return "";
   }

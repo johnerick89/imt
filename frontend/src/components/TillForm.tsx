@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { FormItem } from "./ui/FormItem";
 import { Input } from "./ui/Input";
@@ -40,6 +40,8 @@ const TillForm: React.FC<TillFormProps> = ({
     control,
     handleSubmit,
     formState: { errors },
+    watch,
+    setValue,
   } = useForm<CreateTillRequest>({
     defaultValues: {
       name: initialData?.name || "",
@@ -59,7 +61,10 @@ const TillForm: React.FC<TillFormProps> = ({
   });
 
   // Data for dropdowns
-  const { data: vaultsData } = useVaults({ limit: 100 });
+  const { data: vaultsData } = useVaults({
+    limit: 100,
+    organisation_id: currentOrganisationId || "",
+  });
   const { data: currenciesData } = useCurrencies({ limit: 1000 });
   const { data: organisationsData } = useOrganisations({ limit: 100 });
 
@@ -78,6 +83,17 @@ const TillForm: React.FC<TillFormProps> = ({
     { value: TillStatus.PENDING, label: "Pending" },
     { value: TillStatus.BLOCKED, label: "Blocked" },
   ];
+
+  const watchedVaultId = watch("vault_id");
+
+  useEffect(() => {
+    if (watchedVaultId && vaults.find((vault) => vault.id === watchedVaultId)) {
+      setValue(
+        "currency_id",
+        vaults.find((vault) => vault.id === watchedVaultId)?.currency_id || ""
+      );
+    }
+  }, [watchedVaultId, vaults, setValue]);
 
   const handleFormSubmit = (data: CreateTillRequest) => {
     try {

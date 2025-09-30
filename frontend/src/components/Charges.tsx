@@ -218,36 +218,54 @@ const Charges: React.FC = () => {
       {/* Filters */}
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-          <div className="relative">
-            <FiSearch className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-            <Input
-              type="text"
-              placeholder="Search charges..."
-              value={filters.search || ""}
-              onChange={(e) => handleFilterChange("search", e.target.value)}
-              className="pl-10"
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Search
+            </label>
+            <div className="relative">
+              <FiSearch className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Search charges..."
+                value={filters.search || ""}
+                onChange={(e) => handleFilterChange("search", e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Type
+            </label>
+            <SearchableSelect
+              value={filters.type || ""}
+              onChange={(value) => handleFilterChange("type", value)}
+              options={typeOptions}
+              placeholder="Filter by type"
             />
           </div>
-          <SearchableSelect
-            value={filters.type || ""}
-            onChange={(value) => handleFilterChange("type", value)}
-            options={typeOptions}
-            placeholder="Filter by type"
-          />
-          <SearchableSelect
-            value={filters.status || ""}
-            onChange={(value) => handleFilterChange("status", value)}
-            options={statusOptions}
-            placeholder="Filter by status"
-          />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
-          <SearchableSelect
-            value={filters.currency_id || ""}
-            onChange={(value) => handleFilterChange("currency_id", value)}
-            options={currencyOptions}
-            placeholder="Filter by currency"
-          />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Status
+            </label>
+            <SearchableSelect
+              value={filters.status || ""}
+              onChange={(value) => handleFilterChange("status", value)}
+              options={statusOptions}
+              placeholder="Filter by status"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Currency
+            </label>
+            <SearchableSelect
+              value={filters.currency_id || ""}
+              onChange={(value) => handleFilterChange("currency_id", value)}
+              options={currencyOptions}
+              placeholder="Filter by currency"
+            />
+          </div>
         </div>
       </div>
 

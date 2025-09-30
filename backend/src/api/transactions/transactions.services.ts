@@ -1,5 +1,4 @@
 import { GlTransactionService } from "../gltransactions/gltransactions.services";
-import { BalanceOperationService } from "../balanceoperations/balanceoperations.services";
 import type {
   ITransaction,
   ITransactionCharge,
@@ -17,13 +16,15 @@ import type {
   ChargeWithNegotiatedRate,
   MarkAsReadyRequest,
   UpdateTransactionRequest,
+  UpdateInboundTransactionReceiverDetailsRequest,
 } from "./transactions.interfaces";
 import { prisma } from "../../lib/prisma.lib";
 import { AppError } from "../../utils/AppError";
 import { Charge, Direction } from "@prisma/client";
+import { UserTillService } from "../usertills/usertills.services";
 
 const glTransactionService = new GlTransactionService();
-const balanceOperationService = new BalanceOperationService();
+const userTillService = new UserTillService();
 
 export class TransactionService {
   // Create Outbound Transaction
@@ -35,26 +36,40 @@ export class TransactionService {
   ): Promise<OutboundTransactionResult> {
     return await prisma.$transaction(async (tx) => {
       // 1. Validate that user has an open till
-      const userTill = await tx.userTill.findFirst({
+      let userTill = await tx.userTill.findFirst({
         where: {
           user_id: userId,
           status: "OPEN",
           closed_at: null,
         },
         include: {
-          till: {
-            include: {
-              organisation: true,
-            },
-          },
+          till: true,
         },
       });
 
       if (!userTill) {
-        throw new AppError(
-          "User must have an open till to create transactions",
-          400
-        );
+        const freeTill = await tx.till.findFirst({
+          where: {
+            organisation_id: organisationId,
+            status: "ACTIVE",
+            current_teller_user_id: null,
+            currency_id: data.origin_currency_id,
+          },
+        });
+        if (freeTill) {
+          const userTillResponse = await userTillService.createUserTill({
+            user_id: userId,
+            till_id: freeTill?.id,
+            opening_balance: freeTill?.balance?.toNumber() || 0,
+            date: new Date().toISOString(),
+            status: "OPEN",
+          });
+          userTill = userTillResponse.data as any;
+        }
+      }
+
+      if (!userTill) {
+        throw new AppError("User till not found", 400);
       }
 
       // 2. Validate till belongs to the organisation
@@ -65,27 +80,12 @@ export class TransactionService {
         );
       }
 
-      // 3. Validate till is the same as the one in the request
-      // if (userTill.till_id !== data.till_id && data.till_id !== null) {
-      //   throw new AppError(
-      //     "Transaction till must match the user's open till",
-      //     400
-      //   );
-      // }
-      if (data.till_id === null) {
+      if (userTill) {
         data.till_id = userTill.till_id;
       }
 
-      // 3.1. Validate till belongs to the organisation
-      const till = await tx.till.findUnique({
-        where: {
-          id: data.till_id,
-          organisation_id: organisationId,
-          status: "ACTIVE",
-        },
-      });
-
-      if (!till) {
+      // 3.1. Validate till is active
+      if (!userTill.till || userTill.till.status !== "ACTIVE") {
         throw new AppError(
           "Till not found or does not belong to organisation",
           400
@@ -105,18 +105,6 @@ export class TransactionService {
       });
 
       if (!corridor) {
-        console.log(
-          "Invalid or inactive corridor:corridor_id=",
-          data.corridor_id,
-          "organisationId=",
-          organisationId,
-          "dest_currency_id=",
-          data.dest_currency_id,
-          "destination_country_id=",
-          data.destination_country_id,
-          "destination_organisation_id=",
-          data.destination_organisation_id
-        );
         throw new AppError("Invalid or inactive corridor", 400);
       }
 
@@ -189,12 +177,12 @@ export class TransactionService {
             beneficiary.incorporation_country_id ===
               data.destination_country_id);
 
-        if (!countryMatches) {
-          throw new AppError(
-            "Beneficiary's country (nationality/residence/incorporation) must match the destination country",
-            400
-          );
-        }
+        // if (!countryMatches) {
+        //   throw new AppError(
+        //     "Beneficiary's country (nationality/residence/incorporation) must match the destination country",
+        //     400
+        //   );
+        // }
       }
 
       // 7. Check organisation balance for destination organisation
@@ -1945,7 +1933,10 @@ export class TransactionService {
       });
 
       // if (!defaultTill) {
-      //   throw new AppError("No active till found for destination organisation", 400   );
+      //   throw new AppError(
+      //     "No active till found for destination organisation",
+      //     400
+      //   );
       // }
 
       // Generate transaction number for inbound transaction
@@ -1960,7 +1951,7 @@ export class TransactionService {
           corridor_id: transaction.corridor_id,
           till_id: defaultTill?.id, // Use default till, will be updated when approved
           direction: "INBOUND",
-          origin_amount: transaction.dest_amount, // Original amount in destination currency
+          origin_amount: transaction.origin_amount, // Original amount in destination currency
           origin_channel_id: transaction.origin_channel_id,
           origin_currency_id: transaction.origin_currency_id,
           dest_amount: transaction.dest_amount, // Received amount in destination currency
@@ -1982,8 +1973,8 @@ export class TransactionService {
           destination_organisation_id: transaction.destination_organisation_id,
           origin_country_id: transaction.origin_country_id, // Reversed
           destination_country_id: transaction.destination_country_id, // Reversed
-          amount_payable: transaction.dest_amount,
-          amount_receivable: transaction.dest_amount,
+          amount_payable: transaction.amount_payable,
+          amount_receivable: transaction.amount_receivable,
           status: "PENDING_APPROVAL",
           remittance_status: "TRANSIT",
           request_status: "UNDER_REVIEW",
@@ -2386,45 +2377,60 @@ export class TransactionService {
       }
 
       // Get user's open till
-      const userTill = await tx.userTill.findFirst({
+      let userTill = await tx.userTill.findFirst({
         where: {
           user_id: userId,
           status: "OPEN",
         },
         include: {
-          till: {
-            include: {
-              organisation: true,
-            },
-          },
+          till: true,
         },
       });
 
       if (!userTill) {
-        throw new AppError(
-          "User must have an open till to approve transactions",
-          400
-        );
+        const freeTill = await tx.till.findFirst({
+          where: {
+            organisation_id: transaction.destination_organisation_id,
+            status: "ACTIVE",
+            current_teller_user_id: null,
+            currency_id: transaction.dest_currency_id,
+          },
+        });
+
+        if (freeTill) {
+          const userTillResponse = await userTillService.createUserTill({
+            user_id: userId,
+            till_id: freeTill.id,
+            opening_balance: freeTill.balance?.toNumber() || 0,
+            date: new Date().toISOString(),
+            status: "OPEN",
+          });
+          userTill = userTillResponse.data as any;
+        }
+      }
+
+      if (!userTill) {
+        throw new AppError("User till not found", 400);
       }
 
       // Check organisation balance
-      const orgBalance = await tx.orgBalance.findFirst({
-        where: {
-          base_org_id: transaction.destination_organisation_id || undefined,
-          dest_org_id: transaction.origin_organisation_id || undefined,
-          currency_id: transaction.origin_currency_id,
-        },
-      });
+      // const orgBalance = await tx.orgBalance.findFirst({
+      //   where: {
+      //     dest_org_id: transaction.destination_organisation_id || undefined,
+      //     base_org_id: transaction.origin_organisation_id || undefined,
+      //     currency_id: transaction.origin_currency_id,
+      //   },
+      // });
 
-      if (
-        !orgBalance ||
-        parseFloat(orgBalance.balance.toString()) <
-          parseFloat(transaction.origin_amount.toString())
-      ) {
-        throw new AppError(
-          "Insufficient organisation balance for this transaction"
-        );
-      }
+      // if (
+      //   !orgBalance ||
+      //   parseFloat(orgBalance.balance.toString()) <
+      //     parseFloat(transaction.origin_amount.toString())
+      // ) {
+      //   throw new AppError(
+      //     "Insufficient organisation balance for this transaction"
+      //   );
+      // }
 
       // Update transaction status and set till
       const updatedTransaction = await tx.transaction.update({
@@ -2752,6 +2758,7 @@ export class TransactionService {
     userId: string
   ): Promise<void> {
     const organisationId = transaction.destination_organisation_id;
+    const originOrganisationId = transaction.origin_organisation_id;
 
     // Get GL accounts
     const tillGlAccountId = await glTransactionService.getGlAccountForEntity(
@@ -2762,7 +2769,7 @@ export class TransactionService {
 
     const accountsPayableGlAccountId =
       await glTransactionService.getGlAccountForEntity(
-        "ORG_BALANCE",
+        "INBOUND_BENEFICIARY_PAYMENT",
         transaction.origin_organisation_id,
         organisationId
       );
@@ -2773,13 +2780,13 @@ export class TransactionService {
           gl_account_id: tillGlAccountId,
           amount: transaction.origin_amount,
           dr_cr: "DR" as const,
-          description: `Till cash increased by ${transaction.origin_amount}`,
+          description: `Till cash decreased by ${transaction.origin_amount}`,
         },
         {
           gl_account_id: accountsPayableGlAccountId,
           amount: transaction.origin_amount,
           dr_cr: "CR" as const,
-          description: `Accounts payable increased by ${transaction.origin_amount}`,
+          description: `Accounts payable increased by ${transaction.origin_amount}, beneficiary paid`,
         },
       ];
 
@@ -2971,5 +2978,100 @@ export class TransactionService {
         byOrganisation: orgStats,
       },
     };
+  }
+
+  async updateInboundTransactionReceiverDetails(
+    transactionId: string,
+    receiverDetails: UpdateInboundTransactionReceiverDetailsRequest
+  ) {
+    return await prisma.$transaction(async (tx) => {
+      // First, validate the transaction exists and is inbound
+      const transaction = await tx.transaction.findUnique({
+        where: { id: transactionId },
+        include: {
+          receiver_trasaction_party: true,
+        },
+      });
+
+      if (!transaction) {
+        throw new AppError("Transaction not found", 404);
+      }
+
+      if (transaction.direction !== "INBOUND") {
+        throw new AppError("Transaction is not an inbound transaction", 400);
+      }
+
+      if (!transaction.receiver_trasaction_party_id) {
+        throw new AppError(
+          "Receiver party not found for this transaction",
+          404
+        );
+      }
+
+      // Get the current receiver party data
+      const receiverParty = transaction.receiver_trasaction_party;
+
+      if (!receiverParty) {
+        throw new AppError("Receiver party not found", 404);
+      }
+
+      // Prepare the update data
+      const updateData: {
+        id_type?: any;
+        id_number?: string;
+        payout_phone?: string;
+        metadata?: any;
+      } = {};
+
+      // Only update fields that are provided
+      if (receiverDetails.id_type !== undefined) {
+        updateData.id_type = receiverDetails.id_type;
+      }
+      if (receiverDetails.id_number !== undefined) {
+        updateData.id_number = receiverDetails.id_number;
+      }
+      if (receiverDetails.phone !== undefined) {
+        updateData.payout_phone = receiverDetails.phone;
+      }
+
+      // Update metadata only if there are metadata fields to update
+      const metadataFields = ["email", "phone", "address"];
+      const hasMetadataUpdates = metadataFields.some(
+        (field) =>
+          receiverDetails[
+            field as keyof UpdateInboundTransactionReceiverDetailsRequest
+          ] !== undefined
+      );
+
+      if (hasMetadataUpdates) {
+        const currentMetadata =
+          typeof receiverParty.metadata === "object" &&
+          receiverParty.metadata !== null
+            ? receiverParty.metadata
+            : {};
+        const updatedMetadata: Record<string, any> = { ...currentMetadata };
+
+        if (receiverDetails.email !== undefined) {
+          updatedMetadata.email = receiverDetails.email;
+        }
+        if (receiverDetails.phone !== undefined) {
+          updatedMetadata.phone = receiverDetails.phone;
+        }
+        if (receiverDetails.address !== undefined) {
+          updatedMetadata.address = receiverDetails.address;
+        }
+
+        updateData.metadata = updatedMetadata;
+      }
+
+      // Update the receiver party
+      await tx.transactionParty.update({
+        where: { id: receiverParty.id },
+        data: updateData,
+      });
+
+      // Return the updated transaction with all relations
+      return await this.getInboundTransactionById(transactionId);
+    });
   }
 }

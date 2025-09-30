@@ -8,10 +8,13 @@ import {
   useCancelInboundTransaction,
 } from "../hooks/useInboundTransactions";
 import { useSession } from "../hooks";
+import { useOrganisations } from "../hooks/useOrganisations";
+import { useCurrencies } from "../hooks/useCurrencies";
 import { Button } from "../components/ui/Button";
 import { Modal } from "../components/ui/Modal";
 import { Input } from "../components/ui/Input";
 import { Textarea } from "../components/ui/Textarea";
+import { SearchableSelect } from "../components/ui/SearchableSelect";
 import { formatToCurrency } from "../utils/textUtils";
 import InboundTransactionsTable from "./InboundTransactionsTable";
 import ApproveTransactionModal from "./ApproveTransactionModal";
@@ -19,6 +22,8 @@ import TransactionDetailsModal from "./TransactionDetailsModal";
 import type {
   Transaction,
   InboundTransactionFilters,
+  Status,
+  RemittanceStatus,
 } from "../types/TransactionsTypes";
 import { siteCommonStrings } from "../config";
 
@@ -29,6 +34,8 @@ const InboundTransactions: React.FC = () => {
   const [filters, setFilters] = useState<InboundTransactionFilters>({
     page: 1,
     limit: 10,
+    direction: "INBOUND",
+    destination_organisation_id: financialOrganisationId,
   });
   const [selectedTransaction, setSelectedTransaction] =
     useState<Transaction | null>(null);
@@ -53,6 +60,12 @@ const InboundTransactions: React.FC = () => {
     financialOrganisationId
   );
 
+  // Fetch data for filters
+  const { data: organisationsData } = useOrganisations({
+    limit: 100,
+  });
+  const { data: currenciesData } = useCurrencies({ limit: 1000 });
+
   const approveMutation = useApproveInboundTransaction();
   const reverseMutation = useReverseInboundTransaction();
   const cancelMutation = useCancelInboundTransaction();
@@ -62,6 +75,18 @@ const InboundTransactions: React.FC = () => {
     [transactionsData]
   );
   const stats = statsData?.data;
+
+  // Handle filter changes
+  const handleFilterChange = (
+    key: keyof InboundTransactionFilters,
+    value: string | undefined
+  ) => {
+    setFilters((prev) => ({
+      ...prev,
+      [key]: value,
+      page: 1, // Reset to first page when filters change
+    }));
+  };
 
   const handleApprove = async (remarks: string) => {
     if (!selectedTransaction) return;
@@ -150,6 +175,8 @@ const InboundTransactions: React.FC = () => {
       </div>
     );
   }
+
+  console.log("stats", stats);
 
   return (
     <>
@@ -286,48 +313,165 @@ const InboundTransactions: React.FC = () => {
       )}
 
       {/* Filters */}
-      <div className="bg-white p-4 rounded-lg shadow">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Input
-            placeholder="Search transactions..."
-            value={filters.search || ""}
-            onChange={(e) =>
-              setFilters({ ...filters, search: e.target.value, page: 1 })
-            }
-          />
-          <select
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={filters.status || ""}
-            onChange={(e) =>
+      <div className="bg-white p-6 rounded-lg shadow mb-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Filters</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Search
+            </label>
+            <Input
+              type="text"
+              value={filters.search || ""}
+              onChange={(e) =>
+                handleFilterChange("search", e.target.value || undefined)
+              }
+              placeholder="Search transactions..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Status
+            </label>
+            <SearchableSelect
+              options={[
+                { value: "PENDING_APPROVAL", label: "Pending Approval" },
+                { value: "APPROVED", label: "Approved" },
+                { value: "PENDING", label: "Pending" },
+                { value: "FAILED", label: "Failed" },
+                { value: "CANCELLED", label: "Cancelled" },
+                { value: "REJECTED", label: "Rejected" },
+                { value: "COMPLETED", label: "Completed" },
+                { value: "REVERSED", label: "Reversed" },
+              ]}
+              value={filters.status || ""}
+              onChange={(value) =>
+                handleFilterChange("status", (value as Status) || undefined)
+              }
+              placeholder="Select status..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Remittance Status
+            </label>
+            <SearchableSelect
+              options={[
+                { value: "PENDING", label: "Pending" },
+                { value: "FAILED", label: "Failed" },
+                { value: "REJECTED", label: "Rejected" },
+                { value: "READY", label: "Ready" },
+                { value: "TRANSIT", label: "Transit" },
+                { value: "HOLD", label: "Hold" },
+                { value: "PAID", label: "Paid" },
+                { value: "STOP", label: "Stop" },
+                { value: "COMPLETED", label: "Completed" },
+                { value: "CANCELLED", label: "Cancelled" },
+              ]}
+              value={filters.remittance_status || ""}
+              onChange={(value) =>
+                handleFilterChange(
+                  "remittance_status",
+                  (value as RemittanceStatus) || undefined
+                )
+              }
+              placeholder="Select remittance status..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Origin Organisation
+            </label>
+            <SearchableSelect
+              options={
+                organisationsData?.data?.organisations
+                  ?.filter(
+                    (organisation) =>
+                      organisation.id !== financialOrganisationId
+                  )
+                  ?.map((organisation) => ({
+                    value: organisation.id,
+                    label: organisation.name,
+                  })) || []
+              }
+              value={filters.origin_organisation_id || ""}
+              onChange={(value) =>
+                handleFilterChange("origin_organisation_id", value || undefined)
+              }
+              placeholder="Select origin organisation..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Currency
+            </label>
+            <SearchableSelect
+              options={
+                currenciesData?.data?.currencies?.map((currency) => ({
+                  value: currency.id,
+                  label: `${currency.currency_code} - ${currency.currency_name}`,
+                })) || []
+              }
+              value={filters.origin_currency_id || ""}
+              onChange={(value) =>
+                handleFilterChange("origin_currency_id", value || undefined)
+              }
+              placeholder="Select currency..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Date From
+            </label>
+            <Input
+              type="date"
+              value={filters.date_from || ""}
+              onChange={(e) =>
+                handleFilterChange("date_from", e.target.value || undefined)
+              }
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Date To
+            </label>
+            <Input
+              type="date"
+              value={filters.date_to || ""}
+              onChange={(e) =>
+                handleFilterChange("date_to", e.target.value || undefined)
+              }
+            />
+          </div>
+        </div>
+
+        <div className="flex justify-end mt-4">
+          <button
+            onClick={() =>
               setFilters({
-                ...filters,
-                status: e.target.value as typeof filters.status,
                 page: 1,
+                limit: 10,
+                search: "",
+                direction: "INBOUND",
+                destination_organisation_id: financialOrganisationId,
+                status: undefined,
+                remittance_status: undefined,
+                origin_organisation_id: undefined,
+                origin_currency_id: undefined,
+                date_from: undefined,
+                date_to: undefined,
               })
             }
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="">All Statuses</option>
-            <option value="PENDING">Pending</option>
-            <option value="PENDING_APPROVAL">Pending Approval</option>
-            <option value="APPROVED">Approved</option>
-            <option value="REVERSED">Reversed</option>
-          </select>
-          <Input
-            type="date"
-            placeholder="From Date"
-            value={filters.date_from || ""}
-            onChange={(e) =>
-              setFilters({ ...filters, date_from: e.target.value, page: 1 })
-            }
-          />
-          <Input
-            type="date"
-            placeholder="To Date"
-            value={filters.date_to || ""}
-            onChange={(e) =>
-              setFilters({ ...filters, date_to: e.target.value, page: 1 })
-            }
-          />
+            Clear Filters
+          </button>
         </div>
       </div>
 
@@ -337,8 +481,6 @@ const InboundTransactions: React.FC = () => {
         isLoading={isLoading}
         onView={handleViewTransaction}
         onApprove={handleApproveTransaction}
-        onReverse={handleReverseTransaction}
-        onCancel={handleCancelTransaction}
       />
 
       {/* Transaction Details Modal */}

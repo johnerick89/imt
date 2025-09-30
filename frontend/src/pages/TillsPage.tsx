@@ -316,34 +316,54 @@ const TillsPage: React.FC = () => {
       {/* Filters */}
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="relative">
-            <FiSearch className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-            <Input
-              type="text"
-              placeholder="Search tills..."
-              value={filters.search || ""}
-              onChange={(e) => handleFilterChange("search", e.target.value)}
-              className="pl-10"
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Search...
+            </label>
+            <div className="relative">
+              <FiSearch className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Search tills..."
+                value={filters.search || ""}
+                onChange={(e) => handleFilterChange("search", e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Status
+            </label>
+            <SearchableSelect
+              value={filters.status || ""}
+              onChange={(value) => handleFilterChange("status", value)}
+              options={statusOptions}
+              placeholder="Filter by status"
             />
           </div>
-          <SearchableSelect
-            value={filters.status || ""}
-            onChange={(value) => handleFilterChange("status", value)}
-            options={statusOptions}
-            placeholder="Filter by status"
-          />
-          <SearchableSelect
-            value={filters.vault_id || ""}
-            onChange={(value) => handleFilterChange("vault_id", value)}
-            options={vaultOptions}
-            placeholder="Filter by vault"
-          />
-          <SearchableSelect
-            value={filters.currency_id || ""}
-            onChange={(value) => handleFilterChange("currency_id", value)}
-            options={currencyOptions}
-            placeholder="Filter by currency"
-          />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Vault
+            </label>
+            <SearchableSelect
+              value={filters.vault_id || ""}
+              onChange={(value) => handleFilterChange("vault_id", value)}
+              options={vaultOptions}
+              placeholder="Filter by vault"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Currency
+            </label>
+            <SearchableSelect
+              value={filters.currency_id || ""}
+              onChange={(value) => handleFilterChange("currency_id", value)}
+              options={currencyOptions}
+              placeholder="Filter by currency"
+            />
+          </div>
         </div>
       </div>
 

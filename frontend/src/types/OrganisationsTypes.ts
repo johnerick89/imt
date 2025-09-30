@@ -76,6 +76,7 @@ export interface CreateOrganisationRequest {
   integration_mode?: IntegrationMode;
   contact_person?: string;
   contact_email?: string;
+  contact_password?: string;
   contact_phone?: string;
   contact_address?: string;
   contact_city?: string;

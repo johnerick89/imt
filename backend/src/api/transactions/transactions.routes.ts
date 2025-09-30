@@ -40,6 +40,13 @@ router.get(
   transactionController.getInboundTransactionStats.bind(transactionController)
 );
 
+router.put(
+  "/inbound/:transactionId/receiver-details",
+  transactionController.updateInboundTransactionReceiverDetails.bind(
+    transactionController
+  )
+);
+
 router.post(
   "/transactions/:transactionId/cancel",
   transactionController.cancelTransaction.bind(transactionController)

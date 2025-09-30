@@ -2,8 +2,11 @@ import React, { useState } from "react";
 import { Modal } from "./ui/Modal";
 import { Button } from "./ui/Button";
 import { StatusBadge } from "./ui/StatusBadge";
-import { formatToCurrency } from "../utils/textUtils";
+import { formatToCurrency, toHumanFriendly } from "../utils/textUtils";
+import { ReceiptService } from "../services/ReceiptService";
+import { UpdateReceiverDetailsForm } from "./UpdateReceiverDetailsForm";
 import type { Transaction } from "../types/TransactionsTypes";
+import { FiDownload, FiEdit3 } from "react-icons/fi";
 
 interface TransactionDetailsModalProps {
   isOpen: boolean;
@@ -14,6 +17,7 @@ interface TransactionDetailsModalProps {
   onApprove?: (transaction: Transaction) => void;
   onUpdate?: (transaction: Transaction) => void;
   onMarkAsReady?: (transaction: Transaction) => void;
+  onUpdateReceiver?: (transaction: Transaction) => void;
   isLoading?: boolean;
 }
 
@@ -28,11 +32,14 @@ export const TransactionDetailsModal: React.FC<
   onApprove,
   onUpdate,
   onMarkAsReady,
+  onUpdateReceiver,
   isLoading = false,
 }) => {
   const [activeTab, setActiveTab] = useState<"details" | "charges" | "audit">(
     "details"
   );
+  const [isUpdateReceiverModalOpen, setIsUpdateReceiverModalOpen] =
+    useState(false);
   console.log("transaction", transaction);
 
   if (!transaction) return null;
@@ -66,6 +73,15 @@ export const TransactionDetailsModal: React.FC<
     transaction.remittance_status === "PENDING";
   const canMarkAsReady =
     isOutbound && ["PENDING", "PENDING_APPROVAL"].includes(transaction.status);
+
+  const handleDownloadReceipt = async () => {
+    try {
+      await ReceiptService.downloadReceipt(transaction);
+    } catch (error) {
+      console.error("Error downloading receipt:", error);
+      // You might want to show a toast notification here
+    }
+  };
 
   const getCounterPartyEmail = (metadata: Record<string, unknown>) => {
     return metadata.email as string;
@@ -206,6 +222,18 @@ export const TransactionDetailsModal: React.FC<
                   {transaction.customer?.phone_number || "N/A"}
                 </p>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  ID Number
+                </label>
+                <p className="text-sm text-gray-900">
+                  {transaction.customer?.id_number
+                    ? `${transaction.customer?.id_number} (${toHumanFriendly(
+                        transaction.customer?.id_type || ""
+                      )})`
+                    : "N/A"}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -224,18 +252,30 @@ export const TransactionDetailsModal: React.FC<
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Bank
+                  Phone
                 </label>
                 <p className="text-sm text-gray-900">
-                  {transaction.beneficiary?.bank_name || "N/A"}
+                  {transaction.beneficiary?.phone || "N/A"}
                 </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Account Number
+                  Email
                 </label>
                 <p className="text-sm text-gray-900">
-                  {transaction.beneficiary?.bank_account_number || "N/A"}
+                  {transaction.beneficiary?.email || "N/A"}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  ID Number
+                </label>
+                <p className="text-sm text-gray-900">
+                  {transaction.beneficiary?.id_number
+                    ? `${transaction.beneficiary?.id_number} (${toHumanFriendly(
+                        transaction.beneficiary?.id_type || ""
+                      )})`
+                    : "N/A"}
                 </p>
               </div>
             </div>
@@ -755,6 +795,17 @@ export const TransactionDetailsModal: React.FC<
     );
   };
 
+  const tabs = isOutbound
+    ? [
+        { id: "details", label: "Details" },
+        { id: "charges", label: "Charges" },
+        { id: "audit", label: "Audit Trail" },
+      ]
+    : [
+        { id: "details", label: "Details" },
+        { id: "audit", label: "Audit Trail" },
+      ];
+
   return (
     <Modal
       isOpen={isOpen}
@@ -766,11 +817,7 @@ export const TransactionDetailsModal: React.FC<
         {/* Tab Navigation */}
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">
-            {[
-              { id: "details", label: "Details" },
-              { id: "charges", label: "Charges" },
-              { id: "audit", label: "Audit Trail" },
-            ].map((tab) => (
+            {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() =>
@@ -846,8 +893,36 @@ export const TransactionDetailsModal: React.FC<
               Reverse Transaction
             </Button>
           )}
+          <Button
+            variant="outline"
+            onClick={handleDownloadReceipt}
+            className="flex items-center gap-2"
+          >
+            <FiDownload className="h-4 w-4" />
+            Download Receipt
+          </Button>
+          {isInbound && (
+            <Button
+              variant="outline"
+              onClick={() => setIsUpdateReceiverModalOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <FiEdit3 className="h-4 w-4" />
+              Update Receiver
+            </Button>
+          )}
         </div>
       </div>
+
+      <UpdateReceiverDetailsForm
+        isOpen={isUpdateReceiverModalOpen}
+        onClose={() => setIsUpdateReceiverModalOpen(false)}
+        onSuccess={(updatedTransaction) => {
+          onUpdateReceiver?.(updatedTransaction);
+          setIsUpdateReceiverModalOpen(false);
+        }}
+        transaction={transaction}
+      />
     </Modal>
   );
 };

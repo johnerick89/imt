@@ -43,6 +43,8 @@ export interface GlAccount {
   charge?: Charge | null;
   vault_id?: string | null;
   vault?: Vault | null;
+  counter_party_organisation_id?: string | null;
+  counter_party_organisation?: Organisation | null;
   gl_entries?: GlEntry[] | null;
 }
 
@@ -138,6 +140,7 @@ export interface GenerateAccountsRequest {
   generate_for_charges?: boolean;
   generate_for_charges_payments?: boolean;
   generate_for_org_balances?: boolean;
+  generate_for_inbound_beneficiary_payments?: boolean;
 }
 
 export interface GenerateAccountsResponse {

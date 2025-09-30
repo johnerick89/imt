@@ -51,6 +51,7 @@ export interface ChargesPaymentItem {
   transaction_charges_id: string;
   internal_amount_settled: number;
   external_amount_settled: number;
+  amount_settled: number;
   created_at: string;
   // Relations
   charges_payment?: ChargesPayment;

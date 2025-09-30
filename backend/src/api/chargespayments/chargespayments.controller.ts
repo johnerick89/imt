@@ -141,6 +141,12 @@ export class ChargesPaymentController {
       if (!validation.success) {
         throw new AppError("Validation error", 400);
       }
+      const result = await chargesPaymentService.approveChargesPayment(
+        paymentId,
+        validation.data
+      );
+
+      res.status(200).json(result);
     }
   );
 

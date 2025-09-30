@@ -1,5 +1,6 @@
 import { ChargeType, ChargesPaymentStatus } from "@prisma/client";
 import { prisma } from "../../lib/prisma.lib";
+import { GlTransactionService } from "../gltransactions/gltransactions.services";
 import type {
   IChargesPayment,
   IChargesPaymentItem,
@@ -22,6 +23,7 @@ import {
 } from "../../utils/AppError";
 
 export class ChargesPaymentService {
+  private glTransactionService = new GlTransactionService();
   // Generate reference number for charges payment
   private async generateReferenceNumber(
     type: ChargeType,
@@ -460,6 +462,7 @@ export class ChargesPaymentService {
                 transaction_charges_id: tc.id,
                 internal_amount_settled: tc.internal_amount || 0,
                 external_amount_settled: tc.external_amount || 0,
+                amount_settled: tc.amount || 0,
               },
             })
           )
@@ -527,6 +530,7 @@ export class ChargesPaymentService {
             external_amount_settled: parseFloat(
               item.external_amount_settled.toString()
             ),
+            amount_settled: parseFloat(item.amount_settled.toString()),
             created_at: item.created_at.toISOString(),
           })),
         } as any,
@@ -634,6 +638,7 @@ export class ChargesPaymentService {
             external_amount_settled: parseFloat(
               item.external_amount_settled.toString()
             ),
+            amount_settled: parseFloat(item.amount_settled.toString()),
             created_at: item.created_at.toISOString(),
           })),
         })) as unknown as IChargesPayment[],
@@ -716,8 +721,7 @@ export class ChargesPaymentService {
   // Approve charges payment
   async approveChargesPayment(
     paymentId: string,
-    data: ApproveChargesPaymentRequest,
-    userId: string
+    data: ApproveChargesPaymentRequest
   ): Promise<ChargesPaymentResponse> {
     return await prisma.$transaction(async (tx) => {
       const chargesPayment = await tx.chargesPayment.findUnique({
@@ -725,7 +729,11 @@ export class ChargesPaymentService {
         include: {
           payment_items: {
             include: {
-              transaction_charges: true,
+              transaction_charges: {
+                include: {
+                  charge: true,
+                },
+              },
             },
           },
         },
@@ -765,11 +773,74 @@ export class ChargesPaymentService {
         )
       );
 
-      // TODO: Add GL postings and balance updates here
-      // This would involve:
-      // 1. Creating GL entries for the payment
-      // 2. Updating organisation balances
-      // 3. Creating audit trail entries
+      // Prepare GL entries for all payment items
+      const glEntries = [];
+
+      for (const item of chargesPayment.payment_items) {
+        const transactionCharge = item.transaction_charges;
+        const charge = transactionCharge.charge;
+
+        // Get the REVENUE account for this charge
+        const revenueAccount = await tx.glAccount.findFirst({
+          where: {
+            charge_id: charge.id,
+            organisation_id: chargesPayment.organisation_id,
+            type: "REVENUE",
+          },
+        });
+
+        if (!revenueAccount) {
+          throw new AppError(
+            `Revenue account not found for charge ${charge.name}`,
+            404
+          );
+        }
+
+        // Get the LIABILITY (PAYABLE) account for this charge
+        const liabilityAccount = await tx.glAccount.findFirst({
+          where: {
+            charge_id: charge.id,
+            organisation_id: chargesPayment.organisation_id,
+            type: "LIABILITY",
+          },
+        });
+
+        if (!liabilityAccount) {
+          throw new AppError(
+            `Liability account not found for charge ${charge.name}`,
+            404
+          );
+        }
+
+        // Add GL entries for this payment item
+        glEntries.push(
+          {
+            gl_account_id: revenueAccount.id,
+            amount: parseFloat(item.external_amount_settled.toString()),
+            dr_cr: "CR" as const,
+            description: `Revenue from ${charge.name} - ${chargesPayment.reference_number}`,
+          },
+          {
+            gl_account_id: liabilityAccount.id,
+            amount: parseFloat(item.external_amount_settled.toString()),
+            dr_cr: "DR" as const,
+            description: `Payment of ${charge.name} liability - ${chargesPayment.reference_number}`,
+          }
+        );
+      }
+
+      // Create GL transaction using the service
+      await this.glTransactionService.createGlTransaction(
+        chargesPayment.organisation_id!,
+        {
+          transaction_type: "CHARGES_PAYMENT", // Using existing type temporarily
+          amount: parseFloat(chargesPayment.external_total_amount.toString()),
+          currency_id: chargesPayment.currency_id || undefined,
+          description: `Charges payment approved - ${chargesPayment.reference_number}`,
+          gl_entries: glEntries,
+        },
+        chargesPayment.created_by!
+      );
 
       // Get updated payment with relations
       const result = await tx.chargesPayment.findUnique({
@@ -815,6 +886,7 @@ export class ChargesPaymentService {
             external_amount_settled: parseFloat(
               item.external_amount_settled.toString()
             ),
+            amount_settled: parseFloat(item.amount_settled.toString()),
             created_at: item.created_at.toISOString(),
           })),
         } as any,
@@ -834,7 +906,11 @@ export class ChargesPaymentService {
         include: {
           payment_items: {
             include: {
-              transaction_charges: true,
+              transaction_charges: {
+                include: {
+                  charge: true,
+                },
+              },
             },
           },
         },
@@ -873,11 +949,72 @@ export class ChargesPaymentService {
         )
       );
 
-      // TODO: Add reverse GL postings and balance updates here
-      // This would involve:
-      // 1. Creating reverse GL entries
-      // 2. Reversing organisation balance updates
-      // 3. Creating audit trail entries
+      // Prepare GL entries for all payment items
+      const glEntries = [];
+
+      for (const item of chargesPayment.payment_items) {
+        const transactionCharge = item.transaction_charges;
+        const charge = transactionCharge.charge;
+
+        // Get the REVENUE account for this charge
+        const revenueAccount = await tx.glAccount.findFirst({
+          where: {
+            charge_id: charge.id,
+            organisation_id: chargesPayment.organisation_id,
+            type: "REVENUE",
+          },
+        });
+
+        if (!revenueAccount) {
+          throw new AppError(
+            `Revenue account not found for charge ${charge.name}`,
+            404
+          );
+        }
+
+        // Get the LIABILITY (PAYABLE) account for this charge
+        const liabilityAccount = await tx.glAccount.findFirst({
+          where: {
+            charge_id: charge.id,
+            organisation_id: chargesPayment.organisation_id,
+            type: "LIABILITY",
+          },
+        });
+
+        if (!liabilityAccount) {
+          throw new AppError(
+            `Liability account not found for charge ${charge.name}`,
+            404
+          );
+        }
+
+        // Add GL entries for this payment item
+        glEntries.push(
+          {
+            gl_account_id: revenueAccount.id,
+            amount: parseFloat(item.external_amount_settled.toString()),
+            dr_cr: "DR" as const,
+            description: `Reversal of Revenue from ${charge.name} - ${chargesPayment.reference_number}`,
+          },
+          {
+            gl_account_id: liabilityAccount.id,
+            amount: parseFloat(item.external_amount_settled.toString()),
+            dr_cr: "CR" as const,
+            description: `Reversal of Payment of ${charge.name} liability - ${chargesPayment.reference_number}`,
+          }
+        );
+      }
+      await this.glTransactionService.createGlTransaction(
+        chargesPayment.organisation_id!,
+        {
+          transaction_type: "CHARGES_PAYMENT_REVERSAL", // Using existing type temporarily
+          amount: parseFloat(chargesPayment.external_total_amount.toString()),
+          currency_id: chargesPayment.currency_id || undefined,
+          description: `Charges payment reversed - ${chargesPayment.reference_number}`,
+          gl_entries: glEntries,
+        },
+        chargesPayment.created_by!
+      );
 
       // Get updated payment with relations
       const result = await tx.chargesPayment.findUnique({
@@ -923,6 +1060,7 @@ export class ChargesPaymentService {
             external_amount_settled: parseFloat(
               item.external_amount_settled.toString()
             ),
+            amount_settled: parseFloat(item.amount_settled.toString()),
             created_at: item.created_at.toISOString(),
           })),
         } as any,

@@ -7,6 +7,7 @@ import type {
   ApproveTransactionRequest,
   ReverseTransactionRequest,
   CancelTransactionRequest,
+  UpdateInboundTransactionReceiverDetailsRequest,
 } from "../types/TransactionsTypes";
 
 export class InboundTransactionService {
@@ -63,7 +64,7 @@ export class InboundTransactionService {
     organisationId: string
   ): Promise<InboundTransactionStatsResponse> {
     const response = await apiClient.get(
-      `/api/v1/transactions/organisations/${organisationId}/inbound-stats`
+      `/api/v1/transactions/organisations/${organisationId}/inbound/stats`
     );
     return response.data;
   }
@@ -105,6 +106,20 @@ export class InboundTransactionService {
   ): Promise<InboundTransactionResponse> {
     const response = await apiClient.post(
       `/api/v1/transactions/${transactionId}/cancel`,
+      data
+    );
+    return response.data;
+  }
+
+  /**
+   * Update inbound transaction receiver details
+   */
+  async updateReceiverDetails(
+    transactionId: string,
+    data: UpdateInboundTransactionReceiverDetailsRequest
+  ): Promise<InboundTransactionResponse> {
+    const response = await apiClient.put(
+      `/api/v1/transactions/inbound/${transactionId}/receiver-details`,
       data
     );
     return response.data;

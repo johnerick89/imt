@@ -22,7 +22,10 @@ class ReportsService {
       limit = 100,
     } = filters;
 
-    const where: any = { origin_organisation_id: user_organisation_id };
+    const where: any = {
+      origin_organisation_id: user_organisation_id,
+      direction: "OUTBOUND",
+    };
 
     if (date_from || date_to) {
       where.created_at = {};
@@ -95,7 +98,10 @@ class ReportsService {
       limit = 100,
     } = filters;
 
-    const where: any = { destination_organisation_id: user_organisation_id };
+    const where: any = {
+      destination_organisation_id: user_organisation_id,
+      direction: "INBOUND",
+    };
 
     if (date_from || date_to) {
       where.created_at = {};
@@ -119,6 +125,8 @@ class ReportsService {
         corridor: {
           include: {
             base_currency: true,
+            destination_country: true,
+            organisation: true,
           },
         },
         transaction_charges: {
@@ -126,6 +134,7 @@ class ReportsService {
             charge: true,
           },
         },
+        destination_organisation: true,
       },
       orderBy: { created_at: "desc" },
       skip: (page - 1) * limit,
