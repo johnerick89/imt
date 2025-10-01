@@ -28,18 +28,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggle }) => {
           // If no permission is required, show the item
           if (!item.permission) return true;
           // Check if user has the required permission
-          console.log(
-            "item.permission",
-            item.permission,
-            "hasPermission",
-            hasPermission(user, item.permission),
-            "permissions",
-            user?.user_role?.role_permissions?.map(
-              (permission) => permission.permission?.name
-            ),
-            "role_id",
-            user?.role_id
-          );
           return hasPermission(user, item.permission);
         }),
       }))
