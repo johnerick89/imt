@@ -1,6 +1,7 @@
 import React from "react";
 import { FiEdit2, FiTrash2, FiEye, FiPlus, FiMinus } from "react-icons/fi";
 import type { Vault } from "../types/VaultsTypes";
+import { usePermissions } from "../hooks/usePermissions";
 
 interface VaultActionCellProps {
   vault: Vault;
@@ -19,6 +20,7 @@ const VaultActionCell: React.FC<VaultActionCellProps> = ({
   onTopup,
   onWithdraw,
 }) => {
+  const { canEditVaults, canDeleteVaults } = usePermissions();
   return (
     <div className="flex items-center space-x-2">
       <button
@@ -28,7 +30,7 @@ const VaultActionCell: React.FC<VaultActionCellProps> = ({
       >
         <FiEye className="h-4 w-4" />
       </button>
-      {onTopup && (
+      {onTopup && canEditVaults() && (
         <button
           onClick={() => onTopup(vault)}
           className="p-1 text-green-600 hover:text-green-900 hover:bg-green-50 rounded transition-colors duration-200"
@@ -37,7 +39,7 @@ const VaultActionCell: React.FC<VaultActionCellProps> = ({
           <FiPlus className="h-4 w-4" />
         </button>
       )}
-      {onWithdraw && (
+      {onWithdraw && canEditVaults() && (
         <button
           onClick={() => onWithdraw(vault)}
           className="p-1 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded transition-colors duration-200"
@@ -46,20 +48,24 @@ const VaultActionCell: React.FC<VaultActionCellProps> = ({
           <FiMinus className="h-4 w-4" />
         </button>
       )}
-      <button
-        onClick={() => onEdit(vault)}
-        className="p-1 text-yellow-600 hover:text-yellow-900 hover:bg-yellow-50 rounded transition-colors duration-200"
-        title="Edit vault"
-      >
-        <FiEdit2 className="h-4 w-4" />
-      </button>
-      <button
-        onClick={() => onDelete(vault)}
-        className="p-1 text-red-600 hover:text-red-900 hover:bg-red-50 rounded transition-colors duration-200"
-        title="Delete vault"
-      >
-        <FiTrash2 className="h-4 w-4" />
-      </button>
+      {canEditVaults() && (
+        <button
+          onClick={() => onEdit(vault)}
+          className="p-1 text-yellow-600 hover:text-yellow-900 hover:bg-yellow-50 rounded transition-colors duration-200"
+          title="Edit vault"
+        >
+          <FiEdit2 className="h-4 w-4" />
+        </button>
+      )}
+      {canDeleteVaults() && (
+        <button
+          onClick={() => onDelete(vault)}
+          className="p-1 text-red-600 hover:text-red-900 hover:bg-red-50 rounded transition-colors duration-200"
+          title="Delete vault"
+        >
+          <FiTrash2 className="h-4 w-4" />
+        </button>
+      )}
     </div>
   );
 };

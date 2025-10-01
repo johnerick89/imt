@@ -29,13 +29,18 @@ import type {
   ApproveChargesPaymentRequest,
   ReverseChargesPaymentRequest,
 } from "../types/ChargesPaymentTypes";
+import { usePermissions } from "../hooks/usePermissions";
 
 const ChargesPaymentsPage: React.FC = () => {
   const { orgId } = useParams<{ orgId: string }>();
   const { user } = useSession();
   const navigate = useNavigate();
   const financialOrganisationId = orgId || user?.organisation_id || "";
-
+  const {
+    canCreateChargesPayments,
+    canApproveChargesPayments,
+    canReverseChargesPayments,
+  } = usePermissions();
   // Tab state
   const [activeTab, setActiveTab] = useState<"pending" | "payments">("pending");
 
@@ -499,12 +504,14 @@ const ChargesPaymentsPage: React.FC = () => {
                   {selectedCharges.length} of {pendingCharges.length} selected
                 </span>
               </div>
-              <Button
-                onClick={() => setShowCreateModal(true)}
-                disabled={selectedCharges.length === 0}
-              >
-                Process Charges Payment
-              </Button>
+              {canCreateChargesPayments() && (
+                <Button
+                  onClick={() => setShowCreateModal(true)}
+                  disabled={selectedCharges.length === 0}
+                >
+                  Process Charges Payment
+                </Button>
+              )}
             </div>
           </div>
 
@@ -1004,30 +1011,32 @@ const ChargesPaymentsPage: React.FC = () => {
                         >
                           View
                         </Button>
-                        {payment.status === "PENDING" && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedPayment(payment);
-                              setShowApproveModal(true);
-                            }}
-                          >
-                            Approve
-                          </Button>
-                        )}
-                        {payment.status === "COMPLETED" && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedPayment(payment);
-                              setShowReverseModal(true);
-                            }}
-                          >
-                            Reverse
-                          </Button>
-                        )}
+                        {payment.status === "PENDING" &&
+                          canApproveChargesPayments() && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedPayment(payment);
+                                setShowApproveModal(true);
+                              }}
+                            >
+                              Approve
+                            </Button>
+                          )}
+                        {payment.status === "COMPLETED" &&
+                          canReverseChargesPayments() && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedPayment(payment);
+                                setShowReverseModal(true);
+                              }}
+                            >
+                              Reverse
+                            </Button>
+                          )}
                       </td>
                     </tr>
                   ))}

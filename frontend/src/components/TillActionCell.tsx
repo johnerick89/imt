@@ -12,6 +12,7 @@ import {
 } from "react-icons/fi";
 import { TillStatus } from "../types/TillsTypes";
 import type { Till } from "../types/TillsTypes";
+import { usePermissions } from "../hooks/usePermissions";
 
 interface TillActionCellProps {
   till: Till;
@@ -38,21 +39,24 @@ const TillActionCell: React.FC<TillActionCellProps> = ({
   onTopup,
   onWithdraw,
 }) => {
+  const { canEditTills, canDeleteTills } = usePermissions();
   // Check if till can be opened (assigned to user)
   const canOpen =
     till.status !== TillStatus.BLOCKED &&
     till.status !== TillStatus.PENDING &&
     !till.current_teller_user_id &&
-    !till.opened_at;
+    !till.opened_at &&
+    canEditTills();
 
   // Check if till can be closed (is currently open)
-  const canClose = till.current_teller_user_id && till.opened_at;
+  const canClose =
+    till.current_teller_user_id && till.opened_at && canEditTills();
 
   // Check if till can be blocked (not already blocked)
-  const canBlock = till.status !== TillStatus.BLOCKED;
+  const canBlock = till.status !== TillStatus.BLOCKED && canEditTills();
 
   // Check if till can be deactivated (not already inactive)
-  const canDeactivate = till.status !== TillStatus.INACTIVE;
+  const canDeactivate = till.status !== TillStatus.INACTIVE && canEditTills();
 
   return (
     <div className="flex items-center gap-2">
@@ -66,13 +70,15 @@ const TillActionCell: React.FC<TillActionCellProps> = ({
       </button>
 
       {/* Edit */}
-      <button
-        onClick={() => onEdit(till)}
-        className="p-1 text-green-600 hover:text-green-900 hover:bg-green-50 rounded transition-colors duration-200"
-        title="Edit till"
-      >
-        <FiEdit2 className="h-4 w-4" />
-      </button>
+      {canEditTills() && (
+        <button
+          onClick={() => onEdit(till)}
+          className="p-1 text-green-600 hover:text-green-900 hover:bg-green-50 rounded transition-colors duration-200"
+          title="Edit till"
+        >
+          <FiEdit2 className="h-4 w-4" />
+        </button>
+      )}
 
       {/* Till Operations */}
       {canOpen && (
@@ -116,31 +122,37 @@ const TillActionCell: React.FC<TillActionCellProps> = ({
       )}
 
       {/* Topup */}
-      <button
-        onClick={() => onTopup(till)}
-        className="p-1 text-green-600 hover:text-green-900 hover:bg-green-50 rounded transition-colors duration-200"
-        title="Topup till"
-      >
-        <FiPlus className="h-4 w-4" />
-      </button>
+      {canEditTills() && (
+        <button
+          onClick={() => onTopup(till)}
+          className="p-1 text-green-600 hover:text-green-900 hover:bg-green-50 rounded transition-colors duration-200"
+          title="Topup till"
+        >
+          <FiPlus className="h-4 w-4" />
+        </button>
+      )}
 
       {/* Withdraw */}
-      <button
-        onClick={() => onWithdraw(till)}
-        className="p-1 text-orange-600 hover:text-orange-900 hover:bg-orange-50 rounded transition-colors duration-200"
-        title="Withdraw from till"
-      >
-        <FiMinus className="h-4 w-4" />
-      </button>
+      {canEditTills() && (
+        <button
+          onClick={() => onWithdraw(till)}
+          className="p-1 text-orange-600 hover:text-orange-900 hover:bg-orange-50 rounded transition-colors duration-200"
+          title="Withdraw from till"
+        >
+          <FiMinus className="h-4 w-4" />
+        </button>
+      )}
 
       {/* Delete */}
-      <button
-        onClick={() => onDelete(till)}
-        className="p-1 text-red-600 hover:text-red-900 hover:bg-red-50 rounded transition-colors duration-200"
-        title="Delete till"
-      >
-        <FiTrash2 className="h-4 w-4" />
-      </button>
+      {canDeleteTills() && (
+        <button
+          onClick={() => onDelete(till)}
+          className="p-1 text-red-600 hover:text-red-900 hover:bg-red-50 rounded transition-colors duration-200"
+          title="Delete till"
+        >
+          <FiTrash2 className="h-4 w-4" />
+        </button>
+      )}
     </div>
   );
 };

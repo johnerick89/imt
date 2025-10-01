@@ -23,10 +23,11 @@ import type {
   CorridorFilters,
   CorridorStatsFilters,
 } from "../types/CorridorsTypes";
+import { usePermissions } from "../hooks/usePermissions";
 
 const CorridorsPage: React.FC = () => {
   const { user: currentUser } = useSession();
-
+  const { canCreateCorridors } = usePermissions();
   // Filter state
   const [filters, setFilters] = useState<CorridorFilters>({
     page: 1,
@@ -192,13 +193,15 @@ const CorridorsPage: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">Corridors</h1>
           <p className="text-gray-600">Manage payment corridors</p>
         </div>
-        <button
-          onClick={openCreateModal}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2"
-        >
-          <FiPlus className="h-4 w-4" />
-          Create Corridor
-        </button>
+        {canCreateCorridors() && (
+          <button
+            onClick={openCreateModal}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2"
+          >
+            <FiPlus className="h-4 w-4" />
+            Create Corridor
+          </button>
+        )}
       </div>
 
       {/* Stats */}

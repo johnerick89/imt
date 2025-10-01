@@ -17,10 +17,12 @@ import {
 } from "../types/ExchangeRatesTypes";
 import type { UpdateExchangeRateRequest } from "../types/ExchangeRatesTypes";
 import { formatToCurrency } from "../utils/textUtils";
+import { usePermissions } from "../hooks/usePermissions";
 
 const ExchangeRateProfilePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { canEditExchangeRates, canDeleteExchangeRates } = usePermissions();
 
   // Modal states
   const [showEditModal, setShowEditModal] = useState(false);
@@ -180,7 +182,7 @@ const ExchangeRateProfilePage: React.FC = () => {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
-          {canEdit && (
+          {canEdit && canEditExchangeRates() && (
             <button
               onClick={() => setShowEditModal(true)}
               className="flex items-center gap-2 px-4 py-2 text-green-600 border border-green-600 rounded-lg hover:bg-green-50 transition-colors duration-200"
@@ -190,7 +192,7 @@ const ExchangeRateProfilePage: React.FC = () => {
             </button>
           )}
 
-          {canApprove && (
+          {canApprove && canEditExchangeRates() && (
             <>
               <button
                 onClick={() => setShowApproveModal(true)}
@@ -209,7 +211,7 @@ const ExchangeRateProfilePage: React.FC = () => {
             </>
           )}
 
-          {canDelete && (
+          {canDelete && canDeleteExchangeRates() && (
             <button
               onClick={() => setShowDeleteModal(true)}
               className="flex items-center gap-2 px-4 py-2 text-red-600 border border-red-600 rounded-lg hover:bg-red-50 transition-colors duration-200"

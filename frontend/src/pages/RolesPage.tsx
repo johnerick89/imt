@@ -17,13 +17,14 @@ import type {
   CreateRoleRequest,
   UpdateRoleRequest,
 } from "../types/RolesTypes";
+import { usePermissions } from "../hooks/usePermissions";
 
 const RolesPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
   const limit = 10;
-
+  const { canCreateRoles } = usePermissions();
   // Modals state
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -107,13 +108,15 @@ const RolesPage: React.FC = () => {
             Manage system roles and permissions
           </p>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-        >
-          <FiPlus className="mr-2 h-4 w-4" />
-          Create Role
-        </button>
+        {canCreateRoles() && (
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+          >
+            <FiPlus className="mr-2 h-4 w-4" />
+            Create Role
+          </button>
+        )}
       </div>
 
       {/* Stats */}

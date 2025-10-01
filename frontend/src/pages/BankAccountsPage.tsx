@@ -27,6 +27,7 @@ import type {
   TopupRequest,
   WithdrawalRequest,
 } from "../types/BankAccountsTypes";
+import { usePermissions } from "../hooks/usePermissions";
 
 const BankAccountsPage: React.FC = () => {
   const { user } = useSession();
@@ -39,6 +40,8 @@ const BankAccountsPage: React.FC = () => {
     search: "",
     organisation_id: organisationId || "",
   });
+
+  const { canCreateBankAccounts } = usePermissions();
 
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -176,13 +179,15 @@ const BankAccountsPage: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">Bank Accounts</h1>
           <p className="text-gray-600">Manage bank accounts and balances</p>
         </div>
-        <Button
-          onClick={() => setShowCreateModal(true)}
-          className="flex items-center space-x-2"
-        >
-          <FiPlus className="h-4 w-4" />
-          <span>Add Bank Account</span>
-        </Button>
+        {canCreateBankAccounts() && (
+          <Button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center space-x-2"
+          >
+            <FiPlus className="h-4 w-4" />
+            <span>Add Bank Account</span>
+          </Button>
+        )}
       </div>
 
       {/* Stats */}

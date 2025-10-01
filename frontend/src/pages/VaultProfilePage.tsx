@@ -12,11 +12,12 @@ import { useTopupVault, useWithdrawVault } from "../hooks/useBalanceOperations";
 import VaultTopupForm from "../components/VaultTopupForm";
 import { Modal } from "../components/ui/Modal";
 import type { VaultTopupRequest } from "../types/BalanceOperationsTypes";
+import { usePermissions } from "../hooks/usePermissions";
 
 const VaultProfilePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-
+  const { canEditVaults } = usePermissions();
   // State
   const [showTopupModal, setShowTopupModal] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
@@ -127,26 +128,30 @@ const VaultProfilePage: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowTopupModal(true)}
-            disabled={
-              topupVaultMutation.isPending || withdrawVaultMutation.isPending
-            }
-            className="flex items-center gap-2 px-3 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-          >
-            <FiPlus className="h-4 w-4" />
-            Topup Vault
-          </button>
-          <button
-            onClick={() => setShowWithdrawModal(true)}
-            disabled={
-              topupVaultMutation.isPending || withdrawVaultMutation.isPending
-            }
-            className="flex items-center gap-2 px-3 py-2 text-purple-600 border border-purple-600 rounded-lg hover:bg-purple-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-          >
-            <FiMinus className="h-4 w-4" />
-            Withdraw
-          </button>
+          {canEditVaults() && (
+            <button
+              onClick={() => setShowTopupModal(true)}
+              disabled={
+                topupVaultMutation.isPending || withdrawVaultMutation.isPending
+              }
+              className="flex items-center gap-2 px-3 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+            >
+              <FiPlus className="h-4 w-4" />
+              Topup Vault
+            </button>
+          )}
+          {canEditVaults() && (
+            <button
+              onClick={() => setShowWithdrawModal(true)}
+              disabled={
+                topupVaultMutation.isPending || withdrawVaultMutation.isPending
+              }
+              className="flex items-center gap-2 px-3 py-2 text-purple-600 border border-purple-600 rounded-lg hover:bg-purple-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+            >
+              <FiMinus className="h-4 w-4" />
+              Withdraw
+            </button>
+          )}
         </div>
       </div>
 

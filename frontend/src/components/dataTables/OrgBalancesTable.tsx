@@ -5,6 +5,7 @@ import { DataTable } from "../ui/DataTable";
 import { formatToCurrency } from "../../utils/textUtils";
 import type { OrgBalance } from "../../types/BalanceOperationsTypes";
 import type { ColumnDef } from "@tanstack/react-table";
+import { usePermissions } from "../../hooks/usePermissions";
 
 interface OrgBalancesTableProps {
   data: OrgBalance[];
@@ -17,6 +18,7 @@ const OrgBalancesTable: React.FC<OrgBalancesTableProps> = ({
   loading,
   onPrefund,
 }) => {
+  const { canCreateOrgBalances } = usePermissions();
   // Table columns
   const columns: ColumnDef<OrgBalance>[] = [
     {
@@ -91,15 +93,17 @@ const OrgBalancesTable: React.FC<OrgBalancesTableProps> = ({
       header: "Actions",
       cell: ({ row }) => (
         <div className="flex items-center space-x-2">
-          <Button
-            onClick={() => onPrefund(row.original.dest_org_id)}
-            size="sm"
-            variant="outline"
-            className="text-green-600 hover:text-green-700"
-          >
-            <FiPlus className="h-4 w-4 mr-1" />
-            Prefund
-          </Button>
+          {canCreateOrgBalances() && (
+            <Button
+              onClick={() => onPrefund(row.original.dest_org_id)}
+              size="sm"
+              variant="outline"
+              className="text-green-600 hover:text-green-700"
+            >
+              <FiPlus className="h-4 w-4 mr-1" />
+              Prefund
+            </Button>
+          )}
         </div>
       ),
     },

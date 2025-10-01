@@ -35,6 +35,7 @@ import type {
   RemittanceStatus,
 } from "../types/TransactionsTypes";
 import { siteCommonStrings } from "../config";
+import { usePermissions } from "../hooks/usePermissions";
 
 const OutboundTransactions: React.FC = () => {
   const { id: organisationId } = useParams<{ id: string }>();
@@ -48,7 +49,7 @@ const OutboundTransactions: React.FC = () => {
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
   const [isMarkAsReadyModalOpen, setIsMarkAsReadyModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-
+  const { canCreateTransactions } = usePermissions();
   // Use the current user's organisation if no organisationId in URL
   const effectiveOrganisationId = organisationId || user?.organisation_id;
 
@@ -261,9 +262,11 @@ const OutboundTransactions: React.FC = () => {
               transactions for your organisation.
             </p>
           </div>
-          <Button onClick={() => setIsCreateModalOpen(true)}>
-            Create {outboundLabel} Transaction
-          </Button>
+          {canCreateTransactions() && (
+            <Button onClick={() => setIsCreateModalOpen(true)}>
+              Create {outboundLabel} Transaction
+            </Button>
+          )}
         </div>
 
         {/* Stats Cards */}

@@ -29,9 +29,11 @@ import {
   IntegrationMode as IntegrationModeEnum,
   OrganisationStatus as OrganisationStatusEnum,
 } from "../types/OrganisationsTypes";
+import { usePermissions } from "../hooks/usePermissions";
 
 const OrganisationsPage: React.FC = () => {
   const navigate = useNavigate();
+  const { canCreateOrganisations } = usePermissions();
   const [filters, setFilters] = useState<OrganisationFilters>({
     search: "",
     type: undefined,
@@ -306,9 +308,11 @@ const OrganisationsPage: React.FC = () => {
               Manage partner organisations, agencies, and customers
             </p>
           </div>
-          <button onClick={openCreateModal} className="btn-primary">
-            Add Organisation
-          </button>
+          {canCreateOrganisations() && (
+            <button onClick={openCreateModal} className="btn-primary">
+              Add Organisation
+            </button>
+          )}
         </div>
       </div>
 

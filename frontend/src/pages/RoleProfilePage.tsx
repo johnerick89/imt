@@ -7,7 +7,6 @@ import PermissionManager from "../components/PermissionManager";
 const RoleProfilePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-
   const { data: roleData, isLoading, error } = useRole(id || "");
 
   if (isLoading) {

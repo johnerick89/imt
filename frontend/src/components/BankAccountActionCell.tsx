@@ -1,7 +1,7 @@
 import React from "react";
 import { FiEdit, FiTrash2, FiEye, FiPlus, FiMinus } from "react-icons/fi";
 import type { BankAccount } from "../types/BankAccountsTypes";
-
+import { usePermissions } from "../hooks/usePermissions";
 interface BankAccountActionCellProps {
   bankAccount: BankAccount;
   onView?: (bankAccount: BankAccount) => void;
@@ -19,10 +19,11 @@ const BankAccountActionCell: React.FC<BankAccountActionCellProps> = ({
   onTopup,
   onWithdraw,
 }) => {
-  const canEdit = true; // Add any business logic here
-  const canDelete = true; // Add any business logic here
-  const canTopup = true; // Add any business logic here
-  const canWithdraw = bankAccount.balance > 0; // Can only withdraw if there's balance
+  const { canEditBankAccounts, canDeleteBankAccounts } = usePermissions();
+  const canEdit = canEditBankAccounts(); // Add any business logic here
+  const canDelete = canDeleteBankAccounts(); // Add any business logic here
+  const canTopup = canEditBankAccounts(); // Add any business logic here
+  const canWithdraw = bankAccount.balance > 0 && canEditBankAccounts(); // Can only withdraw if there's balance
 
   return (
     <div className="flex items-center space-x-2">

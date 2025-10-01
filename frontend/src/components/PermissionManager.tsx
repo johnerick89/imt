@@ -5,6 +5,7 @@ import {
   useDeleteRolePermission,
 } from "../hooks/useRoles";
 import type { Role, Permission } from "../types/RolesTypes";
+import { usePermissions as usePermissionsHook } from "../hooks/usePermissions";
 
 interface PermissionManagerProps {
   role: Role;
@@ -15,6 +16,7 @@ const PermissionManager: React.FC<PermissionManagerProps> = ({ role }) => {
   const { data: permissionsData, isLoading } = usePermissions({ limit: 100 });
   const createRolePermissionMutation = useCreateRolePermission();
   const deleteRolePermissionMutation = useDeleteRolePermission();
+  const { canEditRoles } = usePermissionsHook();
 
   const allPermissions = permissionsData?.data?.permissions || [];
   const rolePermissionIds = new Set(role.permissions?.map((p) => p.id) || []);
@@ -114,7 +116,8 @@ const PermissionManager: React.FC<PermissionManagerProps> = ({ role }) => {
                       }
                       disabled={
                         createRolePermissionMutation.isPending ||
-                        deleteRolePermissionMutation.isPending
+                        deleteRolePermissionMutation.isPending ||
+                        !canEditRoles()
                       }
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                     />

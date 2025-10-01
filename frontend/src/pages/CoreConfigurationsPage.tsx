@@ -2,11 +2,12 @@ import React, { useState } from "react";
 import ParametersTab from "../components/ParametersTab";
 import CurrenciesTab from "../components/CurrenciesTab";
 import CountriesTab from "../components/CountriesTab";
-
+import { usePermissions } from "../hooks/usePermissions";
 const CoreConfigurationsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<
     "parameters" | "currencies" | "countries"
   >("parameters");
+  const { canViewParameters } = usePermissions();
 
   return (
     <div className="p-6">
@@ -24,16 +25,18 @@ const CoreConfigurationsPage: React.FC = () => {
       <div className="bg-white rounded-lg shadow mb-6">
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8 px-6">
-            <button
-              onClick={() => setActiveTab("parameters")}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === "parameters"
-                  ? "border-blue-500 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
-            >
-              Parameters
-            </button>
+            {canViewParameters() && (
+              <button
+                onClick={() => setActiveTab("parameters")}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "parameters"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                Parameters
+              </button>
+            )}
             <button
               onClick={() => setActiveTab("currencies")}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${

@@ -27,12 +27,14 @@ import type {
 } from "../types/CustomersTypes";
 import { FiArrowLeft, FiPlus, FiEdit, FiTrash2 } from "react-icons/fi";
 import { StatusBadge } from "../components/ui/StatusBadge";
+import { usePermissions } from "../hooks/usePermissions";
 
 const CustomerProfilePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("beneficiaries");
-
+  const { canCreateCustomers, canEditCustomers, canDeleteCustomers } =
+    usePermissions();
   // Customer state
   const [showEditCustomerModal, setShowEditCustomerModal] = useState(false);
   const [showDeleteCustomerModal, setShowDeleteCustomerModal] = useState(false);
@@ -206,13 +208,15 @@ const CustomerProfilePage: React.FC = () => {
                   Manage beneficiaries for this customer
                 </p>
               </div>
-              <button
-                onClick={() => setShowCreateBeneficiaryModal(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-              >
-                <FiPlus className="w-4 h-4 mr-2" />
-                Add Beneficiary
-              </button>
+              {canCreateCustomers() && (
+                <button
+                  onClick={() => setShowCreateBeneficiaryModal(true)}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  <FiPlus className="w-4 h-4 mr-2" />
+                  Add Beneficiary
+                </button>
+              )}
             </div>
 
             <BeneficiariesTable
@@ -265,20 +269,24 @@ const CustomerProfilePage: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center space-x-2">
-          <button
-            onClick={openEditCustomerModal}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <FiEdit className="w-4 h-4 mr-2" />
-            Edit Customer
-          </button>
-          <button
-            onClick={openDeleteCustomerModal}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-          >
-            <FiTrash2 className="w-4 h-4 mr-2" />
-            Delete Customer
-          </button>
+          {canEditCustomers() && (
+            <button
+              onClick={openEditCustomerModal}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              <FiEdit className="w-4 h-4 mr-2" />
+              Edit Customer
+            </button>
+          )}
+          {canDeleteCustomers() && (
+            <button
+              onClick={openDeleteCustomerModal}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            >
+              <FiTrash2 className="w-4 h-4 mr-2" />
+              Delete Customer
+            </button>
+          )}
         </div>
       </div>
 

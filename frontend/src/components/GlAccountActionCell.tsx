@@ -1,7 +1,7 @@
 import React from "react";
 import { FiEdit, FiTrash2, FiEye, FiLock, FiUnlock } from "react-icons/fi";
 import type { GlAccount } from "../types/GlAccountsTypes";
-
+import { usePermissions } from "../hooks/usePermissions";
 interface GlAccountActionCellProps {
   glAccount: GlAccount;
   onView?: (glAccount: GlAccount) => void;
@@ -19,10 +19,15 @@ const GlAccountActionCell: React.FC<GlAccountActionCellProps> = ({
   onFreeze,
   onUnfreeze,
 }) => {
-  const canEdit = !glAccount.closed_at && !glAccount.frozen_at;
-  const canDelete = !glAccount.closed_at && !glAccount.frozen_at;
-  const canFreeze = !glAccount.closed_at && !glAccount.frozen_at;
-  const canUnfreeze = glAccount.frozen_at && !glAccount.closed_at;
+  const { canEditGlAccounts, canDeleteGlAccounts } = usePermissions();
+  const canEdit =
+    !glAccount.closed_at && !glAccount.frozen_at && canEditGlAccounts();
+  const canDelete =
+    !glAccount.closed_at && !glAccount.frozen_at && canDeleteGlAccounts();
+  const canFreeze =
+    !glAccount.closed_at && !glAccount.frozen_at && canEditGlAccounts();
+  const canUnfreeze =
+    glAccount.frozen_at && !glAccount.closed_at && canEditGlAccounts();
 
   return (
     <div className="flex items-center space-x-2">

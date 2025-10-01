@@ -4,7 +4,6 @@ import { DataTable } from "./ui/DataTable";
 import BankAccountActionCell from "./BankAccountActionCell";
 import { formatToCurrency } from "../utils/textUtils";
 import type { BankAccount } from "../types/BankAccountsTypes";
-
 interface BankAccountsTableProps {
   data: BankAccount[];
   onView?: (bankAccount: BankAccount) => void;

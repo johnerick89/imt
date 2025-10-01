@@ -52,12 +52,27 @@ import type {
 } from "../types/ChargesTypes";
 import type { PrefundRequest } from "../types/BalanceOperationsTypes";
 import { Button } from "../components/ui/Button";
+import { usePermissions } from "../hooks/usePermissions";
 
 const OrganisationProfilePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("corridors");
   const { user } = useSession();
+  const {
+    canViewIntegrations,
+    canViewCorridors,
+    canViewCharges,
+    canEditOrganisations,
+    canViewOrgBalances,
+    canCreateIntegrations,
+    canCreateCorridors,
+    canCreateCharges,
+    canCreateOrgBalances,
+  } = usePermissions();
+
+  const isMyOrganisation =
+    user?.organisation_id && id === user?.organisation_id;
 
   // Balance-related state
   const [showPrefundModal, setShowPrefundModal] = useState(false);
@@ -379,12 +394,18 @@ const OrganisationProfilePage: React.FC = () => {
   }
 
   const tabs = [
-    ...(organisation?.integration_mode === "EXTERNAL"
+    ...(organisation?.integration_mode === "EXTERNAL" && canViewIntegrations()
       ? [{ id: "integrations", label: "Integrations", icon: "🔌" }]
       : []),
-    { id: "corridors", label: "Corridors", icon: "🌐" },
-    { id: "charges", label: "Charges", icon: "💰" },
-    { id: "balance", label: "Balance", icon: "💳" },
+    ...(canViewCorridors()
+      ? [{ id: "corridors", label: "Corridors", icon: "🌐" }]
+      : []),
+    ...(canViewCharges()
+      ? [{ id: "charges", label: "Charges", icon: "💰" }]
+      : []),
+    ...(canViewOrgBalances()
+      ? [{ id: "balance", label: "Balance", icon: "💳" }]
+      : []),
     // { id: "branches", label: "Branches", icon: "🏢" },
   ];
 
@@ -397,20 +418,24 @@ const OrganisationProfilePage: React.FC = () => {
               <h3 className="text-lg font-semibold text-gray-900">
                 Integrations
               </h3>
-              <button
-                onClick={() => setShowCreateModal(true)}
-                disabled={!user?.organisation_id || user.organisation_id === id}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                title={
-                  !user?.organisation_id
-                    ? "You must be assigned to an organisation to create integrations"
-                    : user.organisation_id === id
-                    ? "You cannot create integrations with your own organisation"
-                    : "Add Integration"
-                }
-              >
-                Add Integration
-              </button>
+              {canCreateIntegrations() && (
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  disabled={
+                    !user?.organisation_id || user.organisation_id === id
+                  }
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={
+                    !user?.organisation_id
+                      ? "You must be assigned to an organisation to create integrations"
+                      : user.organisation_id === id
+                      ? "You cannot create integrations with your own organisation"
+                      : "Add Integration"
+                  }
+                >
+                  Add Integration
+                </button>
+              )}
             </div>
             <IntegrationsTable
               data={integrations}
@@ -433,12 +458,14 @@ const OrganisationProfilePage: React.FC = () => {
           <div className="p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-gray-900">Corridors</h3>
-              <button
-                onClick={() => setShowCreateCorridorModal(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                Add Corridor
-              </button>
+              {canCreateCorridors() && (
+                <button
+                  onClick={() => setShowCreateCorridorModal(true)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Add Corridor
+                </button>
+              )}
             </div>
             <CorridorsTable
               data={corridors}
@@ -465,12 +492,14 @@ const OrganisationProfilePage: React.FC = () => {
           <div className="p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-gray-900">Charges</h3>
-              <button
-                onClick={() => setShowCreateChargeModal(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                Add Charge
-              </button>
+              {canCreateCharges() && (
+                <button
+                  onClick={() => setShowCreateChargeModal(true)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Add Charge
+                </button>
+              )}
             </div>
             <ChargesTable
               data={charges}
@@ -521,11 +550,13 @@ const OrganisationProfilePage: React.FC = () => {
                 Balance Management
               </h3>
               <div className="flex space-x-2">
-                {orgBalances && orgBalances.length === 0 && (
-                  <Button onClick={() => setShowPrefundModal(true)}>
-                    Set up Balance
-                  </Button>
-                )}
+                {orgBalances &&
+                  orgBalances.length === 0 &&
+                  canCreateOrgBalances() && (
+                    <Button onClick={() => setShowPrefundModal(true)}>
+                      Set up Balance
+                    </Button>
+                  )}
               </div>
             </div>
 
@@ -565,13 +596,17 @@ const OrganisationProfilePage: React.FC = () => {
             </div>
           </div>
           <div className="flex space-x-3">
-            <button
-              onClick={() => navigate(`/organisations/${organisation.id}/edit`)}
-              className="px-4 py-2 text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 flex items-center"
-            >
-              <span className="mr-2">✏️</span>
-              Edit Organisation
-            </button>
+            {canEditOrganisations() && (
+              <button
+                onClick={() =>
+                  navigate(`/organisations/${organisation.id}/edit`)
+                }
+                className="px-4 py-2 text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 flex items-center"
+              >
+                <span className="mr-2">✏️</span>
+                Edit Organisation
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -702,30 +737,32 @@ const OrganisationProfilePage: React.FC = () => {
       </div>
 
       {/* Tabs Section */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        {/* Tab Navigation */}
-        <div className="border-b border-gray-200">
-          <nav className="flex space-x-8 px-6" aria-label="Tabs">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === tab.id
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                <span className="mr-2">{tab.icon}</span>
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-        </div>
+      {!isMyOrganisation && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          {/* Tab Navigation */}
+          <div className="border-b border-gray-200">
+            <nav className="flex space-x-8 px-6" aria-label="Tabs">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === tab.id
+                      ? "border-blue-500 text-blue-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
+                >
+                  <span className="mr-2">{tab.icon}</span>
+                  {tab.label}
+                </button>
+              ))}
+            </nav>
+          </div>
 
-        {/* Tab Content */}
-        {renderTabContent()}
-      </div>
+          {/* Tab Content */}
+          {renderTabContent()}
+        </div>
+      )}
 
       {/* Create Integration Modal */}
       <Modal

@@ -7,6 +7,7 @@ import { ReceiptService } from "../services/ReceiptService";
 import { UpdateReceiverDetailsForm } from "./UpdateReceiverDetailsForm";
 import type { Transaction } from "../types/TransactionsTypes";
 import { FiDownload, FiEdit3 } from "react-icons/fi";
+import { usePermissions } from "../hooks/usePermissions";
 
 interface TransactionDetailsModalProps {
   isOpen: boolean;
@@ -41,6 +42,12 @@ export const TransactionDetailsModal: React.FC<
   const [isUpdateReceiverModalOpen, setIsUpdateReceiverModalOpen] =
     useState(false);
   console.log("transaction", transaction);
+  const {
+    canApproveTransactions,
+    canReverseTransactions,
+    canCancelTransactions,
+    canEditTransactions,
+  } = usePermissions();
 
   if (!transaction) return null;
 
@@ -58,21 +65,27 @@ export const TransactionDetailsModal: React.FC<
   const canCancel =
     isOutbound &&
     ["PENDING", "PENDING_APPROVAL", "READY"].includes(transaction.status) &&
-    transaction.remittance_status === "PENDING";
+    transaction.remittance_status === "PENDING" &&
+    canCancelTransactions();
   const canReverse =
     isOutbound &&
     transaction.status === "APPROVED" &&
-    transaction.remittance_status === "READY";
+    transaction.remittance_status === "READY" &&
+    canReverseTransactions();
   const canApprove =
     isOutbound &&
     transaction.status === "READY" &&
-    transaction.remittance_status === "READY";
+    transaction.remittance_status === "READY" &&
+    canApproveTransactions();
   const canUpdate =
     isOutbound &&
     ["PENDING", "PENDING_APPROVAL"].includes(transaction.status) &&
-    transaction.remittance_status === "PENDING";
+    transaction.remittance_status === "PENDING" &&
+    canEditTransactions();
   const canMarkAsReady =
-    isOutbound && ["PENDING", "PENDING_APPROVAL"].includes(transaction.status);
+    isOutbound &&
+    ["PENDING", "PENDING_APPROVAL"].includes(transaction.status) &&
+    canEditTransactions();
 
   const handleDownloadReceipt = async () => {
     try {
