@@ -36,7 +36,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggle }) => {
             "permissions",
             user?.user_role?.role_permissions?.map(
               (permission) => permission.permission?.name
-            )
+            ),
+            "role_id",
+            user?.role_id
           );
           return hasPermission(user, item.permission);
         }),
