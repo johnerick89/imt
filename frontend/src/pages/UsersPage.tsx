@@ -26,7 +26,7 @@ const UsersPage: React.FC = () => {
     search: "",
     role: "",
     status: undefined,
-    organisation_id: organisationId,
+    ...(organisationId && { organisation_id: organisationId }),
     page: 1,
     limit: 10,
   });
@@ -59,7 +59,7 @@ const UsersPage: React.FC = () => {
     error: usersError,
   } = useUsers(filters);
   const { data: statsData, isLoading: statsLoading } = useUserStats({
-    organisation_id: organisationId,
+    ...(organisationId && { organisation_id: organisationId }),
   });
   const toggleUserStatusMutation = useToggleUserStatus();
   const deleteUserMutation = useDeleteUser();
