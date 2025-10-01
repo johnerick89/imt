@@ -31,6 +31,7 @@ const InboundTransactions: React.FC = () => {
   const { orgId } = useParams<{ orgId: string }>();
   const { user } = useSession();
   const financialOrganisationId = orgId || user?.organisation_id || "";
+
   const [filters, setFilters] = useState<InboundTransactionFilters>({
     page: 1,
     limit: 10,

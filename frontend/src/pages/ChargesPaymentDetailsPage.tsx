@@ -15,10 +15,13 @@ import type {
   ApproveChargesPaymentRequest,
   ReverseChargesPaymentRequest,
 } from "../types/ChargesPaymentTypes";
+import { usePermissions } from "../hooks/usePermissions";
 
 const ChargesPaymentDetailsPage: React.FC = () => {
   const { paymentId } = useParams<{ paymentId: string }>();
   const navigate = useNavigate();
+  const { canApproveChargesPayments, canReverseChargesPayments } =
+    usePermissions();
 
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showReverseModal, setShowReverseModal] = useState(false);
@@ -131,12 +134,12 @@ const ChargesPaymentDetailsPage: React.FC = () => {
           >
             Back to List
           </Button>
-          {payment.status === "PENDING" && (
+          {payment.status === "PENDING" && canApproveChargesPayments() && (
             <Button onClick={() => setShowApproveModal(true)}>
               Approve Payment
             </Button>
           )}
-          {payment.status === "COMPLETED" && (
+          {payment.status === "COMPLETED" && canReverseChargesPayments() && (
             <Button variant="outline" onClick={() => setShowReverseModal(true)}>
               Reverse Payment
             </Button>

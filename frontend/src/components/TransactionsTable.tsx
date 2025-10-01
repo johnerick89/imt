@@ -16,7 +16,7 @@ import {
   FiClock,
   FiDownload,
 } from "react-icons/fi";
-
+import { usePermissions } from "../hooks/usePermissions";
 interface TransactionsTableProps {
   transactions: Transaction[];
   isLoading?: boolean;
@@ -46,6 +46,12 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
       // You might want to show a toast notification here
     }
   };
+  const {
+    canApproveTransactions,
+    canReverseTransactions,
+    canCancelTransactions,
+    canEditTransactions,
+  } = usePermissions();
   const columns: ColumnDef<Transaction>[] = [
     {
       accessorKey: "transaction_no",
@@ -223,23 +229,28 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
           ["PENDING", "PENDING_APPROVAL", "READY"].includes(
             transaction.status
           ) &&
-          transaction.remittance_status === "PENDING";
+          transaction.remittance_status === "PENDING" &&
+          canCancelTransactions();
         const canReverse =
           isOutbound &&
           transaction.status === "APPROVED" &&
-          transaction.remittance_status === "PENDING";
+          transaction.remittance_status === "PENDING" &&
+          canReverseTransactions();
         const canApprove =
           isOutbound &&
           transaction.status === "READY" &&
-          transaction.remittance_status === "READY";
+          transaction.remittance_status === "READY" &&
+          canApproveTransactions();
         const canUpdate =
           isOutbound &&
           ["PENDING", "PENDING_APPROVAL"].includes(transaction.status) &&
-          transaction.remittance_status === "PENDING";
+          transaction.remittance_status === "PENDING" &&
+          canEditTransactions();
         const canMarkAsReady =
           isOutbound &&
           ["PENDING", "PENDING_APPROVAL"].includes(transaction.status) &&
-          transaction.remittance_status === "PENDING";
+          transaction.remittance_status === "PENDING" &&
+          canEditTransactions();
 
         return (
           <div className="flex items-center space-x-1">

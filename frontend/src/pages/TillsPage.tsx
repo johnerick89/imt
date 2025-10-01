@@ -31,12 +31,13 @@ import type {
   TillFilters,
 } from "../types/TillsTypes";
 import type { TillTopupRequest } from "../types/BalanceOperationsTypes";
+import { usePermissions } from "../hooks/usePermissions";
 
 const TillsPage: React.FC = () => {
   const navigate = useNavigate();
   const { user: currentUser } = useSession();
   const organisationId = currentUser?.organisation_id;
-
+  const { canCreateTills } = usePermissions();
   // Filter state
   const [filters, setFilters] = useState<TillFilters>({
     page: 1,
@@ -274,13 +275,15 @@ const TillsPage: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">Tills</h1>
           <p className="text-gray-600">Manage till operations</p>
         </div>
-        <button
-          onClick={openCreateModal}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2"
-        >
-          <FiPlus className="h-4 w-4" />
-          Create Till
-        </button>
+        {canCreateTills() && (
+          <button
+            onClick={openCreateModal}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2"
+          >
+            <FiPlus className="h-4 w-4" />
+            Create Till
+          </button>
+        )}
       </div>
 
       {/* Stats */}

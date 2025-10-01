@@ -5,7 +5,7 @@ import {
   ExchangeRateOperatorStatus,
 } from "../types/ExchangeRatesTypes";
 import type { ExchangeRate } from "../types/ExchangeRatesTypes";
-
+import { usePermissions } from "../hooks/usePermissions";
 interface ExchangeRateActionCellProps {
   exchangeRate: ExchangeRate;
   onView: (exchangeRate: ExchangeRate) => void;
@@ -23,30 +23,36 @@ const ExchangeRateActionCell: React.FC<ExchangeRateActionCellProps> = ({
   onApprove,
   onReject,
 }) => {
+  const { canEditExchangeRates, canDeleteExchangeRates } = usePermissions();
   // Check if exchange rate can be approved/rejected
   const canApprove =
-    exchangeRate.status === ExchangeRateStatus.PENDING_APPROVAL ||
-    exchangeRate.operator_status ===
-      ExchangeRateOperatorStatus.PENDING_APPROVAL;
+    canEditExchangeRates() &&
+    (exchangeRate.status === ExchangeRateStatus.PENDING_APPROVAL ||
+      exchangeRate.operator_status ===
+        ExchangeRateOperatorStatus.PENDING_APPROVAL);
 
   const canEdit =
     exchangeRate.status !== ExchangeRateStatus.APPROVED &&
-    exchangeRate.status !== ExchangeRateStatus.ACTIVE;
+    exchangeRate.status !== ExchangeRateStatus.ACTIVE &&
+    canEditExchangeRates();
 
   const canDelete =
     exchangeRate.status !== ExchangeRateStatus.APPROVED &&
-    exchangeRate.status !== ExchangeRateStatus.ACTIVE;
+    exchangeRate.status !== ExchangeRateStatus.ACTIVE &&
+    canDeleteExchangeRates();
 
   return (
     <div className="flex items-center gap-2">
       {/* View */}
-      <button
-        onClick={() => onView(exchangeRate)}
-        className="p-1 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded transition-colors duration-200"
-        title="View exchange rate"
-      >
-        <FiEye className="h-4 w-4" />
-      </button>
+      {canEdit && (
+        <button
+          onClick={() => onView(exchangeRate)}
+          className="p-1 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded transition-colors duration-200"
+          title="View exchange rate"
+        >
+          <FiEye className="h-4 w-4" />
+        </button>
+      )}
 
       {/* Edit */}
       {canEdit && (

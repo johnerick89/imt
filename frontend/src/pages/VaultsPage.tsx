@@ -24,6 +24,7 @@ import type {
 import type { VaultTopupRequest } from "../types/BalanceOperationsTypes";
 import { useSession } from "../hooks";
 import { SearchableSelect } from "../components/ui/SearchableSelect";
+import { usePermissions } from "../hooks/usePermissions";
 
 const VaultsPage: React.FC = () => {
   const { user: currentUser } = useSession();
@@ -39,7 +40,7 @@ const VaultsPage: React.FC = () => {
   });
   const [page, setPage] = useState(1);
   const limit = 100;
-
+  const { canCreateVaults } = usePermissions();
   // Modals state
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -168,13 +169,15 @@ const VaultsPage: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">Vaults</h1>
           <p className="text-gray-600 mt-1">Manage system vaults and storage</p>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-        >
-          <FiPlus className="mr-2 h-4 w-4" />
-          Create Vault
-        </button>
+        {canCreateVaults() && (
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+          >
+            <FiPlus className="mr-2 h-4 w-4" />
+            Create Vault
+          </button>
+        )}
       </div>
 
       {/* Stats */}

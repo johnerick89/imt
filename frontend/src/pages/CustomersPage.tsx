@@ -17,6 +17,7 @@ import CustomerForm from "../components/CustomerForm";
 import { Modal } from "../components/ui/Modal";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { FiPlus } from "react-icons/fi";
+import { usePermissions } from "../hooks/usePermissions";
 
 const CustomersPage: React.FC = () => {
   const { user: currentUser } = useSession();
@@ -27,6 +28,7 @@ const CustomersPage: React.FC = () => {
     search: "",
     organisation_id: organisationId,
   });
+  const { canCreateCustomers } = usePermissions();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -109,13 +111,15 @@ const CustomersPage: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
           <p className="text-gray-600">Manage your customer database</p>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <FiPlus className="w-4 h-4" />
-          Add Customer
-        </button>
+        {canCreateCustomers() && (
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <FiPlus className="w-4 h-4" />
+            Add Customer
+          </button>
+        )}
       </div>
 
       {/* Stats Section */}

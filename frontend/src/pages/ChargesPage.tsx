@@ -22,10 +22,11 @@ import type {
   ChargeFilters,
   ChargeType,
 } from "../types/ChargesTypes";
+import { usePermissions } from "../hooks/usePermissions";
 
 const ChargesPage: React.FC = () => {
   const { user: currentUser } = useSession();
-
+  const { canCreateCharges } = usePermissions();
   // Filter state
   const [filters, setFilters] = useState<ChargeFilters>({
     page: 1,
@@ -176,13 +177,15 @@ const ChargesPage: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">Charges</h1>
           <p className="text-gray-600">Manage transaction charges and fees</p>
         </div>
-        <button
-          onClick={openCreateModal}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2 hidden"
-        >
-          <FiPlus className="h-4 w-4" />
-          Create Charge
-        </button>
+        {canCreateCharges() && (
+          <button
+            onClick={openCreateModal}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2 hidden"
+          >
+            <FiPlus className="h-4 w-4" />
+            Create Charge
+          </button>
+        )}
       </div>
 
       {/* Stats */}

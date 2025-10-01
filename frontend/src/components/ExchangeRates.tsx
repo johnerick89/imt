@@ -27,11 +27,12 @@ import type {
   UpdateExchangeRateRequest,
   ExchangeRateFilters,
 } from "../types/ExchangeRatesTypes";
+import { usePermissions } from "../hooks/usePermissions";
 
 const ExchangeRates: React.FC = () => {
   const { user: currentUser } = useSession();
   const navigate = useNavigate();
-
+  const { canCreateExchangeRates } = usePermissions();
   // Filter state
   const [filters, setFilters] = useState<ExchangeRateFilters>({
     page: 1,
@@ -225,13 +226,15 @@ const ExchangeRates: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">Exchange Rates</h1>
           <p className="text-gray-600">Manage currency exchange rates</p>
         </div>
-        <button
-          onClick={openCreateModal}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2"
-        >
-          <FiPlus className="h-4 w-4" />
-          Create Exchange Rate
-        </button>
+        {canCreateExchangeRates() && (
+          <button
+            onClick={openCreateModal}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2"
+          >
+            <FiPlus className="h-4 w-4" />
+            Create Exchange Rate
+          </button>
+        )}
       </div>
 
       {/* Stats */}

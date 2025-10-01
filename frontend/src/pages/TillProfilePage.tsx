@@ -42,11 +42,12 @@ import type {
   UpdateUserTillRequest,
 } from "../types/TillsTypes";
 import type { TillTopupRequest } from "../types/BalanceOperationsTypes";
+import { usePermissions } from "../hooks/usePermissions";
 
 const TillProfilePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-
+  const { canEditTills } = usePermissions();
   // State
   const [activeTab, setActiveTab] = useState("details");
   const [showEditModal, setShowEditModal] = useState(false);
@@ -304,7 +305,7 @@ const TillProfilePage: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {canOpen && (
+          {canOpen && canEditTills() && (
             <button
               onClick={() => handleTillOperation("open")}
               disabled={isAnyMutationLoading}
@@ -314,7 +315,7 @@ const TillProfilePage: React.FC = () => {
               Open Till
             </button>
           )}
-          {canClose && (
+          {canClose && canEditTills() && (
             <button
               onClick={() => handleTillOperation("close")}
               disabled={isAnyMutationLoading}
@@ -324,7 +325,7 @@ const TillProfilePage: React.FC = () => {
               Close Till
             </button>
           )}
-          {canBlock && (
+          {canBlock && canEditTills() && (
             <button
               onClick={() => handleTillOperation("block")}
               disabled={isAnyMutationLoading}
@@ -334,7 +335,7 @@ const TillProfilePage: React.FC = () => {
               Block Till
             </button>
           )}
-          {canUnblock && (
+          {canUnblock && canEditTills() && (
             <button
               onClick={() => handleTillOperation("unblock")}
               disabled={isAnyMutationLoading}
@@ -344,7 +345,7 @@ const TillProfilePage: React.FC = () => {
               Unblock Till
             </button>
           )}
-          {canDeactivate && (
+          {canDeactivate && canEditTills() && (
             <button
               onClick={() => handleTillOperation("deactivate")}
               disabled={isAnyMutationLoading}
@@ -354,29 +355,35 @@ const TillProfilePage: React.FC = () => {
               Deactivate
             </button>
           )}
-          <button
-            onClick={() => setShowTopupModal(true)}
-            disabled={isAnyMutationLoading}
-            className="flex items-center gap-2 px-3 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-          >
-            <FiPlus className="h-4 w-4" />
-            Topup Till
-          </button>
-          <button
-            onClick={() => setShowWithdrawModal(true)}
-            disabled={isAnyMutationLoading}
-            className="flex items-center gap-2 px-3 py-2 text-purple-600 border border-purple-600 rounded-lg hover:bg-purple-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-          >
-            <FiMinus className="h-4 w-4" />
-            Withdraw
-          </button>
-          <button
-            onClick={() => setShowEditModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-          >
-            <FiEdit2 className="h-4 w-4" />
-            Edit Till
-          </button>
+          {canEditTills() && (
+            <button
+              onClick={() => setShowTopupModal(true)}
+              disabled={isAnyMutationLoading}
+              className="flex items-center gap-2 px-3 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+            >
+              <FiPlus className="h-4 w-4" />
+              Topup Till
+            </button>
+          )}
+          {canEditTills() && (
+            <button
+              onClick={() => setShowWithdrawModal(true)}
+              disabled={isAnyMutationLoading}
+              className="flex items-center gap-2 px-3 py-2 text-purple-600 border border-purple-600 rounded-lg hover:bg-purple-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+            >
+              <FiMinus className="h-4 w-4" />
+              Withdraw
+            </button>
+          )}
+          {canEditTills() && (
+            <button
+              onClick={() => setShowEditModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+            >
+              <FiEdit2 className="h-4 w-4" />
+              Edit Till
+            </button>
+          )}
         </div>
       </div>
 

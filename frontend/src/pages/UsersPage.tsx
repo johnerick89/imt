@@ -17,11 +17,13 @@ import { Input } from "../components/ui/Input";
 import { Select } from "../components/ui/Select";
 import UserForm from "../components/UserForm";
 import type { User, UserFilters, UserStatus } from "../types/UsersTypes";
+import { usePermissions } from "../hooks/usePermissions";
 
 const UsersPage: React.FC = () => {
   const { user: currentUser } = useSession();
   const organisationId = currentUser?.organisation_id;
   const navigate = useNavigate();
+  const { canCreateUsers } = usePermissions();
   const [filters, setFilters] = useState<UserFilters>({
     search: "",
     role: "",
@@ -259,9 +261,11 @@ const UsersPage: React.FC = () => {
               Manage user accounts and permissions
             </p>
           </div>
-          <button onClick={openCreateModal} className="btn-primary">
-            Add User
-          </button>
+          {canCreateUsers() && (
+            <button onClick={openCreateModal} className="btn-primary">
+              Add User
+            </button>
+          )}
         </div>
       </div>
 

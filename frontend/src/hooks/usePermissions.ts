@@ -54,6 +54,11 @@ export const usePermissions = () => {
     canEditUsers: () => hasPermission(user, "admin.users.edit"),
     canDeleteUsers: () => hasPermission(user, "admin.users.delete"),
 
+    canViewRoles: () => hasPermission(user, "admin.roles.view"),
+    canCreateRoles: () => hasPermission(user, "admin.roles.create"),
+    canEditRoles: () => hasPermission(user, "admin.roles.edit"),
+    canDeleteRoles: () => hasPermission(user, "admin.roles.delete"),
+
     canViewOrganisations: () => hasPermission(user, "admin.organisations.view"),
     canCreateOrganisations: () =>
       hasPermission(user, "admin.organisations.create"),
@@ -130,6 +135,8 @@ export const usePermissions = () => {
     canCreateChargesPayments: () =>
       hasPermission(user, "admin.chargesPayments.create"),
     canApproveChargesPayments: () =>
+      hasPermission(user, "admin.chargesPayments.approve"),
+    canReverseChargesPayments: () =>
       hasPermission(user, "admin.chargesPayments.approve"),
 
     // Organisation Balance Management
