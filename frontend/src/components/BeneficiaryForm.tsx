@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { FormItem } from "./ui/FormItem";
 import { Input } from "./ui/Input";
@@ -8,13 +8,12 @@ import { SearchableSelect } from "./ui/SearchableSelect";
 import { useAllCountries } from "../hooks/useCountries";
 import { useOccupations } from "../hooks/useOccupations";
 import { useIndustries } from "../hooks/useIndustries";
+import { useSession } from "../hooks/useSession";
 import type {
   CreateBeneficiaryRequest,
   UpdateBeneficiaryRequest,
   Beneficiary,
 } from "../types/BeneficiariesTypes";
-import type { IParameter } from "../types/ParametersTypes";
-import type { Country } from "../types/CountriesTypes";
 
 interface BeneficiaryFormProps {
   initialData?: Beneficiary;
@@ -22,7 +21,6 @@ interface BeneficiaryFormProps {
   isLoading?: boolean;
   customerId: string;
   organisationId: string;
-  useBeneficiaryDefaultCountryCode?: IParameter;
 }
 
 const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
@@ -31,23 +29,17 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
   isLoading = false,
   customerId,
   organisationId,
-  useBeneficiaryDefaultCountryCode,
 }) => {
   const isEdit = !!initialData;
   const { data: countriesData } = useAllCountries();
   const { data: occupationsData } = useOccupations({ limit: 100 });
   const { data: industriesData } = useIndustries({ limit: 100 });
+  const { fetchBeneficiaryDefaultCountryId } = useSession();
+  useEffect(() => {
+    fetchBeneficiaryDefaultCountryId();
+  }, [fetchBeneficiaryDefaultCountryId]);
+  const { beneficiaryDefaultCountryId } = useSession();
 
-  const getBeneficiaryDefaultCountryId = () => {
-    if (useBeneficiaryDefaultCountryCode?.value === "true") {
-      return countriesData?.data?.countries?.find(
-        (c: Country) => c.code === useBeneficiaryDefaultCountryCode?.value_2
-      )?.id;
-    }
-
-    return "";
-  };
-  const countryId = getBeneficiaryDefaultCountryId();
   const {
     control,
     handleSubmit,
@@ -63,7 +55,8 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
       date_of_birth: initialData?.date_of_birth
         ? new Date(initialData.date_of_birth).toISOString().split("T")[0]
         : "",
-      nationality_id: initialData?.nationality_id || countryId,
+      nationality_id:
+        initialData?.nationality_id || beneficiaryDefaultCountryId || "",
       address: initialData?.address || "",
       customer_id: customerId,
       organisation_id: organisationId,
@@ -73,8 +66,8 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
       reg_number: "",
       occupation_id: "",
       industry_id: "",
-      residence_country_id: countryId,
-      incorporation_country_id: countryId,
+      residence_country_id: beneficiaryDefaultCountryId || "",
+      incorporation_country_id: beneficiaryDefaultCountryId || "",
       bank_name: initialData?.bank_name || "",
       bank_address: initialData?.bank_address || "",
       bank_city: initialData?.bank_city || "",

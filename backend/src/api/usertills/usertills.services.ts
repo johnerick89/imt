@@ -30,6 +30,7 @@ export class UserTillService {
           user_id: data.user_id,
           till_id: data.till_id,
           opening_balance: till.balance?.toNumber() || 0,
+          moving_balance: till.balance?.toNumber() || 0,
           date: new Date(data.date || new Date()),
           status: data.status || UserTillStatus.OPEN,
           organisation_id: till.organisation_id,

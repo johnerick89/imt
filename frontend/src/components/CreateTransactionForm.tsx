@@ -556,7 +556,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 <SearchableSelect
                   options={customers.map((customer) => ({
                     value: customer.id,
-                    label: `${customer.full_name} `,
+                    label: `${customer.full_name} - ${customer.phone_number}`,
                   }))}
                   value={field.value}
                   onChange={(value) => {
@@ -585,7 +585,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 <SearchableSelect
                   options={beneficiaries.map((beneficiary) => ({
                     value: beneficiary.id,
-                    label: `${beneficiary.name} `,
+                    label: `${beneficiary.name} - ${beneficiary.phone}`,
                   }))}
                   value={field.value}
                   onChange={(value) => {

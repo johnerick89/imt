@@ -542,6 +542,60 @@ export class TransactionService {
         },
       });
 
+      //update org balance for outbound transaction
+      if (
+        updatedTransaction.destination_organisation_id &&
+        updatedTransaction.origin_currency_id &&
+        updatedTransaction.origin_organisation_id
+      ) {
+        let orgBalance = await tx.orgBalance.findFirst({
+          where: {
+            base_org_id: updatedTransaction.origin_organisation_id,
+            dest_org_id: updatedTransaction.destination_organisation_id,
+            currency_id: updatedTransaction.origin_currency_id,
+          },
+        });
+
+        if (!orgBalance) {
+          orgBalance = await tx.orgBalance.create({
+            data: {
+              base_org_id: updatedTransaction.origin_organisation_id,
+              dest_org_id: updatedTransaction.destination_organisation_id,
+              currency_id: updatedTransaction.origin_currency_id,
+              balance: 0,
+              locked_balance: 0,
+            },
+          });
+        }
+
+        const oldBalance = parseFloat(orgBalance?.balance?.toString() || "0");
+        const transactionAmount = parseFloat(
+          updatedTransaction.origin_amount?.toString() || "0"
+        );
+        const newBalance = oldBalance - transactionAmount;
+
+        await tx.orgBalance.update({
+          where: { id: orgBalance.id },
+          data: {
+            balance: newBalance,
+            updated_at: new Date(),
+          },
+        });
+
+        await tx.balanceHistory.create({
+          data: {
+            entity_type: "ORG_BALANCE",
+            entity_id: orgBalance.id,
+            currency_id: updatedTransaction.origin_currency_id,
+            old_balance: oldBalance,
+            new_balance: newBalance,
+            change_amount: -transactionAmount,
+            description: `Outbound transaction approved: ${updatedTransaction.id}`,
+            created_by: userId,
+          },
+        });
+      }
+
       // Update till balance for outbound transaction
       if (transaction.till_id) {
         const till = await tx.till.findUnique({
@@ -551,9 +605,9 @@ export class TransactionService {
         if (till) {
           const currentBalance = parseFloat(till.balance?.toString() || "0");
           const transactionAmount = parseFloat(
-            transaction.origin_amount.toString()
+            transaction.amount_payable?.toString() || "0"
           );
-          const newBalance = currentBalance - transactionAmount;
+          const newBalance = currentBalance + transactionAmount;
 
           // Update till balance
           await tx.till.update({
@@ -570,9 +624,11 @@ export class TransactionService {
               till_id: transaction.till_id,
               status: "OPEN",
               organisation_id: till.organisation_id,
+              user_id: userId,
             },
             data: {
-              net_transactions_total: { increment: -transactionAmount },
+              net_transactions_total: { increment: transactionAmount },
+              moving_balance: { increment: transactionAmount },
             },
           });
 
@@ -584,7 +640,7 @@ export class TransactionService {
               currency_id: transaction.origin_currency_id,
               old_balance: currentBalance,
               new_balance: newBalance,
-              change_amount: -transactionAmount,
+              change_amount: transactionAmount,
               description: `Outbound transaction approved: ${transaction.id}`,
               created_by: userId,
             },
@@ -1778,7 +1834,6 @@ export class TransactionService {
           },
           userId
         );
-      console.log("glTransactionResponse", glTransactionResponse);
     }
   }
 

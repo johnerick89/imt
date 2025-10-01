@@ -397,6 +397,7 @@ export class TillService {
           user_id: userId,
           till_id: tillId,
           opening_balance: till.balance || 0, // Default opening balance for user till
+          moving_balance: till.balance || 0,
           date: new Date(),
           status: "OPEN" as any,
         },

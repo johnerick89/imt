@@ -9,7 +9,6 @@ import {
   useUpdateCustomer,
   useDeleteCustomer,
 } from "../hooks";
-import { useParameters } from "../hooks/useParameters";
 
 import { Modal } from "../components/ui/Modal";
 import { ConfirmModal } from "../components/ConfirmModal";
@@ -28,7 +27,6 @@ import type {
 } from "../types/CustomersTypes";
 import { FiArrowLeft, FiPlus, FiEdit, FiTrash2 } from "react-icons/fi";
 import { StatusBadge } from "../components/ui/StatusBadge";
-import type { IParameter } from "../types/ParametersTypes";
 
 const CustomerProfilePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -55,12 +53,6 @@ const CustomerProfilePage: React.FC = () => {
     id: string;
     name: string;
   } | null>(null);
-  const { data: parametersData } = useParameters({ limit: 100 });
-  const parameters = parametersData?.data?.parameters;
-  const useBeneficiaryDefaultCountryCode = parameters?.find(
-    (p: IParameter) => p.name === "USE_BENEFICIARY_DEFAULT_COUNTRY_CODE"
-  );
-
   const { data: customerData, isLoading, error } = useCustomer(id || "");
 
   // Beneficiary hooks
@@ -693,7 +685,6 @@ const CustomerProfilePage: React.FC = () => {
           isLoading={createBeneficiaryMutation.isPending}
           customerId={customer.id}
           organisationId={customer.organisation_id}
-          useBeneficiaryDefaultCountryCode={useBeneficiaryDefaultCountryCode}
         />
       </Modal>
 
@@ -711,7 +702,6 @@ const CustomerProfilePage: React.FC = () => {
           isLoading={updateBeneficiaryMutation.isPending}
           customerId={customer.id}
           organisationId={customer.organisation_id}
-          useBeneficiaryDefaultCountryCode={useBeneficiaryDefaultCountryCode}
         />
       </Modal>
 

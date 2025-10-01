@@ -4,6 +4,7 @@ export interface NavigationItem {
   path: string;
   icon: string;
   children?: NavigationItem[];
+  permission?: string; // Required permission to view this navigation item
 }
 
 export interface NavigationSection {
@@ -23,12 +24,14 @@ export const navigationSections: NavigationSection[] = [
         label: "Dashboard",
         path: "/dashboard",
         icon: "📊",
+        // No permission required - everyone can access dashboard
       },
       {
         id: "transactions",
         label: "Transactions",
         path: "/transactions",
         icon: "💸",
+        permission: "admin.transactions.view",
       },
 
       {
@@ -36,18 +39,21 @@ export const navigationSections: NavigationSection[] = [
         label: "Customers",
         path: "/customers",
         icon: "👥",
+        permission: "admin.customers.view",
       },
       {
         id: "charges-payments",
         label: "Charges Payments",
         path: "/charges-payments",
         icon: "💰",
+        permission: "admin.chargesPayments.view",
       },
       {
         id: "organisations.gl-transactions",
         label: "GL Transactions",
         path: "/gl-transactions",
         icon: "📊",
+        permission: "admin.ledgers.view",
       },
 
       {
@@ -55,6 +61,7 @@ export const navigationSections: NavigationSection[] = [
         label: "Reports",
         path: "/reports",
         icon: "📊",
+        permission: "admin.reports.view",
       },
     ],
   },
@@ -67,12 +74,14 @@ export const navigationSections: NavigationSection[] = [
         label: "Organisations",
         path: "/organisations",
         icon: "🏢",
+        permission: "admin.organisations.view",
       },
       {
         id: "organisations.connections",
         label: "Connections",
         path: "/connections",
         icon: "🔌",
+        permission: "admin.corridors.view",
       },
 
       {
@@ -80,6 +89,7 @@ export const navigationSections: NavigationSection[] = [
         label: "Financial Settings",
         path: "/financial-settings",
         icon: "💰",
+        permission: "admin.charges.view", // Or use a dedicated permission if available
       },
 
       {
@@ -87,6 +97,7 @@ export const navigationSections: NavigationSection[] = [
         label: "Vaults",
         path: "/vaults",
         icon: "🔒",
+        permission: "admin.vaults.view",
       },
 
       {
@@ -94,18 +105,21 @@ export const navigationSections: NavigationSection[] = [
         label: "Tills",
         path: "/tills",
         icon: "🏪",
+        permission: "admin.tills.view",
       },
       {
         id: "bank-accounts",
         label: "Bank Accounts",
         path: "/bank-accounts",
         icon: "🏦",
+        permission: "admin.bankAccounts.view",
       },
       {
         id: "organisations.accounts",
         label: "GL Accounts",
         path: "/gl-accounts",
         icon: "📋",
+        permission: "admin.accounts.view",
       },
     ],
   },
@@ -118,12 +132,14 @@ export const navigationSections: NavigationSection[] = [
         label: "Core Configurations",
         path: "/core-configurations",
         icon: "⚙️",
+        permission: "admin.parameters.view",
       },
       {
         id: "transaction-channels",
         label: "Transaction Channels",
         path: "/transaction-channels",
         icon: "🔗",
+        permission: "admin.transactionChannels.view",
       },
     ],
   },
@@ -136,18 +152,21 @@ export const navigationSections: NavigationSection[] = [
         label: "Users",
         path: "/users",
         icon: "👤",
+        permission: "admin.users.view",
       },
       {
         id: "roles",
         label: "Roles",
         path: "/roles",
         icon: "🔐",
+        permission: "admin.roles.view",
       },
       {
         id: "my-account",
         label: "My Account",
         path: "/my-account",
         icon: "⚙️",
+        // No permission required - everyone can access their own account
       },
     ],
   },

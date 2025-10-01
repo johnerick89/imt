@@ -266,6 +266,7 @@ export class BalanceOperationService {
         },
         data: {
           net_transactions_total: { increment: data.amount }, // Negative for withdrawal
+          moving_balance: { increment: data.amount },
         },
       });
 
@@ -578,6 +579,7 @@ export class BalanceOperationService {
         },
         data: {
           net_transactions_total: { increment: -data.amount }, // Negative for withdrawal
+          moving_balance: { increment: -data.amount },
         },
       });
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   navigationSections,
@@ -6,6 +6,8 @@ import {
   type NavigationSection,
 } from "../navigation";
 import siteConfig from "../config/site.config";
+import { useSession } from "../hooks/useSession";
+import { hasPermission } from "../utils/acl";
 
 interface SidebarProps {
   isCollapsed?: boolean;
@@ -15,6 +17,22 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggle }) => {
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const location = useLocation();
+  const { user } = useSession();
+
+  // Filter navigation items based on user permissions
+  const filteredNavigationSections = useMemo(() => {
+    return navigationSections
+      .map((section) => ({
+        ...section,
+        items: section.items.filter((item) => {
+          // If no permission is required, show the item
+          if (!item.permission) return true;
+          // Check if user has the required permission
+          return hasPermission(user, item.permission);
+        }),
+      }))
+      .filter((section) => section.items.length > 0); // Remove empty sections
+  }, [user]);
 
   const toggleSubmenu = (itemId: string) => {
     setExpandedItems((prev) =>
@@ -153,7 +171,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggle }) => {
 
       {/* Navigation Menu */}
       <nav className="flex-1 overflow-y-auto py-4">
-        {navigationSections.map((section: NavigationSection) => (
+        {filteredNavigationSections.map((section: NavigationSection) => (
           <div key={section.id} className="mb-6">
             {/* Section Header */}
             {!isCollapsed && (

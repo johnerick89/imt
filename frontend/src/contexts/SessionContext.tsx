@@ -10,6 +10,9 @@ import { jwtDecode } from "jwt-decode";
 import type { User } from "../types/AuthTypes";
 import { InactivityWarningModal } from "../components/InactivityWarningModal";
 import { useRole } from "../hooks/useRoles";
+import { getParameterValue } from "../utils/parameterUtils";
+import CountriesService from "../services/CountriesService";
+import type { Country } from "../types/CountriesTypes";
 
 type SessionContextType = {
   sessionJwt: string | null;
@@ -19,6 +22,10 @@ type SessionContextType = {
   logout: () => void;
   updateUserDetails: (newDetails: Partial<User>) => void;
   refreshAuthState: () => void;
+  beneficiaryDefaultCountryId?: string | null;
+  fetchBeneficiaryDefaultCountryId: () => Promise<void>;
+  roleLoading: boolean;
+  fetchUserRole: () => void;
 };
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
@@ -40,20 +47,45 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({
   const inactivityTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const warningTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigate = useNavigate();
+  const [beneficiaryDefaultCountryId, setBeneficiaryDefaultCountryId] =
+    useState<string | null>(null);
+
+  // Manual function to trigger role fetch by updating a state
+  const [shouldManuallyFetchRole, setShouldManuallyFetchRole] = useState(false);
 
   // Fetch user role data if user is authenticated and role_id exists but user_role is missing
-  const shouldFetchRole = isAuthenticated && user?.role_id && !user?.user_role;
-  console.log(
-    "shouldFetchRole",
-    shouldFetchRole,
-    "user",
-    user,
-    "isAuthenticated",
-    isAuthenticated
-  );
+  const shouldFetchRole =
+    (isAuthenticated && user?.role_id && !user?.user_role) ||
+    shouldManuallyFetchRole;
+
   const { data: roleData, isLoading: roleLoading } = useRole(
-    shouldFetchRole ? user.role_id || "" : ""
+    shouldFetchRole ? user?.role_id || "" : ""
   );
+
+  // Fetch beneficiary default country id
+  const fetchBeneficiaryDefaultCountryId = useCallback(async () => {
+    const useBeneficiaryDefaultCountryCodeParam = await getParameterValue({
+      name: "USE_BENEFICIARY_DEFAULT_COUNTRY_CODE",
+    });
+
+    const countriesData = await CountriesService.getCountries({
+      limit: 1000,
+    });
+    const beneficiaryDefaultCountryId =
+      countriesData?.data?.countries?.find(
+        (country: Country) =>
+          country.code === useBeneficiaryDefaultCountryCodeParam?.value_2
+      )?.id || null;
+
+    setBeneficiaryDefaultCountryId(beneficiaryDefaultCountryId);
+  }, []);
+
+  // Function to manually trigger role fetch
+  const fetchUserRole = useCallback(() => {
+    if (user?.role_id && !user?.user_role) {
+      setShouldManuallyFetchRole(true);
+    }
+  }, [user]);
 
   // Clear all timers
   const clearTimers = useCallback(() => {
@@ -282,8 +314,24 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({
     if (roleData?.data && user && !user.user_role && !roleLoading) {
       console.log("Updating user with role data:", roleData.data);
       updateUserDetails({ user_role: roleData.data });
+      // Reset manual fetch flag after successful role update
+      setShouldManuallyFetchRole(false);
     }
   }, [roleData, user, roleLoading, updateUserDetails]);
+
+  // Fetch beneficiary default country ID when user becomes authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchBeneficiaryDefaultCountryId();
+    }
+  }, [isAuthenticated, fetchBeneficiaryDefaultCountryId]);
+
+  // Fetch user role when user becomes authenticated
+  useEffect(() => {
+    if (isAuthenticated && user?.role_id && !user?.user_role) {
+      fetchUserRole();
+    }
+  }, [isAuthenticated, user?.role_id, user?.user_role, fetchUserRole]);
 
   // Refresh authentication state
   const refreshAuthState = () => {
@@ -324,6 +372,10 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({
           logout,
           updateUserDetails,
           refreshAuthState,
+          beneficiaryDefaultCountryId,
+          fetchBeneficiaryDefaultCountryId,
+          roleLoading,
+          fetchUserRole,
         }}
       >
         <div className="min-h-screen flex items-center justify-center">
@@ -343,6 +395,10 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({
         logout,
         updateUserDetails,
         refreshAuthState,
+        beneficiaryDefaultCountryId,
+        fetchBeneficiaryDefaultCountryId,
+        roleLoading,
+        fetchUserRole,
       }}
     >
       {children}
