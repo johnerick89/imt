@@ -13,6 +13,7 @@ interface UserFormProps {
   mode: "create" | "edit";
   onSuccess?: () => void;
   onCancel?: () => void;
+  myAccount?: boolean;
 }
 
 interface UserFormData {
@@ -32,6 +33,7 @@ const UserForm: React.FC<UserFormProps> = ({
   mode,
   onSuccess,
   onCancel,
+  myAccount = false,
 }) => {
   const isEditMode = mode === "edit";
   const { user } = useSession();
@@ -194,6 +196,7 @@ const UserForm: React.FC<UserFormProps> = ({
                   placeholder="user@example.com"
                   invalid={Boolean(errors.email)}
                   {...field}
+                  disabled={userId !== null || userId !== ""}
                 />
               )}
             />
@@ -201,45 +204,47 @@ const UserForm: React.FC<UserFormProps> = ({
         </div>
 
         {/* Password */}
-        <div className="md:col-span-2">
-          <FormItem
-            label="Password"
-            invalid={Boolean(errors.password)}
-            errorMessage={errors.password?.message}
-            required={!isEditMode}
-          >
-            <Controller
-              name="password"
-              control={control}
-              rules={{
-                required: !isEditMode ? "Password is required" : false,
-                minLength: !isEditMode
-                  ? {
-                      value: 6,
-                      message: "Password must be at least 6 characters",
+        {!isEditMode && (
+          <div className="md:col-span-2">
+            <FormItem
+              label="Password"
+              invalid={Boolean(errors.password)}
+              errorMessage={errors.password?.message}
+              required={!isEditMode}
+            >
+              <Controller
+                name="password"
+                control={control}
+                rules={{
+                  required: !isEditMode ? "Password is required" : false,
+                  minLength: !isEditMode
+                    ? {
+                        value: 6,
+                        message: "Password must be at least 6 characters",
+                      }
+                    : undefined,
+                }}
+                render={({ field }) => (
+                  <Input
+                    type="password"
+                    placeholder={
+                      isEditMode
+                        ? "Leave blank to keep current password"
+                        : "Enter password"
                     }
-                  : undefined,
-              }}
-              render={({ field }) => (
-                <Input
-                  type="password"
-                  placeholder={
-                    isEditMode
-                      ? "Leave blank to keep current password"
-                      : "Enter password"
-                  }
-                  invalid={Boolean(errors.password)}
-                  {...field}
-                />
+                    invalid={Boolean(errors.password)}
+                    {...field}
+                  />
+                )}
+              />
+              {isEditMode && (
+                <p className="mt-1 text-sm text-gray-500">
+                  Leave blank to keep the current password
+                </p>
               )}
-            />
-            {isEditMode && (
-              <p className="mt-1 text-sm text-gray-500">
-                Leave blank to keep the current password
-              </p>
-            )}
-          </FormItem>
-        </div>
+            </FormItem>
+          </div>
+        )}
 
         {/* First Name */}
         <FormItem
@@ -286,28 +291,30 @@ const UserForm: React.FC<UserFormProps> = ({
         </FormItem>
 
         {/* Role */}
-        <FormItem
-          label="Role"
-          invalid={Boolean(errors.role_id)}
-          errorMessage={errors.role_id?.message}
-          required
-        >
-          <Controller
-            name="role_id"
-            control={control}
-            rules={{ required: "Role is required" }}
-            render={({ field }) => (
-              <Select invalid={Boolean(errors.role_id)} {...field}>
-                <option value="">Select a role</option>
-                {rolesData?.data?.roles.map((role) => (
-                  <option key={role.id} value={role.id}>
-                    {role.name}
-                  </option>
-                ))}
-              </Select>
-            )}
-          />
-        </FormItem>
+        {!myAccount && (
+          <FormItem
+            label="Role"
+            invalid={Boolean(errors.role_id)}
+            errorMessage={errors.role_id?.message}
+            required
+          >
+            <Controller
+              name="role_id"
+              control={control}
+              rules={{ required: "Role is required" }}
+              render={({ field }) => (
+                <Select invalid={Boolean(errors.role_id)} {...field}>
+                  <option value="">Select a role</option>
+                  {rolesData?.data?.roles.map((role) => (
+                    <option key={role.id} value={role.id}>
+                      {role.name}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            />
+          </FormItem>
+        )}
 
         {/* Phone */}
         <FormItem label="Phone Number">

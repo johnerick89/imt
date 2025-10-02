@@ -1,4 +1,4 @@
-import { OrganisationStatus } from "@prisma/client";
+import { OrganisationStatus, IntegrationMethod } from "@prisma/client";
 import { prisma } from "../../lib/prisma.lib";
 import {
   ICreateOrganisationRequest,
@@ -18,9 +18,11 @@ export class OrganisationsService {
   ): Promise<IOrganisationResponse> {
     return await prisma.$transaction(async (tx) => {
       console.log(organisationData);
+      const integrationMode = organisationData.integration_mode;
       const { base_currency_id, country_id, contact_password, ...rest } =
         organisationData;
       const organisation = await tx.organisation.create({
+        //@ts-ignore
         data: {
           ...rest,
           base_currency: base_currency_id
@@ -39,6 +41,7 @@ export class OrganisationsService {
             : undefined,
 
           status: OrganisationStatus.ACTIVE,
+          created_by: createdBy,
         },
         include: {
           base_currency: true,
@@ -47,7 +50,9 @@ export class OrganisationsService {
         },
       });
 
-      await createContactPerson(organisationData, organisation.id, tx);
+      if (integrationMode === IntegrationMethod.INTERNAL) {
+        await createContactPerson(organisationData, organisation.id, tx);
+      }
 
       return {
         success: true,
@@ -109,6 +114,22 @@ export class OrganisationsService {
           created_by_user: true,
           users: true,
           integrations: true,
+          origin_transactions: {
+            select: {
+              id: true,
+              direction: true,
+              created_at: true,
+              status: true,
+            },
+          },
+          destination_transactions: {
+            select: {
+              id: true,
+              direction: true,
+              created_at: true,
+              status: true,
+            },
+          },
         },
       }),
       prisma.organisation.count({ where }),
@@ -138,6 +159,22 @@ export class OrganisationsService {
         created_by_user: true,
         users: true,
         integrations: true,
+        origin_transactions: {
+          select: {
+            id: true,
+            direction: true,
+            created_at: true,
+            status: true,
+          },
+        },
+        destination_transactions: {
+          select: {
+            id: true,
+            direction: true,
+            created_at: true,
+            status: true,
+          },
+        },
       },
     });
 

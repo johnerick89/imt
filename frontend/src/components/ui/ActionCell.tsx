@@ -17,6 +17,8 @@ interface ActionCellProps {
   showEdit?: boolean;
   showToggleStatus?: boolean;
   showDelete?: boolean;
+  isMainOrg?: boolean;
+  hasTransactions?: boolean;
 }
 
 export const ActionCell: React.FC<ActionCellProps> = ({
@@ -29,6 +31,8 @@ export const ActionCell: React.FC<ActionCellProps> = ({
   showEdit = true,
   showToggleStatus = true,
   showDelete = true,
+  isMainOrg = false,
+  hasTransactions = false,
 }) => {
   const getToggleStatusIcon = (currentStatus: string) => {
     switch (currentStatus) {
@@ -91,7 +95,7 @@ export const ActionCell: React.FC<ActionCellProps> = ({
           <FiEdit3 className="w-4 h-4" />
         </button>
       )}
-      {showToggleStatus && onToggleStatus && status && (
+      {showToggleStatus && onToggleStatus && status && !isMainOrg && (
         <button
           onClick={onToggleStatus}
           className={`p-2 rounded-md transition-colors duration-200 ${getToggleStatusColor(
@@ -102,7 +106,7 @@ export const ActionCell: React.FC<ActionCellProps> = ({
           {getToggleStatusIcon(status)}
         </button>
       )}
-      {showDelete && onDelete && (
+      {showDelete && onDelete && !isMainOrg && !hasTransactions && (
         <button
           onClick={onDelete}
           className="p-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-md transition-colors duration-200"
