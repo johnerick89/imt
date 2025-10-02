@@ -67,6 +67,18 @@ export interface Organisation {
     type: string;
     status: string;
   }>;
+  origin_transactions?: Array<{
+    id: string;
+    direction: string;
+    created_at?: Date | null;
+    status: string;
+  }>;
+  destination_transactions?: Array<{
+    id: string;
+    direction: string;
+    created_at?: Date | null;
+    status: string;
+  }>;
 }
 
 export interface CreateOrganisationRequest {
@@ -77,6 +89,7 @@ export interface CreateOrganisationRequest {
   contact_person?: string;
   contact_email?: string;
   contact_password?: string;
+  contact_role_id?: string;
   contact_phone?: string;
   contact_address?: string;
   contact_city?: string;

@@ -12,12 +12,22 @@ const createContactPerson = async (
 ) => {
   const db = tx || prisma;
 
-  const adminRole = await db.role.findFirst({
-    where: { name: "Admin" },
-  });
-
-  if (!adminRole) {
-    throw new Error("Admin role not found");
+  // Use provided role_id or fall back to Admin role
+  let selectedRole;
+  if (organisationData.contact_role_id) {
+    selectedRole = await db.role.findUnique({
+      where: { id: organisationData.contact_role_id },
+    });
+    if (!selectedRole) {
+      throw new Error("Selected role not found");
+    }
+  } else {
+    selectedRole = await db.role.findFirst({
+      where: { name: "Admin" },
+    });
+    if (!selectedRole) {
+      throw new Error("Admin role not found");
+    }
   }
 
   const firstName = organisationData.contact_person.split(" ")[0];
@@ -27,8 +37,8 @@ const createContactPerson = async (
       email: organisationData.contact_email,
       first_name: firstName,
       last_name: lastName,
-      role: adminRole?.name,
-      role_id: adminRole?.id,
+      role: selectedRole?.name,
+      role_id: selectedRole?.id,
       password: organisationData.contact_password || DEFAULT_PASSWORD,
       organisation_id: organisationId,
     },

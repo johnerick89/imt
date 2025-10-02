@@ -33,6 +33,22 @@ export interface IOrganisation {
   created_by_user?: User | null;
   users?: User[] | null;
   integrations?: Integration[] | null;
+  origin_transactions?:
+    | {
+        id: string;
+        direction: string;
+        created_at?: Date | null;
+        status: string;
+      }[]
+    | null;
+  destination_transactions?:
+    | {
+        id: string;
+        direction: string;
+        created_at?: Date | null;
+        status: string;
+      }[]
+    | null;
 }
 
 export interface ICreateOrganisationRequest {
@@ -50,6 +66,7 @@ export interface ICreateOrganisationRequest {
   base_currency_id?: string | null | undefined;
   country_id?: string | null | undefined;
   contact_password: string;
+  contact_role_id?: string;
 }
 
 export interface IUpdateOrganisationRequest {

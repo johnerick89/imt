@@ -182,6 +182,7 @@ const OrganisationsPage: React.FC = () => {
       header: "Organisation",
       cell: ({ row }) => {
         const org = row.original;
+
         return (
           <button
             onClick={() => navigate(`/organisations/${org.id}`)}
@@ -283,17 +284,32 @@ const OrganisationsPage: React.FC = () => {
     {
       id: "actions",
       header: "Actions",
-      cell: ({ row }) => (
-        <ActionCell
-          onView={() => navigate(`/organisations/${row.original.id}`)}
-          onEdit={() => openEditModal(row.original.id)}
-          onToggleStatus={() =>
-            handleStatusToggle(row.original.id, row.original.status)
-          }
-          onDelete={() => openDeleteModal(row.original.id, row.original.name)}
-          status={row.original.status}
-        />
-      ),
+      cell: ({ row }) => {
+        console.log("row", row);
+        const isMainOrg = row.original.type === "CUSTOMER";
+        const hasTransactions =
+          (row.original.origin_transactions?.length ?? 0) > 0 ||
+          (row.original.destination_transactions?.length ?? 0) > 0;
+        console.log("hasTransactions", hasTransactions);
+        console.log("origin_transactions", row.original.origin_transactions);
+        console.log(
+          "destination_transactions",
+          row.original.destination_transactions
+        );
+        return (
+          <ActionCell
+            onView={() => navigate(`/organisations/${row.original.id}`)}
+            onEdit={() => openEditModal(row.original.id)}
+            onToggleStatus={() =>
+              handleStatusToggle(row.original.id, row.original.status)
+            }
+            onDelete={() => openDeleteModal(row.original.id, row.original.name)}
+            status={row.original.status}
+            isMainOrg={isMainOrg}
+            hasTransactions={hasTransactions}
+          />
+        );
+      },
     },
   ];
 

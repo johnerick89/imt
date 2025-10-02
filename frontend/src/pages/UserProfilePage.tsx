@@ -707,6 +707,7 @@ const UserProfilePage: React.FC = () => {
           mode="edit"
           userId={editModal.userId || undefined}
           onSuccess={handleEditSuccess}
+          myAccount={isMyProfile}
         />
       </Modal>
 

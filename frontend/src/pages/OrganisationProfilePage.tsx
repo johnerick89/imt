@@ -34,6 +34,7 @@ import ChargeForm from "../components/ChargeForm";
 import ChargesTable from "../components/ChargesTable";
 import OrgBalancesTable from "../components/dataTables/OrgBalancesTable";
 import PrefundModal from "../components/modals/PrefundModal";
+import OrganisationForm from "../components/OrganisationForm";
 import type {
   Integration,
   CreateIntegrationRequest,
@@ -54,8 +55,16 @@ import type { PrefundRequest } from "../types/BalanceOperationsTypes";
 import { Button } from "../components/ui/Button";
 import { usePermissions } from "../hooks/usePermissions";
 
-const OrganisationProfilePage: React.FC = () => {
+interface OrganisationProfilePageProps {
+  organisationId?: string;
+}
+
+const OrganisationProfilePage: React.FC<OrganisationProfilePageProps> = ({
+  organisationId,
+}) => {
   const { id } = useParams<{ id: string }>();
+  const finalId = id || organisationId;
+  console.log("id", id, "organisationId", organisationId);
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("corridors");
   const { user } = useSession();
@@ -72,10 +81,20 @@ const OrganisationProfilePage: React.FC = () => {
   } = usePermissions();
 
   const isMyOrganisation =
-    user?.organisation_id && id === user?.organisation_id;
+    user?.organisation_id && finalId === user?.organisation_id;
 
   // Balance-related state
   const [showPrefundModal, setShowPrefundModal] = useState(false);
+
+  // Form modal state
+  const [formModal, setFormModal] = useState<{
+    isOpen: boolean;
+    mode: "create" | "edit";
+    organisationId?: string;
+  }>({
+    isOpen: false,
+    mode: "create",
+  });
   // Integration state
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -113,13 +132,13 @@ const OrganisationProfilePage: React.FC = () => {
     data: organisationData,
     isLoading,
     error,
-  } = useOrganisation(id || "");
+  } = useOrganisation(finalId || "");
 
   // Integration hooks - show integrations where current user's org is origin and target org is the viewed org
   const { data: integrationsData, isLoading: integrationsLoading } =
     useIntegrations({
       origin_organisation_id: user?.organisation_id || "",
-      organisation_id: id || "",
+      organisation_id: finalId || "",
     });
 
   const createIntegrationMutation = useCreateIntegration();
@@ -128,7 +147,7 @@ const OrganisationProfilePage: React.FC = () => {
 
   // Corridor hooks
   const { data: corridorsData, isLoading: corridorsLoading } = useCorridors({
-    organisation_id: id,
+    organisation_id: finalId,
     limit: 100,
     origin_organisation_id: user?.organisation_id,
   });
@@ -141,7 +160,7 @@ const OrganisationProfilePage: React.FC = () => {
   const { data: chargesData, isLoading: chargesLoading } = useCharges({
     origin_organisation_id: user?.organisation_id || "",
     limit: 100,
-    destination_organisation_id: id || "",
+    destination_organisation_id: finalId || "",
   });
 
   const createChargeMutation = useCreateCharge();
@@ -333,6 +352,20 @@ const OrganisationProfilePage: React.FC = () => {
     }
   };
 
+  // Form modal functions
+  const openEditOrganisationModal = () => {
+    setFormModal({ isOpen: true, mode: "edit", organisationId: finalId });
+  };
+
+  const closeFormModal = () => {
+    setFormModal({ isOpen: false, mode: "create" });
+  };
+
+  const handleFormSuccess = () => {
+    closeFormModal();
+    // The mutation will automatically invalidate and refetch the data
+  };
+
   const openEditChargeModal = (charge: Charge) => {
     setSelectedCharge(charge);
     setShowEditChargeModal(true);
@@ -382,10 +415,12 @@ const OrganisationProfilePage: React.FC = () => {
                 : "Organisation not found"}
             </p>
             <button
-              onClick={() => navigate("/organisations")}
+              onClick={() =>
+                navigate(organisationId ? "/dashboard" : "/organisations")
+              }
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
-              Back to Organisations
+              {organisationId ? "Back to Dashboard " : "Back to Organisations"}
             </button>
           </div>
         </div>
@@ -581,11 +616,14 @@ const OrganisationProfilePage: React.FC = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <button
-              onClick={() => navigate("/organisations")}
+              onClick={() =>
+                navigate(organisationId ? "/dashboard" : "/organisations")
+              }
               className="mr-4 p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg"
             >
               ← Back
             </button>
+
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
                 Organisation Profile
@@ -596,11 +634,9 @@ const OrganisationProfilePage: React.FC = () => {
             </div>
           </div>
           <div className="flex space-x-3">
-            {canEditOrganisations() && (
+            {canEditOrganisations() && !organisationId && (
               <button
-                onClick={() =>
-                  navigate(`/organisations/${organisation.id}/edit`)
-                }
+                onClick={openEditOrganisationModal}
                 className="px-4 py-2 text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 flex items-center"
               >
                 <span className="mr-2">✏️</span>
@@ -917,6 +953,21 @@ const OrganisationProfilePage: React.FC = () => {
         defaultCurrencyId={organisation?.base_currency_id || undefined}
         balanceExists={orgBalances.length > 0}
       />
+
+      {/* Organisation Form Modal */}
+      <Modal
+        isOpen={formModal.isOpen}
+        onClose={closeFormModal}
+        title="Edit Organisation"
+        size="xl"
+      >
+        <OrganisationForm
+          mode={formModal.mode}
+          organisationId={formModal.organisationId}
+          onSuccess={handleFormSuccess}
+          onCancel={closeFormModal}
+        />
+      </Modal>
     </div>
   );
 };

@@ -7,6 +7,7 @@ import {
   useAllCurrencies,
   useAllCountries,
   useSession,
+  useRoles,
 } from "../hooks";
 import { FormItem } from "./ui/FormItem";
 import { Input } from "./ui/Input";
@@ -35,6 +36,7 @@ interface OrganisationFormData {
   contact_person: string;
   contact_email: string;
   contact_password: string;
+  contact_role_id: string;
   contact_phone: string;
   contact_address: string;
   contact_city: string;
@@ -61,6 +63,7 @@ const OrganisationForm: React.FC<OrganisationFormProps> = ({
     useAllCurrencies();
   const { data: countriesData, isLoading: countriesLoading } =
     useAllCountries();
+  const { data: rolesData, isLoading: rolesLoading } = useRoles();
   const createOrganisationMutation = useCreateOrganisation();
   const updateOrganisationMutation = useUpdateOrganisation();
   const { data: userOrganisationData, isLoading: userOrganisationLoading } =
@@ -85,6 +88,7 @@ const OrganisationForm: React.FC<OrganisationFormProps> = ({
       contact_person: "",
       contact_email: "",
       contact_password: "",
+      contact_role_id: "",
       contact_phone: "",
       contact_address: "",
       contact_city: "",
@@ -94,6 +98,9 @@ const OrganisationForm: React.FC<OrganisationFormProps> = ({
       country_id: "",
     },
   });
+
+  // Watch integration_mode to conditionally show fields
+  const integrationMode = watch("integration_mode");
 
   useEffect(() => {
     if (userOrganisation) {
@@ -117,6 +124,7 @@ const OrganisationForm: React.FC<OrganisationFormProps> = ({
         contact_person: org.contact_person || "",
         contact_email: org.contact_email || "",
         contact_password: "", // Don't populate password for security
+        contact_role_id: "", // Don't populate role for security
         contact_phone: org.contact_phone || "",
         contact_address: org.contact_address || "",
         contact_city: org.contact_city || "",
@@ -300,8 +308,8 @@ const OrganisationForm: React.FC<OrganisationFormProps> = ({
           />
         </FormItem>
 
-        {/* Contact Password - Only for create mode */}
-        {!isEditMode && (
+        {/* Contact Password - Only for create mode and internal integration */}
+        {!isEditMode && integrationMode === "INTERNAL" && (
           <FormItem
             label="Contact Password"
             invalid={Boolean(errors.contact_password)}
@@ -323,6 +331,38 @@ const OrganisationForm: React.FC<OrganisationFormProps> = ({
                   placeholder="Enter password for contact person"
                   invalid={Boolean(errors.contact_password)}
                   {...field}
+                />
+              )}
+            />
+          </FormItem>
+        )}
+
+        {/* Contact Role - Only for create mode and internal integration */}
+        {!isEditMode && integrationMode === "INTERNAL" && (
+          <FormItem
+            label="Contact Role"
+            invalid={Boolean(errors.contact_role_id)}
+            errorMessage={errors.contact_role_id?.message}
+          >
+            <Controller
+              name="contact_role_id"
+              control={control}
+              rules={{
+                required: "Contact role is required",
+              }}
+              render={({ field }) => (
+                <SearchableSelect
+                  placeholder="Select a role for the contact person"
+                  options={
+                    rolesData?.data?.roles?.map((role) => ({
+                      value: role.id,
+                      label: role.name,
+                    })) || []
+                  }
+                  value={field.value}
+                  onChange={field.onChange}
+                  loading={rolesLoading}
+                  invalid={Boolean(errors.contact_role_id)}
                 />
               )}
             />
