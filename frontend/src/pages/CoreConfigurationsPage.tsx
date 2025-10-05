@@ -2,12 +2,13 @@ import React, { useState } from "react";
 import ParametersTab from "../components/ParametersTab";
 import CurrenciesTab from "../components/CurrenciesTab";
 import CountriesTab from "../components/CountriesTab";
+import ValidationRulesTab from "../components/ValidationRulesTab";
 import { usePermissions } from "../hooks/usePermissions";
 const CoreConfigurationsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<
-    "parameters" | "currencies" | "countries"
+    "parameters" | "currencies" | "countries" | "validationrules"
   >("parameters");
-  const { canViewParameters } = usePermissions();
+  const { canViewParameters, canViewValidationRules } = usePermissions();
 
   return (
     <div className="p-6">
@@ -57,12 +58,25 @@ const CoreConfigurationsPage: React.FC = () => {
             >
               Countries
             </button>
+            {canViewValidationRules() && (
+              <button
+                onClick={() => setActiveTab("validationrules")}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "validationrules"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                Validation Rules
+              </button>
+            )}
           </nav>
         </div>
       </div>
       {activeTab === "parameters" && <ParametersTab />}
       {activeTab === "currencies" && <CurrenciesTab />}
       {activeTab === "countries" && <CountriesTab />}
+      {activeTab === "validationrules" && <ValidationRulesTab />}
     </div>
   );
 };

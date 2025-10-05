@@ -31,6 +31,7 @@ import { authMiddleware } from "./middlewares/auth.middleware";
 import { auditMiddleware } from "./middlewares/audit.middleware";
 import seedRoutes from "./seed/seed.routes";
 import parameterRoutes from "./api/parameters/parameters.routes";
+import validationRuleRoutes from "./api/validationRules/validationRules.routes";
 
 const router = Router();
 
@@ -67,6 +68,7 @@ router.use("/api/v1/chargespayments", chargesPaymentRoutes);
 router.use("/api/v1/dashboard", dashboardRoutes);
 router.use("/api/v1/reports", reportsRoutes);
 router.use("/api/v1/parameters", parameterRoutes);
+router.use("/api/v1/validationrules", validationRuleRoutes);
 router.use("/api/v1/seed", seedRoutes);
 // Default API route
 router.get("/api", (req, res) => {
@@ -102,6 +104,7 @@ router.get("/api", (req, res) => {
       chargespayments: "/api/v1/chargespayments",
       reports: "/api/v1/reports",
       parameters: "/api/v1/parameters",
+      validationrules: "/api/v1/validationrules",
       seed: "/api/v1/seed",
     },
   });

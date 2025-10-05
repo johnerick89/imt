@@ -12,6 +12,12 @@ const parameters = [
     value: "true",
     value2: "SO",
   },
+  {
+    name: "VALIDATE_TILL_AND_USER_TILL_DURING_TRANSACTIONS",
+    description: "Validate till and user till during transactions",
+    value: "false",
+    value2: null,
+  },
 ];
 
 export default parameters;

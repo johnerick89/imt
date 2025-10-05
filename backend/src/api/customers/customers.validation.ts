@@ -31,7 +31,7 @@ export const createCustomerSchema = z.object({
   id_type: z.enum(IndividualIDType).optional(),
   id_number: z.string().optional(),
   address: z.string().optional(),
-  email: z.string().email("Invalid email format"),
+  email: z.string().email("Invalid email format").optional(),
   phone_number: z.string(),
   occupation_id: z
     .string()
@@ -95,7 +95,7 @@ export const updateCustomerSchema = z.object({
   id_type: z.enum(IndividualIDType).optional(),
   id_number: z.string().optional(),
   address: z.string().optional(),
-  email: z.string().email("Invalid email format"),
+  email: z.string().email("Invalid email format").optional(),
   phone_number: z.string(),
   occupation_id: z
     .string()

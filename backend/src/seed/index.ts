@@ -11,6 +11,7 @@ import industries from "./industries";
 import organisations from "./organisations";
 import { prisma } from "../lib/prisma.lib";
 import parameters from "./parameters";
+import validationRules from "./validationRules";
 
 const DEFAULT_PASSWORD = "admin1234";
 
@@ -388,6 +389,26 @@ export async function seedParameters() {
   console.log("parameters created: ", createdParameters.length);
 }
 
+export async function seedValidationRules() {
+  const createdValidationRules = await Promise.all(
+    validationRules.map(async (validationRule) => {
+      const createdValidationRule = await prisma.validationRule.findFirst({
+        where: { entity: validationRule.entity },
+      });
+      if (createdValidationRule) {
+        return createdValidationRule;
+      }
+      return await prisma.validationRule.create({
+        data: {
+          entity: validationRule.entity,
+          config: validationRule.config,
+          created_at: new Date(),
+        },
+      });
+    })
+  );
+  console.log("validation rules created: ", createdValidationRules.length);
+}
 interface SeedResponse {
   success: boolean;
   message: string;
@@ -407,6 +428,7 @@ const seedFunctions: { [key: string]: () => Promise<void> } = {
   occupations: seedOccupations,
   industries: seedIndustries,
   parameters: seedParameters,
+  validationRules: seedValidationRules,
 };
 
 export async function seedDatabase(
@@ -477,6 +499,7 @@ async function main() {
     occupations: seedOccupations,
     industries: seedIndustries,
     parameters: seedParameters,
+    validationRules: seedValidationRules,
   };
 
   if (args.length === 0) {

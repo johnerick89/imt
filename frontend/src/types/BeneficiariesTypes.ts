@@ -16,8 +16,8 @@ export interface Beneficiary {
   name: string;
   email?: string | null;
   phone?: string | null;
-  id_type: IdType;
-  id_number: string;
+  id_type?: IdType;
+  id_number?: string;
   date_of_birth?: Date | null;
   nationality_id?: string | null;
   nationality?: Country | null;

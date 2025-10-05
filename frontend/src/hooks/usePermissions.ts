@@ -170,6 +170,12 @@ export const usePermissions = () => {
     canDeleteTransactionChannels: () =>
       hasPermission(user, "admin.transactionChannels.delete"),
 
+    // Validation Rules Management
+    canViewValidationRules: () =>
+      hasPermission(user, "admin.validationRules.view"),
+    canEditValidationRules: () =>
+      hasPermission(user, "admin.validationRules.edit"),
+
     // User context
     user,
   };

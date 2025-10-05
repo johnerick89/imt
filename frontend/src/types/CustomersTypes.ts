@@ -98,8 +98,8 @@ export interface CreateCustomerRequest {
   date_of_birth?: string;
   nationality_id?: string;
   residence_country_id?: string;
-  id_type: IdType;
-  id_number: string;
+  id_type?: IdType;
+  id_number?: string;
   address?: string;
   email?: string;
   phone_number?: string;

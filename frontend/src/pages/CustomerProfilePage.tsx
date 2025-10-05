@@ -8,6 +8,7 @@ import {
   useDeleteBeneficiary,
   useUpdateCustomer,
   useDeleteCustomer,
+  useValidationRules,
 } from "../hooks";
 
 import { Modal } from "../components/ui/Modal";
@@ -41,6 +42,16 @@ const CustomerProfilePage: React.FC = () => {
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(
     null
   );
+  const { data: validationRules } = useValidationRules();
+  const customerValidationRulesData =
+    validationRules?.data.validationRules.find(
+      (rule) => rule.entity === "customer"
+    ) || null;
+  const beneficiaryValidationRulesData =
+    validationRules?.data.validationRules.find(
+      (rule) => rule.entity === "beneficiary"
+    ) || null;
+  console.log("beneficiaryValidationRulesData", beneficiaryValidationRulesData);
 
   // Beneficiary state
   const [showCreateBeneficiaryModal, setShowCreateBeneficiaryModal] =
@@ -693,6 +704,7 @@ const CustomerProfilePage: React.FC = () => {
           isLoading={createBeneficiaryMutation.isPending}
           customerId={customer.id}
           organisationId={customer.organisation_id}
+          validationRules={beneficiaryValidationRulesData}
         />
       </Modal>
 
@@ -710,6 +722,7 @@ const CustomerProfilePage: React.FC = () => {
           isLoading={updateBeneficiaryMutation.isPending}
           customerId={customer.id}
           organisationId={customer.organisation_id}
+          validationRules={beneficiaryValidationRulesData}
         />
       </Modal>
 
@@ -736,6 +749,7 @@ const CustomerProfilePage: React.FC = () => {
           onSubmit={handleEditCustomer}
           isLoading={updateCustomerMutation.isPending}
           isEdit={true}
+          validationRules={customerValidationRulesData}
         />
       </Modal>
 

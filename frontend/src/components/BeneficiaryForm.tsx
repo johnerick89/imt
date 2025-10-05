@@ -14,6 +14,7 @@ import type {
   UpdateBeneficiaryRequest,
   Beneficiary,
 } from "../types/BeneficiariesTypes";
+import type { ValidationRule } from "../types/ValidationRulesTypes";
 
 interface BeneficiaryFormProps {
   initialData?: Beneficiary;
@@ -21,6 +22,7 @@ interface BeneficiaryFormProps {
   isLoading?: boolean;
   customerId: string;
   organisationId: string;
+  validationRules?: ValidationRule | null;
 }
 
 const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
@@ -29,6 +31,7 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
   isLoading = false,
   customerId,
   organisationId,
+  validationRules,
 }) => {
   const isEdit = !!initialData;
   const { data: countriesData } = useAllCountries();
@@ -39,6 +42,13 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
     fetchBeneficiaryDefaultCountryId();
   }, [fetchBeneficiaryDefaultCountryId]);
   const { beneficiaryDefaultCountryId } = useSession();
+
+  const getIsRequiredField = (field: string) => {
+    if (validationRules) {
+      return validationRules.config[field];
+    }
+    return false;
+  };
 
   const {
     control,
@@ -108,12 +118,16 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
             label="Full Name"
             invalid={!!errors.name}
             errorMessage={errors.name?.message}
-            required
+            required={getIsRequiredField("name")}
           >
             <Controller
               name="name"
               control={control}
-              rules={{ required: "Full name is required" }}
+              rules={{
+                required: getIsRequiredField("name")
+                  ? "Full name is required"
+                  : false,
+              }}
               render={({ field }) => (
                 <Input
                   {...field}
@@ -129,12 +143,16 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
             label="Beneficiary Type"
             invalid={!!errors.type}
             errorMessage={errors.type?.message}
-            required
+            required={getIsRequiredField("type")}
           >
             <Controller
               name="type"
               control={control}
-              rules={{ required: "Beneficiary type is required" }}
+              rules={{
+                required: getIsRequiredField("type")
+                  ? "Beneficiary type is required"
+                  : false,
+              }}
               render={({ field }) => (
                 <Select {...field} disabled={isLoading} invalid={!!errors.type}>
                   <option value="">Select beneficiary type</option>
@@ -150,13 +168,15 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
             label="Email"
             invalid={!!errors.email}
             errorMessage={errors.email?.message}
-            required
+            required={getIsRequiredField("email")}
           >
             <Controller
               name="email"
               control={control}
               rules={{
-                required: "Email is required",
+                required: getIsRequiredField("email")
+                  ? "Email is required"
+                  : false,
                 pattern: {
                   value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
                   message: "Invalid email address",
@@ -178,12 +198,16 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
             label="Phone Number"
             invalid={!!errors.phone}
             errorMessage={errors.phone?.message}
-            required
+            required={getIsRequiredField("phone")}
           >
             <Controller
               name="phone"
               control={control}
-              rules={{ required: "Phone number is required" }}
+              rules={{
+                required: getIsRequiredField("phone")
+                  ? "Phone number is required"
+                  : false,
+              }}
               render={({ field }) => (
                 <Input
                   {...field}
@@ -221,12 +245,16 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
                 label="Nationality"
                 invalid={!!errors.nationality_id}
                 errorMessage={errors.nationality_id?.message}
-                required
+                required={getIsRequiredField("nationality_id")}
               >
                 <Controller
                   name="nationality_id"
                   control={control}
-                  rules={{ required: "Nationality is required" }}
+                  rules={{
+                    required: getIsRequiredField("nationality_id")
+                      ? "Nationality is required"
+                      : false,
+                  }}
                   render={({ field }) => (
                     <SearchableSelect
                       value={field.value || ""}
@@ -250,12 +278,16 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
                 label="Residence Country"
                 invalid={!!errors.residence_country_id}
                 errorMessage={errors.residence_country_id?.message}
-                required
+                required={getIsRequiredField("residence_country_id")}
               >
                 <Controller
                   name="residence_country_id"
                   control={control}
-                  rules={{ required: "Residence country is required" }}
+                  rules={{
+                    required: getIsRequiredField("residence_country_id")
+                      ? "Residence country is required"
+                      : false,
+                  }}
                   render={({ field }) => (
                     <SearchableSelect
                       value={field.value || ""}
@@ -284,12 +316,16 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
                 label="Incorporation Country"
                 invalid={!!errors.incorporation_country_id}
                 errorMessage={errors.incorporation_country_id?.message}
-                required
+                required={getIsRequiredField("incorporation_country_id")}
               >
                 <Controller
                   name="incorporation_country_id"
                   control={control}
-                  rules={{ required: "Incorporation country is required" }}
+                  rules={{
+                    required: getIsRequiredField("incorporation_country_id")
+                      ? "Incorporation country is required"
+                      : false,
+                  }}
                   render={({ field }) => (
                     <SearchableSelect
                       value={field.value || ""}
@@ -324,10 +360,16 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
               label="ID Type"
               invalid={!!errors.id_type}
               errorMessage={errors.id_type?.message}
+              required={getIsRequiredField("id_type")}
             >
               <Controller
                 name="id_type"
                 control={control}
+                rules={{
+                  required: getIsRequiredField("id_type")
+                    ? "ID type is required"
+                    : false,
+                }}
                 render={({ field }) => (
                   <Select
                     {...field}
@@ -352,10 +394,16 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
               label="ID Number"
               invalid={!!errors.id_number}
               errorMessage={errors.id_number?.message}
+              required={getIsRequiredField("id_number")}
             >
               <Controller
                 name="id_number"
                 control={control}
+                rules={{
+                  required: getIsRequiredField("id_number")
+                    ? "ID number is required"
+                    : false,
+                }}
                 render={({ field }) => (
                   <Input
                     {...field}
@@ -372,10 +420,16 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
               label="Registration Number"
               invalid={!!errors.reg_number}
               errorMessage={errors.reg_number?.message}
+              required={getIsRequiredField("reg_number")}
             >
               <Controller
                 name="reg_number"
                 control={control}
+                rules={{
+                  required: getIsRequiredField("reg_number")
+                    ? "Registration number is required"
+                    : false,
+                }}
                 render={({ field }) => (
                   <Input
                     {...field}
@@ -391,10 +445,16 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
             label="Tax Number Type"
             invalid={!!errors.tax_number_type}
             errorMessage={errors.tax_number_type?.message}
+            required={getIsRequiredField("tax_number_type")}
           >
             <Controller
               name="tax_number_type"
               control={control}
+              rules={{
+                required: getIsRequiredField("tax_number_type")
+                  ? "Tax number type is required"
+                  : false,
+              }}
               render={({ field }) => (
                 <Select
                   {...field}
@@ -416,10 +476,16 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
             label="Tax Number"
             invalid={!!errors.tax_number}
             errorMessage={errors.tax_number?.message}
+            required={getIsRequiredField("tax_number")}
           >
             <Controller
               name="tax_number"
               control={control}
+              rules={{
+                required: getIsRequiredField("tax_number")
+                  ? "Tax number is required"
+                  : false,
+              }}
               render={({ field }) => (
                 <Input
                   {...field}
@@ -436,10 +502,16 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
                 label="Occupation"
                 invalid={!!errors.occupation_id}
                 errorMessage={errors.occupation_id?.message}
+                required={getIsRequiredField("occupation_id")}
               >
                 <Controller
                   name="occupation_id"
                   control={control}
+                  rules={{
+                    required: getIsRequiredField("occupation_id")
+                      ? "Occupation is required"
+                      : false,
+                  }}
                   render={({ field }) => (
                     <SearchableSelect
                       value={field.value || ""}
@@ -467,10 +539,16 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
             label="Industry"
             invalid={!!errors.industry_id}
             errorMessage={errors.industry_id?.message}
+            required={getIsRequiredField("industry_id")}
           >
             <Controller
               name="industry_id"
               control={control}
+              rules={{
+                required: getIsRequiredField("industry_id")
+                  ? "Industry is required"
+                  : false,
+              }}
               render={({ field }) => (
                 <SearchableSelect
                   value={field.value || ""}
@@ -493,10 +571,16 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
             label="Address"
             invalid={!!errors.address}
             errorMessage={errors.address?.message}
+            required={getIsRequiredField("address")}
           >
             <Controller
               name="address"
               control={control}
+              rules={{
+                required: getIsRequiredField("address")
+                  ? "Address is required"
+                  : false,
+              }}
               render={({ field }) => (
                 <Textarea
                   {...field}
@@ -519,10 +603,16 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
             label="Bank Name"
             invalid={!!errors.bank_name}
             errorMessage={errors.bank_name?.message}
+            required={getIsRequiredField("bank_name")}
           >
             <Controller
               name="bank_name"
               control={control}
+              rules={{
+                required: getIsRequiredField("bank_name")
+                  ? "Bank name is required"
+                  : false,
+              }}
               render={({ field }) => (
                 <Input
                   {...field}
@@ -538,10 +628,16 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
             label="Account Number"
             invalid={!!errors.bank_account_number}
             errorMessage={errors.bank_account_number?.message}
+            required={getIsRequiredField("bank_account_number")}
           >
             <Controller
               name="bank_account_number"
               control={control}
+              rules={{
+                required: getIsRequiredField("bank_account_number")
+                  ? "Account number is required"
+                  : false,
+              }}
               render={({ field }) => (
                 <Input
                   {...field}
@@ -557,10 +653,16 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
             label="Account Holder Name"
             invalid={!!errors.bank_account_name}
             errorMessage={errors.bank_account_name?.message}
+            required={getIsRequiredField("bank_account_name")}
           >
             <Controller
               name="bank_account_name"
               control={control}
+              rules={{
+                required: getIsRequiredField("bank_account_name")
+                  ? "Account holder name is required"
+                  : false,
+              }}
               render={({ field }) => (
                 <Input
                   {...field}
@@ -576,10 +678,16 @@ const BeneficiaryForm: React.FC<BeneficiaryFormProps> = ({
             label="Bank Address"
             invalid={!!errors.bank_address}
             errorMessage={errors.bank_address?.message}
+            required={getIsRequiredField("bank_address")}
           >
             <Controller
               name="bank_address"
               control={control}
+              rules={{
+                required: getIsRequiredField("bank_address")
+                  ? "Bank address is required"
+                  : false,
+              }}
               render={({ field }) => (
                 <Input
                   {...field}

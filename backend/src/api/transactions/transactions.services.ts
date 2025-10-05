@@ -22,6 +22,7 @@ import { prisma } from "../../lib/prisma.lib";
 import { AppError } from "../../utils/AppError";
 import { Charge, Direction } from "@prisma/client";
 import { UserTillService } from "../usertills/usertills.services";
+import { getValidateTillParameter } from "./transactions.utils";
 
 const glTransactionService = new GlTransactionService();
 const userTillService = new UserTillService();
@@ -36,6 +37,8 @@ export class TransactionService {
   ): Promise<OutboundTransactionResult> {
     return await prisma.$transaction(async (tx) => {
       // 1. Validate that user has an open till
+      const validateTill = await getValidateTillParameter();
+
       let userTill = await tx.userTill.findFirst({
         where: {
           user_id: userId,
@@ -68,28 +71,29 @@ export class TransactionService {
         }
       }
 
-      if (!userTill) {
-        throw new AppError("User till not found", 400);
-      }
-
-      // 2. Validate till belongs to the organisation
-      if (userTill.till.organisation_id !== organisationId) {
-        throw new AppError(
-          "Till does not belong to the specified organisation",
-          400
-        );
-      }
-
       if (userTill) {
         data.till_id = userTill.till_id;
       }
+      if (validateTill) {
+        if (!userTill) {
+          throw new AppError("User till not found", 400);
+        }
 
-      // 3.1. Validate till is active
-      if (!userTill.till || userTill.till.status !== "ACTIVE") {
-        throw new AppError(
-          "Till not found or does not belong to organisation",
-          400
-        );
+        // 2. Validate till belongs to the organisation
+        if (userTill.till.organisation_id !== organisationId) {
+          throw new AppError(
+            "Till does not belong to the specified organisation",
+            400
+          );
+        }
+
+        // 3.1. Validate till is active
+        if (!userTill.till || userTill.till.status !== "ACTIVE") {
+          throw new AppError(
+            "Till not found or does not belong to organisation",
+            400
+          );
+        }
       }
 
       // 4. Get corridor and validate it belongs to the organisation
@@ -138,12 +142,12 @@ export class TransactionService {
           (customer.incorporation_country_id &&
             customer.incorporation_country_id === data.origin_country_id);
 
-        if (!countryMatches) {
+        /*if (!countryMatches) {
           throw new AppError(
             "Customer's country (nationality/residence/incorporation) must match the origin country",
             400
           );
-        }
+        }*/
       }
 
       // 6. Get beneficiary and validate it belongs to the customer
@@ -532,7 +536,7 @@ export class TransactionService {
       });
 
       // Update transaction charges status
-      await tx.transactionCharge.updateMany({
+      const transactionCharges = await tx.transactionCharge.updateMany({
         where: {
           transaction_id: transactionId,
         },
@@ -569,10 +573,33 @@ export class TransactionService {
         }
 
         const oldBalance = parseFloat(orgBalance?.balance?.toString() || "0");
-        const transactionAmount = parseFloat(
-          updatedTransaction.origin_amount?.toString() || "0"
+        const totalCharges = parseFloat(
+          updatedTransaction.total_all_charges?.toString() || "0"
         );
+        const totalTaxes = parseFloat(
+          updatedTransaction.total_taxes?.toString() || "0"
+        );
+        const transactionAmount =
+          parseFloat(updatedTransaction.origin_amount?.toString() || "0") +
+          totalCharges -
+          totalTaxes;
         const newBalance = oldBalance - transactionAmount;
+
+        /*if (1 === 1) {
+          console.log(
+            "Am just stopping here, testing, newBalance",
+            newBalance,
+            "totalTaxes",
+            totalTaxes,
+            "totalCharges",
+            totalCharges,
+            "transactionAmount",
+            transactionAmount,
+            "oldBalance",
+            oldBalance
+          );
+          throw new AppError("Am just stopping here, testing", 400);
+        }*/
 
         await tx.orgBalance.update({
           where: { id: orgBalance.id },
@@ -2406,6 +2433,7 @@ export class TransactionService {
     ipAddress: string
   ): Promise<TransactionResponse> {
     return await prisma.$transaction(async (tx) => {
+      const validateTill = await getValidateTillParameter();
       // Get transaction with relations
       const transaction = await tx.transaction.findUnique({
         where: {
@@ -2464,7 +2492,7 @@ export class TransactionService {
         }
       }
 
-      if (!userTill) {
+      if (validateTill && !userTill) {
         throw new AppError("User till not found", 400);
       }
 
@@ -2494,7 +2522,7 @@ export class TransactionService {
           status: "COMPLETED",
           remittance_status: "PAID",
           request_status: "APPROVED",
-          till_id: userTill.till_id,
+          till_id: userTill?.till_id,
           remarks: data.remarks
             ? `${transaction.remarks || ""}\nApproved: ${data.remarks}`.trim()
             : transaction.remarks,
@@ -2504,7 +2532,7 @@ export class TransactionService {
 
       // Update till balance for inbound transaction
       const till = await tx.till.findUnique({
-        where: { id: userTill.till_id },
+        where: { id: userTill?.till_id },
       });
 
       if (till) {
@@ -2516,30 +2544,32 @@ export class TransactionService {
 
         // Update till balance
         await tx.till.update({
-          where: { id: userTill.till_id },
+          where: { id: till.id },
           data: {
             balance: newBalance,
             updated_at: new Date(),
           },
         });
 
-        // Update user_tills for active sessions
-        await tx.userTill.updateMany({
-          where: {
-            till_id: userTill.till_id,
-            status: "OPEN",
-            organisation_id: till.organisation_id,
-          },
-          data: {
-            net_transactions_total: { increment: transactionAmount },
-          },
-        });
+        if (userTill) {
+          // Update user_tills for active sessions
+          await tx.userTill.updateMany({
+            where: {
+              till_id: userTill?.till_id,
+              status: "OPEN",
+              organisation_id: till.organisation_id,
+            },
+            data: {
+              net_transactions_total: { increment: transactionAmount },
+            },
+          });
+        }
 
         // Create balance history record
         await tx.balanceHistory.create({
           data: {
             entity_type: "TILL",
-            entity_id: userTill.till_id,
+            entity_id: till.id,
             currency_id: transaction.dest_currency_id,
             old_balance: currentBalance,
             new_balance: newBalance,
@@ -2553,8 +2583,8 @@ export class TransactionService {
       // Create GL Transaction for the approved inbound transaction
       await this.createGLTransactionForApprovedInboundTransaction(
         transaction,
-        userTill.till_id,
-        userId
+        userId,
+        till?.id
       );
 
       // Create transaction audit
@@ -2809,8 +2839,8 @@ export class TransactionService {
   // Create GL Transaction for Approved Inbound Transaction
   private async createGLTransactionForApprovedInboundTransaction(
     transaction: any,
-    tillId: string,
-    userId: string
+    userId: string,
+    tillId?: string
   ): Promise<void> {
     const organisationId = transaction.destination_organisation_id;
     const originOrganisationId = transaction.origin_organisation_id;
@@ -2818,7 +2848,7 @@ export class TransactionService {
     // Get GL accounts
     const tillGlAccountId = await glTransactionService.getGlAccountForEntity(
       "TILL",
-      tillId,
+      tillId || "",
       organisationId
     );
 
