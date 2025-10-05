@@ -3,7 +3,12 @@ import { useForm, Controller } from "react-hook-form";
 import { FormItem } from "./ui/FormItem";
 import { Input } from "./ui/Input";
 import { SearchableSelect } from "./ui/SearchableSelect";
-import { useCurrencies, useCountries, useSession } from "../hooks";
+import {
+  useCurrencies,
+  useCountries,
+  useSession,
+  useAllOrganisations,
+} from "../hooks";
 import type {
   CreateExchangeRateRequest,
   UpdateExchangeRateRequest,
@@ -26,7 +31,18 @@ const ExchangeRateForm: React.FC<ExchangeRateFormProps> = ({
   const isEdit = !!initialData;
   const { user } = useSession();
   const currentOrganisationId = user?.organisation_id;
-
+  const { data: organisationsData } = useAllOrganisations();
+  const userOrganisation = organisationsData?.data?.organisations?.find(
+    (org) => org.id === currentOrganisationId
+  );
+  console.log(
+    "userOrganisation",
+    userOrganisation,
+    "organisationsData",
+    organisationsData,
+    "currentOrganisationId",
+    currentOrganisationId
+  );
   const {
     control,
     handleSubmit,
@@ -34,9 +50,14 @@ const ExchangeRateForm: React.FC<ExchangeRateFormProps> = ({
   } = useForm<CreateExchangeRateRequest>({
     defaultValues: {
       name: initialData?.name || "",
-      from_currency_id: initialData?.from_currency_id || "",
-      to_currency_id: initialData?.to_currency_id || "",
-      origin_country_id: initialData?.origin_country_id || "",
+      from_currency_id:
+        initialData?.from_currency_id ||
+        userOrganisation?.base_currency_id ||
+        "",
+      to_currency_id:
+        initialData?.to_currency_id || userOrganisation?.base_currency_id || "",
+      origin_country_id:
+        initialData?.origin_country_id || userOrganisation?.country_id || "",
       destination_country_id: initialData?.destination_country_id || "",
       buy_rate: initialData?.buy_rate || 0,
       sell_rate: initialData?.sell_rate || 0,
@@ -71,9 +92,12 @@ const ExchangeRateForm: React.FC<ExchangeRateFormProps> = ({
       const cleanedData = {
         ...data,
         name: data.name || undefined,
-        from_currency_id: data.from_currency_id || undefined,
-        to_currency_id: data.to_currency_id || undefined,
-        origin_country_id: data.origin_country_id || undefined,
+        from_currency_id:
+          data.from_currency_id || userOrganisation?.base_currency_id || "",
+        to_currency_id:
+          data.to_currency_id || userOrganisation?.base_currency_id || "",
+        origin_country_id:
+          data.origin_country_id || userOrganisation?.country_id || "",
         destination_country_id: data.destination_country_id || undefined,
         min_buy_rate: data.min_buy_rate || undefined,
         max_buy_rate: data.max_buy_rate || undefined,

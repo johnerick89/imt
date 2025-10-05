@@ -6,14 +6,18 @@ import {
   useDeleteCustomer,
   useCustomerStats,
   useSession,
+  useValidationRuleByEntity,
 } from "../hooks";
+import { useCreateBeneficiary } from "../hooks/useBeneficiaries";
 import type {
   Customer,
   CreateCustomerRequest,
   UpdateCustomerRequest,
 } from "../types/CustomersTypes";
+import type { CreateBeneficiaryRequest } from "../types/BeneficiariesTypes";
 import CustomersTable from "../components/CustomersTable";
 import CustomerForm from "../components/CustomerForm";
+import BeneficiaryForm from "../components/BeneficiaryForm";
 import { Modal } from "../components/ui/Modal";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { FiPlus } from "react-icons/fi";
@@ -33,12 +37,15 @@ const CustomersPage: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showBeneficiaryModal, setShowBeneficiaryModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
     null
   );
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(
     null
   );
+  const [customerForBeneficiary, setCustomerForBeneficiary] =
+    useState<Customer | null>(null);
 
   const { data: customersData, isLoading: customersLoading } =
     useCustomers(filters);
@@ -50,6 +57,13 @@ const CustomersPage: React.FC = () => {
   const createCustomerMutation = useCreateCustomer();
   const updateCustomerMutation = useUpdateCustomer();
   const deleteCustomerMutation = useDeleteCustomer();
+  const createBeneficiaryMutation = useCreateBeneficiary();
+  const {
+    data: customerValidationRules,
+    isLoading: customerValidationRulesLoading,
+  } = useValidationRuleByEntity("customer");
+  const customerValidationRulesData = customerValidationRules?.data || null;
+  console.log("customerValidationRules", customerValidationRulesData);
 
   const handleCreateCustomer = (
     data: CreateCustomerRequest | UpdateCustomerRequest
@@ -96,6 +110,20 @@ const CustomersPage: React.FC = () => {
   const openDeleteModal = (customer: Customer) => {
     setCustomerToDelete(customer);
     setShowDeleteModal(true);
+  };
+
+  const openBeneficiaryModal = (customer: Customer) => {
+    setCustomerForBeneficiary(customer);
+    setShowBeneficiaryModal(true);
+  };
+
+  const handleCreateBeneficiary = (data: CreateBeneficiaryRequest) => {
+    createBeneficiaryMutation.mutate(data, {
+      onSuccess: () => {
+        setShowBeneficiaryModal(false);
+        setCustomerForBeneficiary(null);
+      },
+    });
   };
 
   const handleViewCustomer = (customer: Customer) => {
@@ -279,10 +307,11 @@ const CustomersPage: React.FC = () => {
       <div className="bg-white rounded-lg shadow-sm border">
         <CustomersTable
           customers={customersData?.data?.customers || []}
-          isLoading={loading}
+          isLoading={loading || customerValidationRulesLoading}
           onView={handleViewCustomer}
           onEdit={openEditModal}
           onDelete={openDeleteModal}
+          onAddBeneficiary={openBeneficiaryModal}
         />
       </div>
 
@@ -328,6 +357,7 @@ const CustomersPage: React.FC = () => {
         <CustomerForm
           onSubmit={handleCreateCustomer}
           isLoading={createCustomerMutation.isPending}
+          validationRules={customerValidationRulesData}
         />
       </Modal>
 
@@ -346,6 +376,7 @@ const CustomersPage: React.FC = () => {
           onSubmit={handleEditCustomer}
           isLoading={updateCustomerMutation.isPending}
           isEdit={true}
+          validationRules={customerValidationRulesData}
         />
       </Modal>
 
@@ -363,6 +394,26 @@ const CustomersPage: React.FC = () => {
         variant="danger"
         isLoading={deleteCustomerMutation.isPending}
       />
+
+      {/* Beneficiary Creation Modal */}
+      <Modal
+        isOpen={showBeneficiaryModal}
+        onClose={() => {
+          setShowBeneficiaryModal(false);
+          setCustomerForBeneficiary(null);
+        }}
+        title={`Add Beneficiary for ${customerForBeneficiary?.full_name}`}
+        size="xl"
+      >
+        <BeneficiaryForm
+          onSubmit={(data) =>
+            handleCreateBeneficiary(data as CreateBeneficiaryRequest)
+          }
+          isLoading={createBeneficiaryMutation.isPending}
+          customerId={customerForBeneficiary?.id || ""}
+          organisationId={organisationId || ""}
+        />
+      </Modal>
     </div>
   );
 };

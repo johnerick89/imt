@@ -2,6 +2,7 @@ import React from "react";
 import { DataTable } from "./ui/DataTable";
 import type { Customer } from "../types/CustomersTypes";
 import CustomerActionCell from "./CustomerActionCell";
+import BeneficiaryCell from "./BeneficiaryCell";
 import { StatusBadge } from "./ui/StatusBadge";
 
 interface CustomersTableProps {
@@ -11,6 +12,7 @@ interface CustomersTableProps {
   onView: (customer: Customer) => void;
   onEdit: (customer: Customer) => void;
   onDelete: (customer: Customer) => void;
+  onAddBeneficiary: (customer: Customer) => void;
 }
 
 const CustomersTable: React.FC<CustomersTableProps> = ({
@@ -20,8 +22,8 @@ const CustomersTable: React.FC<CustomersTableProps> = ({
   onView,
   onEdit,
   onDelete,
+  onAddBeneficiary,
 }) => {
-  console.log("customers", customers);
   const columns = [
     {
       accessorKey: "full_name",
@@ -103,6 +105,17 @@ const CustomersTable: React.FC<CustomersTableProps> = ({
           {new Date(row.original.registration_date).toLocaleDateString()}
         </div>
       ),
+    },
+    {
+      accessorKey: "beneficiaries",
+      header: "Beneficiaries",
+      cell: ({ row }: { row: { original: Customer } }) => (
+        <BeneficiaryCell
+          customer={row.original}
+          onAddBeneficiary={onAddBeneficiary}
+        />
+      ),
+      enableSorting: false,
     },
     {
       accessorKey: "actions",

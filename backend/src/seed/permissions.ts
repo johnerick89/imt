@@ -291,6 +291,14 @@ const permissions = [
     permission_name: "admin.parameters.delete",
     permission_description: "Delete parameters",
   },
+  {
+    permission_name: "admin.validationRules.view",
+    permission_description: "View validation rules",
+  },
+  {
+    permission_name: "admin.validationRules.edit",
+    permission_description: "Edit validation rules",
+  },
 ];
 
 export default permissions;

@@ -105,7 +105,7 @@ export class CustomerService {
       return {
         success: true,
         message: "Customer created successfully",
-        data: customer as ICustomer,
+        data: customer as unknown as ICustomer,
       };
     } catch (error) {
       console.error("Error creating customer:", error);
@@ -434,7 +434,7 @@ export class CustomerService {
       return {
         success: true,
         message: "Customer updated successfully",
-        data: customer as ICustomer,
+        data: customer as unknown as ICustomer,
       };
     } catch (error) {
       console.error("Error updating customer:", error);

@@ -72,6 +72,7 @@ model User {
   approved_transactions       Transaction[]        @relation("ApprovedByUser")
   assigned_transactions       Transaction[]        @relation("AssignedToUser")
   transaction_audits_new_user TransactionAudit[]   @relation("NewUser")
+  validation_rules            ValidationRule[]
 
   @@index([email])
   @@index([id])
@@ -546,7 +547,7 @@ model Customer {
   id_type                  IndividualIDType?
   id_number                String? // Passport or National ID
   address                  String?
-  email                    String
+  email                    String?
   phone_number             String
   occupation_id            String?           @db.Uuid
   occupation               Occupation?       @relation(fields: [occupation_id], references: [id], onDelete: SetNull)
@@ -1428,4 +1429,19 @@ model TransactionAudit {
   @@index([timestamp])
   @@index([action])
   @@map("transaction_audits")
+}
+
+model ValidationRule {
+  id              Int      @id @default(autoincrement())
+  entity          String // e.g., 'customer', 'beneficiary', 'transaction'
+  config          Json // e.g., { "id_number": true, "email": false, "till_id": true }
+  created_at      DateTime @default(now())
+  created_by      String?  @db.Uuid
+  created_by_user User?    @relation(fields: [created_by], references: [id])
+  updated_at      DateTime @updatedAt
+
+  @@unique([entity]) // One config per ntity
+  @@index([entity])
+  @@index([created_by])
+  @@map("validation_rules")
 }

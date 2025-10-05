@@ -6,6 +6,7 @@ import type {
   CreateBeneficiaryRequest,
 } from "../types/BeneficiariesTypes";
 import { useToast } from "../contexts/ToastContext";
+import { customerKeys } from "./useCustomers";
 
 export const beneficiariesKeys = {
   all: ["beneficiaries"] as const,
@@ -55,6 +56,8 @@ export const useCreateBeneficiary = () => {
       );
       queryClient.invalidateQueries({ queryKey: beneficiariesKeys.lists() });
       queryClient.invalidateQueries({ queryKey: beneficiariesKeys.stats() });
+      // Also invalidate customer queries since beneficiary count affects customer data
+      queryClient.invalidateQueries({ queryKey: customerKeys.all });
     },
     onError: (error: unknown) => {
       const errorMessage =
@@ -90,6 +93,8 @@ export const useUpdateBeneficiary = () => {
         queryKey: beneficiariesKeys.detail(variables.id),
       });
       queryClient.invalidateQueries({ queryKey: beneficiariesKeys.stats() });
+      // Also invalidate customer queries since beneficiary data affects customer data
+      queryClient.invalidateQueries({ queryKey: customerKeys.all });
     },
     onError: (error: unknown) => {
       const errorMessage =
@@ -116,6 +121,8 @@ export const useDeleteBeneficiary = () => {
       );
       queryClient.invalidateQueries({ queryKey: beneficiariesKeys.lists() });
       queryClient.invalidateQueries({ queryKey: beneficiariesKeys.stats() });
+      // Also invalidate customer queries since beneficiary count affects customer data
+      queryClient.invalidateQueries({ queryKey: customerKeys.all });
     },
     onError: (error: unknown) => {
       const errorMessage =

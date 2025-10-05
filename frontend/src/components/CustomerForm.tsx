@@ -17,12 +17,14 @@ import { useIndustries } from "../hooks/useIndustries";
 import { useOrganisations } from "../hooks/useOrganisations";
 // import { useBranches } from "../hooks/useBranches";
 import { useSession } from "../hooks/useSession";
+import type { ValidationRule } from "../types/ValidationRulesTypes";
 
 interface CustomerFormProps {
   initialData?: Customer;
   onSubmit: (data: CreateCustomerRequest | UpdateCustomerRequest) => void;
   isLoading?: boolean;
   isEdit?: boolean;
+  validationRules?: ValidationRule | null;
 }
 
 const CustomerForm: React.FC<CustomerFormProps> = ({
@@ -30,6 +32,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
   onSubmit,
   isLoading = false,
   isEdit = false,
+  validationRules,
 }) => {
   const { user } = useSession();
   const organisationId = user?.organisation_id;
@@ -47,6 +50,13 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
   const userOrganisation = organisationsData?.data?.organisations?.find(
     (org) => org.id === organisationId
   );
+
+  const getIsRequiredField = (field: string) => {
+    if (validationRules) {
+      return validationRules.config[field];
+    }
+    return false;
+  };
 
   console.log("userOrganisation", userOrganisation);
 
@@ -144,12 +154,16 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
             label="Full Name"
             invalid={!!errors.full_name}
             errorMessage={errors.full_name?.message}
-            required
+            required={getIsRequiredField("full_name")}
           >
             <Controller
               name="full_name"
               control={control}
-              rules={{ required: "Full name is required" }}
+              rules={{
+                required: getIsRequiredField("full_name")
+                  ? "Full name is required"
+                  : false,
+              }}
               render={({ field }) => (
                 <Input
                   {...field}
@@ -165,12 +179,16 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
             label="Customer Type"
             invalid={!!errors.customer_type}
             errorMessage={errors.customer_type?.message}
-            required
+            required={getIsRequiredField("customer_type")}
           >
             <Controller
               name="customer_type"
               control={control}
-              rules={{ required: "Customer type is required" }}
+              rules={{
+                required: getIsRequiredField("customer_type")
+                  ? "Customer type is required"
+                  : false,
+              }}
               render={({ field }) => (
                 <Select
                   {...field}
@@ -191,10 +209,16 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
               label="Incorporation Date"
               invalid={!!errors.incoporated_date}
               errorMessage={errors.incoporated_date?.message}
+              required={getIsRequiredField("incoporated_date")}
             >
               <Controller
                 name="incoporated_date"
                 control={control}
+                rules={{
+                  required: getIsRequiredField("incoporated_date")
+                    ? "Incorporation date is required"
+                    : false,
+                }}
                 render={({ field }) => (
                   <Input
                     {...field}
@@ -212,10 +236,16 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
               label="Organization Registration Number"
               invalid={!!errors.org_reg_number}
               errorMessage={errors.org_reg_number?.message}
+              required={getIsRequiredField("org_reg_number")}
             >
               <Controller
                 name="org_reg_number"
                 control={control}
+                rules={{
+                  required: getIsRequiredField("org_reg_number")
+                    ? "Organization registration number is required"
+                    : false,
+                }}
                 render={({ field }) => (
                   <Input
                     {...field}
@@ -232,13 +262,15 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
             label="Email"
             invalid={!!errors.email}
             errorMessage={errors.email?.message}
-            required
+            required={getIsRequiredField("email")}
           >
             <Controller
               name="email"
               control={control}
               rules={{
-                required: "Email is required",
+                required: getIsRequiredField("email")
+                  ? "Email is required"
+                  : false,
                 pattern: {
                   value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
                   message: "Invalid email address",
@@ -260,12 +292,16 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
             label="Phone Number"
             invalid={!!errors.phone_number}
             errorMessage={errors.phone_number?.message}
-            required
+            required={getIsRequiredField("phone_number")}
           >
             <Controller
               name="phone_number"
               control={control}
-              rules={{ required: "Phone number is required" }}
+              rules={{
+                required: getIsRequiredField("phone_number")
+                  ? "Phone number is required"
+                  : false,
+              }}
               render={({ field }) => (
                 <Input
                   {...field}
@@ -282,12 +318,16 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
               label="Gender"
               invalid={!!errors.gender}
               errorMessage={errors.gender?.message}
-              required
+              required={getIsRequiredField("gender")}
             >
               <Controller
                 name="gender"
                 control={control}
-                rules={{ required: "Gender is required" }}
+                rules={{
+                  required: getIsRequiredField("gender")
+                    ? "Gender is required"
+                    : false,
+                }}
                 render={({ field }) => (
                   <Select
                     {...field}
@@ -307,12 +347,16 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
             label="Currency"
             invalid={!!errors.currency_id}
             errorMessage={errors.currency_id?.message}
-            required
+            required={getIsRequiredField("currency_id")}
           >
             <Controller
               name="currency_id"
               control={control}
-              rules={{ required: "Currency is required" }}
+              rules={{
+                required: getIsRequiredField("currency_id")
+                  ? "Currency is required"
+                  : false,
+              }}
               render={({ field }) => (
                 <SearchableSelect
                   value={field.value}
@@ -337,12 +381,16 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
               label="Nationality"
               invalid={!!errors.nationality_id}
               errorMessage={errors.nationality_id?.message}
-              required
+              required={getIsRequiredField("nationality_id")}
             >
               <Controller
                 name="nationality_id"
                 control={control}
-                rules={{ required: "Nationality is required" }}
+                rules={{
+                  required: getIsRequiredField("nationality_id")
+                    ? "Nationality is required"
+                    : false,
+                }}
                 render={({ field }) => (
                   <SearchableSelect
                     value={field.value}
@@ -368,12 +416,16 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
               label="Residence Country"
               invalid={!!errors.residence_country_id}
               errorMessage={errors.residence_country_id?.message}
-              required
+              required={getIsRequiredField("residence_country_id")}
             >
               <Controller
                 name="residence_country_id"
                 control={control}
-                rules={{ required: "Residence country is required" }}
+                rules={{
+                  required: getIsRequiredField("residence_country_id")
+                    ? "Residence country is required"
+                    : false,
+                }}
                 render={({ field }) => (
                   <SearchableSelect
                     value={field.value}
@@ -399,12 +451,16 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
               label="Incorporation Country"
               invalid={!!errors.incorporation_country_id}
               errorMessage={errors.incorporation_country_id?.message}
-              required
+              required={getIsRequiredField("incorporation_country_id")}
             >
               <Controller
                 name="incorporation_country_id"
                 control={control}
-                rules={{ required: "Incorporation country is required" }}
+                rules={{
+                  required: getIsRequiredField("incorporation_country_id")
+                    ? "Incorporation country is required"
+                    : false,
+                }}
                 render={({ field }) => (
                   <SearchableSelect
                     value={field.value}
@@ -430,12 +486,16 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
               label="ID Type"
               invalid={!!errors.id_type}
               errorMessage={errors.id_type?.message}
-              required
+              required={getIsRequiredField("id_type")}
             >
               <Controller
                 name="id_type"
                 control={control}
-                rules={{ required: "ID type is required" }}
+                rules={{
+                  required: getIsRequiredField("id_type")
+                    ? "ID type is required"
+                    : false,
+                }}
                 render={({ field }) => (
                   <Select
                     {...field}
@@ -460,12 +520,16 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
               label="ID Number"
               invalid={!!errors.id_number}
               errorMessage={errors.id_number?.message}
-              required
+              required={getIsRequiredField("id_number")}
             >
               <Controller
                 name="id_number"
                 control={control}
-                rules={{ required: "ID number is required" }}
+                rules={{
+                  required: getIsRequiredField("id_number")
+                    ? "ID number is required"
+                    : false,
+                }}
                 render={({ field }) => (
                   <Input
                     {...field}
@@ -555,10 +619,16 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
               label="Date of Birth"
               invalid={!!errors.date_of_birth}
               errorMessage={errors.date_of_birth?.message}
+              required={getIsRequiredField("date_of_birth")}
             >
               <Controller
                 name="date_of_birth"
                 control={control}
+                rules={{
+                  required: getIsRequiredField("date_of_birth")
+                    ? "Date of birth is required"
+                    : false,
+                }}
                 render={({ field }) => (
                   <Input
                     {...field}
@@ -576,10 +646,16 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
               label="Incorporation Date"
               invalid={!!errors.incoporated_date}
               errorMessage={errors.incoporated_date?.message}
+              required={getIsRequiredField("incoporated_date")}
             >
               <Controller
                 name="incoporated_date"
                 control={control}
+                rules={{
+                  required: getIsRequiredField("incoporated_date")
+                    ? "Incorporation date is required"
+                    : false,
+                }}
                 render={({ field }) => (
                   <Input
                     {...field}
@@ -597,10 +673,16 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
               label="Organization Registration Number"
               invalid={!!errors.org_reg_number}
               errorMessage={errors.org_reg_number?.message}
+              required={getIsRequiredField("org_reg_number")}
             >
               <Controller
                 name="org_reg_number"
                 control={control}
+                rules={{
+                  required: getIsRequiredField("org_reg_number")
+                    ? "Organization registration number is required"
+                    : false,
+                }}
                 render={({ field }) => (
                   <Input
                     {...field}
@@ -618,10 +700,16 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
               label="Occupation"
               invalid={!!errors.occupation_id}
               errorMessage={errors.occupation_id?.message}
+              required={getIsRequiredField("occupation_id")}
             >
               <Controller
                 name="occupation_id"
                 control={control}
+                rules={{
+                  required: getIsRequiredField("occupation_id")
+                    ? "Occupation is required"
+                    : false,
+                }}
                 render={({ field }) => (
                   <SearchableSelect
                     value={field.value}
@@ -646,10 +734,16 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
             label="Industry"
             invalid={!!errors.industry_id}
             errorMessage={errors.industry_id?.message}
+            required={getIsRequiredField("industry_id")}
           >
             <Controller
               name="industry_id"
               control={control}
+              rules={{
+                required: getIsRequiredField("industry_id")
+                  ? "Industry is required"
+                  : false,
+              }}
               render={({ field }) => (
                 <SearchableSelect
                   value={field.value}
@@ -675,10 +769,16 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
             label="Address"
             invalid={!!errors.address}
             errorMessage={errors.address?.message}
+            required={getIsRequiredField("address")}
           >
             <Controller
               name="address"
               control={control}
+              rules={{
+                required: getIsRequiredField("address")
+                  ? "Address is required"
+                  : false,
+              }}
               render={({ field }) => (
                 <Textarea
                   {...field}

@@ -8,12 +8,17 @@ import { Textarea } from "./ui/Textarea";
 import { Button } from "./ui/Button";
 import { useCorridors } from "../hooks/useCorridors";
 import { useUserTills } from "../hooks/useTills";
-import { useCustomers } from "../hooks/useCustomers";
-import { useBeneficiaries } from "../hooks/useBeneficiaries";
+import { useCustomers, useCreateCustomer } from "../hooks/useCustomers";
+import {
+  useBeneficiaries,
+  useCreateBeneficiary,
+} from "../hooks/useBeneficiaries";
 import { useOrganisations } from "../hooks/useOrganisations";
 import { useTransactionChannels } from "../hooks/useTransactionChannels";
 import { useExchangeRates } from "../hooks/useExchangeRates";
 import { useCharges } from "../hooks/useCharges";
+import CustomerForm from "./CustomerForm";
+import BeneficiaryForm from "./BeneficiaryForm";
 import type {
   CreateOutboundTransactionRequest,
   UpdateTransactionRequest,
@@ -21,8 +26,16 @@ import type {
   ChargeType,
 } from "../types/TransactionsTypes";
 import type { UserTill } from "../types/TillsTypes";
+import type {
+  CreateCustomerRequest,
+  UpdateCustomerRequest,
+} from "../types/CustomersTypes";
+import type { CreateBeneficiaryRequest } from "../types/BeneficiariesTypes";
 import { formatToCurrencyWithSymbol } from "../utils/textUtils";
 import { siteCommonStrings } from "../config";
+import { FiPlus } from "react-icons/fi";
+import { Tooltip } from "./ui/Tooltip";
+import { useValidationRules } from "../hooks/useValidationRules";
 
 interface TransactionFormProps {
   isOpen: boolean;
@@ -125,6 +138,17 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     userTillsData
   );
 
+  const { data: validationRules } = useValidationRules();
+  const customerValidationRulesData =
+    validationRules?.data.validationRules.find(
+      (rule) => rule.entity === "customer"
+    ) || null;
+  const beneficiaryValidationRulesData =
+    validationRules?.data.validationRules.find(
+      (rule) => rule.entity === "beneficiary"
+    ) || null;
+  console.log("beneficiaryValidationRulesData", beneficiaryValidationRulesData);
+
   const commonStrings = siteCommonStrings;
   const outboundLabel = commonStrings?.outbound;
 
@@ -215,6 +239,14 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       max_amount?: number | null;
     }>
   >([]);
+
+  // State for modals
+  const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [showBeneficiaryModal, setShowBeneficiaryModal] = useState(false);
+
+  // Mutations for creating customers and beneficiaries
+  const createCustomerMutation = useCreateCustomer();
+  const createBeneficiaryMutation = useCreateBeneficiary();
 
   // Watch for customer changes to fetch beneficiaries
   const watchedCustomerId = watch("customer_id");
@@ -528,6 +560,32 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     onClose();
   };
 
+  // Handle customer creation
+  const handleCreateCustomer = (data: CreateCustomerRequest) => {
+    createCustomerMutation.mutate(data, {
+      onSuccess: (response) => {
+        setShowCustomerModal(false);
+        // Auto-select the newly created customer
+        if (response?.data?.id) {
+          setValue("customer_id", response.data.id);
+        }
+      },
+    });
+  };
+
+  // Handle beneficiary creation
+  const handleCreateBeneficiary = (data: CreateBeneficiaryRequest) => {
+    createBeneficiaryMutation.mutate(data, {
+      onSuccess: (response) => {
+        setShowBeneficiaryModal(false);
+        // Auto-select the newly created beneficiary
+        if (response?.data?.id) {
+          setValue("beneficiary_id", response.data.id);
+        }
+      },
+    });
+  };
+
   return (
     <Modal
       isOpen={isOpen}
@@ -548,27 +606,42 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             errorMessage={errors.customer_id?.message}
             required
           >
-            <Controller
-              name="customer_id"
-              control={control}
-              rules={{ required: "Customer is required" }}
-              render={({ field }) => (
-                <SearchableSelect
-                  options={customers.map((customer) => ({
-                    value: customer.id,
-                    label: `${customer.full_name} - ${customer.phone_number}`,
-                  }))}
-                  value={field.value}
-                  onChange={(value) => {
-                    field.onChange(value);
-                    setValue("beneficiary_id", ""); // Reset beneficiary when customer changes
-                    setValue("destination_organisation_id", ""); // Reset partner/agency when customer changes
-                    setValue("corridor_id", ""); // Reset corridor when customer changes
-                  }}
-                  placeholder="Select customer..."
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Controller
+                  name="customer_id"
+                  control={control}
+                  rules={{ required: "Customer is required" }}
+                  render={({ field }) => (
+                    <SearchableSelect
+                      options={customers.map((customer) => ({
+                        value: customer.id,
+                        label: `${customer.full_name} - ${customer.phone_number}`,
+                      }))}
+                      value={field.value}
+                      onChange={(value) => {
+                        field.onChange(value);
+                        setValue("beneficiary_id", ""); // Reset beneficiary when customer changes
+                        setValue("destination_organisation_id", ""); // Reset partner/agency when customer changes
+                        setValue("corridor_id", ""); // Reset corridor when customer changes
+                      }}
+                      placeholder="Select customer..."
+                    />
+                  )}
                 />
-              )}
-            />
+              </div>
+              <Tooltip content="Add Customer">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowCustomerModal(true)}
+                  className="flex items-center gap-1 whitespace-nowrap"
+                >
+                  <FiPlus className="w-4 h-4" />
+                </Button>
+              </Tooltip>
+            </div>
           </FormItem>
 
           <FormItem
@@ -577,27 +650,43 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             errorMessage={errors.beneficiary_id?.message}
             required
           >
-            <Controller
-              name="beneficiary_id"
-              control={control}
-              rules={{ required: "Beneficiary is required" }}
-              render={({ field }) => (
-                <SearchableSelect
-                  options={beneficiaries.map((beneficiary) => ({
-                    value: beneficiary.id,
-                    label: `${beneficiary.name} - ${beneficiary.phone}`,
-                  }))}
-                  value={field.value}
-                  onChange={(value) => {
-                    field.onChange(value);
-                    setValue("destination_organisation_id", ""); // Reset partner/agency when beneficiary changes
-                    setValue("corridor_id", ""); // Reset corridor when beneficiary changes
-                  }}
-                  placeholder="Select beneficiary..."
-                  disabled={!watchedCustomerId}
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Controller
+                  name="beneficiary_id"
+                  control={control}
+                  rules={{ required: "Beneficiary is required" }}
+                  render={({ field }) => (
+                    <SearchableSelect
+                      options={beneficiaries.map((beneficiary) => ({
+                        value: beneficiary.id,
+                        label: `${beneficiary.name} - ${beneficiary.phone}`,
+                      }))}
+                      value={field.value}
+                      onChange={(value) => {
+                        field.onChange(value);
+                        setValue("destination_organisation_id", ""); // Reset partner/agency when beneficiary changes
+                        setValue("corridor_id", ""); // Reset corridor when beneficiary changes
+                      }}
+                      placeholder="Select beneficiary..."
+                      disabled={!watchedCustomerId}
+                    />
+                  )}
                 />
-              )}
-            />
+              </div>
+              <Tooltip content="Add Beneficiary">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowBeneficiaryModal(true)}
+                  disabled={!watchedCustomerId}
+                  className="flex items-center gap-1 whitespace-nowrap"
+                >
+                  <FiPlus className="w-4 h-4" />
+                </Button>
+              </Tooltip>
+            </div>
           </FormItem>
 
           <FormItem
@@ -1124,6 +1213,40 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           </Button>
         </div>
       </form>
+
+      {/* Customer Creation Modal */}
+      <Modal
+        isOpen={showCustomerModal}
+        onClose={() => setShowCustomerModal(false)}
+        title="Create Customer"
+        size="xl"
+      >
+        <CustomerForm
+          onSubmit={(data: CreateCustomerRequest | UpdateCustomerRequest) =>
+            handleCreateCustomer(data as CreateCustomerRequest)
+          }
+          isLoading={createCustomerMutation.isPending}
+          validationRules={customerValidationRulesData}
+        />
+      </Modal>
+
+      {/* Beneficiary Creation Modal */}
+      <Modal
+        isOpen={showBeneficiaryModal}
+        onClose={() => setShowBeneficiaryModal(false)}
+        title="Create Beneficiary"
+        size="xl"
+      >
+        <BeneficiaryForm
+          onSubmit={(data) =>
+            handleCreateBeneficiary(data as CreateBeneficiaryRequest)
+          }
+          isLoading={createBeneficiaryMutation.isPending}
+          customerId={watchedCustomerId}
+          organisationId={organisationId}
+          validationRules={beneficiaryValidationRulesData}
+        />
+      </Modal>
     </Modal>
   );
 };

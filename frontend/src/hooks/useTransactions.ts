@@ -137,6 +137,8 @@ export const useApproveTransaction = () => {
         queryKey: ["transaction", result.data.id],
       });
       queryClient.invalidateQueries({ queryKey: ["glTransactions"] });
+      queryClient.invalidateQueries({ queryKey: ["orgBalances"] });
+      queryClient.invalidateQueries({ queryKey: ["orgBalanceStats"] });
     },
     onError: (error: unknown) => {
       const errorMessage =
@@ -175,6 +177,8 @@ export const useReverseTransaction = () => {
         queryKey: ["transaction", result.data.id],
       });
       queryClient.invalidateQueries({ queryKey: ["glTransactions"] });
+      queryClient.invalidateQueries({ queryKey: ["orgBalances"] });
+      queryClient.invalidateQueries({ queryKey: ["orgBalanceStats"] });
     },
     onError: (error: unknown) => {
       const errorMessage =
