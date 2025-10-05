@@ -1,7 +1,5 @@
 import React from "react";
 import { useForm, Controller } from "react-hook-form";
-import { FormItem } from "./ui/FormItem";
-import { Input } from "./ui/Input";
 import type {
   ValidationRule,
   UpdateValidationRuleRequest,
@@ -23,11 +21,7 @@ const ValidationRuleForm: React.FC<ValidationRuleFormProps> = ({
   const { canEditValidationRules } = usePermissions();
   const isEditDisabled = !canEditValidationRules();
 
-  const {
-    control,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<UpdateValidationRuleRequest>({
+  const { control, handleSubmit } = useForm<UpdateValidationRuleRequest>({
     defaultValues: {
       config: validationRule.config,
     },
@@ -53,7 +47,7 @@ const ValidationRuleForm: React.FC<ValidationRuleFormProps> = ({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {Object.entries(validationRule.config).map(([fieldName, isEnabled]) => {
+        {Object.entries(validationRule.config).map(([fieldName]) => {
           const fieldInfo = fieldConfig[fieldName];
           const label =
             fieldInfo?.label ||
