@@ -2,7 +2,6 @@ import React from "react";
 import { DataTable } from "./ui/DataTable";
 import type { ValidationRule } from "../types/ValidationRulesTypes";
 import ValidationRuleActionCell from "./ValidationRuleActionCell";
-import { StatusBadge } from "./ui/StatusBadge";
 
 interface ValidationRulesTableProps {
   validationRules: ValidationRule[];
