@@ -22,6 +22,7 @@ export interface OrgBalance {
   locked_balance?: number | null;
   created_at: string;
   updated_at: string;
+  limit?: number | null;
 }
 
 export interface OrgBalanceFilters {
@@ -175,6 +176,7 @@ export interface AgencyFloatRequest {
   dest_org_id: string; // Agency organisation ID
   currency_id: string; // Agency base currency
   bank_account_id?: string; // Optional bank account ID to deposit the float
+  limit?: number; // Optional limit for the float
   description?: string;
 }
 

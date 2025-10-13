@@ -36,6 +36,11 @@ router.post(
   )
 );
 
+router.patch(
+  "/organisations/balances/:balanceId/limit",
+  balanceOperationController.updateFloatLimit.bind(balanceOperationController)
+);
+
 router.get(
   "/organisations/:orgId/balance-history",
   balanceOperationController.getOrgBalanceHistory.bind(

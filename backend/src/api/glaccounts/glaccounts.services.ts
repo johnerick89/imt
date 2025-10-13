@@ -472,11 +472,12 @@ export class GlAccountService {
         generate_for_charges_payments,
         generate_for_inbound_beneficiary_payments,
         generate_for_agency_floats,
+        generate_for_float_transit_payables,
       } = data;
 
       const generatedAccounts: IGlAccount[] = [];
 
-      await prisma.$transaction(async (tx) => {
+      await prisma.$transaction(async (tx: any) => {
         // Generate for Bank Accounts
         if (generate_for_bank_accounts) {
           const bankAccounts = await tx.bankAccount.findMany({
@@ -579,6 +580,55 @@ export class GlAccountService {
                     ? parseFloat(glAccount.min_balance.toString())
                     : null,
                 });
+              }
+            }
+
+            // Float Transit Payables
+            if (generate_for_float_transit_payables) {
+              const organisation = await tx.organisation.findUnique({
+                where: { id: organisation_id },
+              });
+
+              if (organisation) {
+                const floatPayableName = `Float Transit Payable - ${organisation.name}`;
+                const existingAccount = await tx.glAccount.findFirst({
+                  where: {
+                    organisation_id,
+                    type: "LIABILITY",
+                    name: {
+                      contains: floatPayableName,
+                    },
+                  },
+                });
+
+                if (!existingAccount) {
+                  const glAccount = await tx.glAccount.create({
+                    data: {
+                      name: floatPayableName,
+                      type: "LIABILITY",
+                      balance: 0,
+                      organisation_id,
+                      opened_by: userId,
+                      currency_id: organisation.base_currency_id,
+                    },
+                  });
+
+                  generatedAccounts.push({
+                    ...glAccount,
+                    balance: glAccount.balance
+                      ? parseFloat(glAccount.balance.toString())
+                      : null,
+                    locked_balance: glAccount.locked_balance
+                      ? parseFloat(glAccount.locked_balance.toString())
+                      : null,
+                    max_balance: glAccount.max_balance
+                      ? parseFloat(glAccount.max_balance.toString())
+                      : null,
+                    min_balance: glAccount.min_balance
+                      ? parseFloat(glAccount.min_balance.toString())
+                      : null,
+                  });
+                }
               }
             }
           }

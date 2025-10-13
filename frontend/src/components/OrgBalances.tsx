@@ -15,12 +15,14 @@ import {
   useOrgBalanceStats,
   usePrefundOrganisation,
   useCreateAgencyFloat,
+  useUpdateFloatLimit,
 } from "../hooks/useBalanceOperations";
 import { formatToCurrency } from "../utils/textUtils";
 import type {
   OrgBalanceFilters,
   PrefundRequest,
   AgencyFloatRequest,
+  OrgBalance,
 } from "../types/BalanceOperationsTypes";
 import PrefundModal from "./modals/PrefundModal";
 import AgencyFloatModal from "./modals/AgencyFloatModal";
@@ -59,15 +61,13 @@ const OrgBalances: React.FC = () => {
   const balances = balancesData?.data?.balances || [];
   const stats = statsData?.data;
   const currencies = currenciesData?.data?.currencies || [];
-  const organisations =
-    organisationsData?.data?.organisations.filter(
-      (organisation) => organisation.id !== user?.organisation_id
-    ) || [];
+  const organisations = organisationsData?.data?.organisations || [];
   const bankAccounts = bankAccountsData?.data?.bankAccounts || [];
 
   // Mutations
   const prefundOrganisationMutation = usePrefundOrganisation();
   const createAgencyFloatMutation = useCreateAgencyFloat();
+  const updateFloatLimitMutation = useUpdateFloatLimit();
 
   // Handlers
   const handleFilterChange = (
@@ -105,14 +105,27 @@ const OrgBalances: React.FC = () => {
     }
   };
 
+  const handleEditLimit = async (balance: OrgBalance) => {
+    try {
+      await updateFloatLimitMutation.mutateAsync({
+        balanceId: balance.id,
+        limit: balance.limit || 0,
+      });
+    } catch (error) {
+      console.error("Failed to update float limit:", error);
+    }
+  };
+
   const openPrefundModal = (orgId: string) => {
     setSelectedOrganisation(orgId);
     setShowPrefundModal(true);
   };
 
-  const agencyOrganisations = organisations.filter(
-    (org) => org.type === "AGENCY" || org.type === "PARTNER"
-  );
+  // const agencyOrganisations = organisations.filter(
+  //   (org) => org.type === "AGENCY" || org.type === "PARTNER"
+  // );
+
+  const agencyOrganisations = organisations;
 
   return (
     <>
@@ -227,7 +240,7 @@ const OrgBalances: React.FC = () => {
             <SearchableSelect
               value={filters.dest_org_id || ""}
               onChange={(value) => handleFilterChange("dest_org_id", value)}
-              options={organisations.map((org) => ({
+              options={organisations?.map((org) => ({
                 value: org.id,
                 label: `${org.name} (${org.type})`,
               }))}
@@ -276,6 +289,7 @@ const OrgBalances: React.FC = () => {
         data={balances}
         loading={balancesLoading}
         onPrefund={openPrefundModal}
+        onEditLimit={handleEditLimit}
       />
 
       {/* Pagination */}
@@ -334,7 +348,7 @@ const OrgBalances: React.FC = () => {
         onSubmit={handleCreateAgencyFloat}
         isLoading={createAgencyFloatMutation.isPending}
         bankAccounts={bankAccounts}
-        agencies={agencyOrganisations}
+        agencies={agencyOrganisations || []}
       />
     </>
   );

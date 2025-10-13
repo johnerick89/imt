@@ -154,4 +154,15 @@ export const BalanceOperationsService = {
     );
     return response.data;
   },
+
+  async updateFloatLimit(
+    balanceId: string,
+    limit: number
+  ): Promise<OrgBalanceResponse> {
+    const response = await apiClient.patch(
+      `/api/v1/balance/organisations/balances/${balanceId}/limit`,
+      { limit }
+    );
+    return response.data;
+  },
 };

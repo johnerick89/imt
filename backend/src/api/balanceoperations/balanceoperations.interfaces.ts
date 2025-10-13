@@ -45,6 +45,7 @@ export interface OrgFloatBalanceRequest {
   source_id?: string; // Optional bank account ID
   description?: string;
   bank_account_id?: string;
+  limit?: number;
 }
 
 export interface OrgBalanceResponse {

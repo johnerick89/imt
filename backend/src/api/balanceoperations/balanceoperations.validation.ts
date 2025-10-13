@@ -35,6 +35,7 @@ export const orgFloatBalanceSchema = z.object({
     .string()
     .uuid("Bank account ID must be a valid UUID")
     .optional(),
+  limit: z.coerce.number().optional(),
 });
 
 export const tillBalanceOperationSchema = z.object({

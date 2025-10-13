@@ -265,4 +265,37 @@ export class BalanceOperationController {
       res.status(201).json(result);
     }
   );
+
+  // Update float limit
+  updateFloatLimit = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
+      const { balanceId } = req.params;
+      const { limit } = req.body;
+
+      if (!balanceId) {
+        throw new AppError("Balance ID is required", 400);
+      }
+
+      if (limit === undefined || limit === null) {
+        throw new AppError("Limit is required", 400);
+      }
+
+      if (limit < 0) {
+        throw new AppError("Limit must be non-negative", 400);
+      }
+
+      const userId = req.user?.id;
+
+      if (!userId) {
+        throw new AppError("User not authenticated", 401);
+      }
+
+      const result = await balanceOperationService.updateFloatLimit(
+        balanceId,
+        limit,
+        userId
+      );
+      res.json(result);
+    }
+  );
 }

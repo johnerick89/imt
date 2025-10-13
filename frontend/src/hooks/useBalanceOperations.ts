@@ -298,3 +298,32 @@ export const useCreateAgencyFloat = () => {
     },
   });
 };
+
+// Update Float Limit Hook
+export const useUpdateFloatLimit = () => {
+  const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
+
+  return useMutation({
+    mutationFn: ({ balanceId, limit }: { balanceId: string; limit: number }) =>
+      BalanceOperationsService.updateFloatLimit(balanceId, limit),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ["orgBalances"] });
+      queryClient.invalidateQueries({ queryKey: ["orgBalanceStats"] });
+      showSuccess(
+        "Float Limit Updated Successfully",
+        response.message || "The float limit has been updated successfully."
+      );
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to update float limit";
+      showError("Update Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
+    },
+  });
+};

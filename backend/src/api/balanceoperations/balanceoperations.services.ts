@@ -20,6 +20,7 @@ import {
   NotFoundError,
   ValidationError,
 } from "../../utils/AppError";
+import { Decimal } from "@prisma/client/runtime/library";
 
 const glTransactionService = new GlTransactionService();
 
@@ -1167,12 +1168,12 @@ export class BalanceOperationService {
         throw new NotFoundError("Agency organisation not found");
       }
 
-      if (destOrg.type !== "AGENCY" && destOrg.type !== "PARTNER") {
-        throw new AppError(
-          "Destination organisation must be an AGENCY or PARTNER",
-          400
-        );
-      }
+      // if (destOrg.type !== "AGENCY" && destOrg.type !== "PARTNER") {
+      //   throw new AppError(
+      //     "Destination organisation must be an AGENCY or PARTNER",
+      //     400
+      //   );
+      // }
 
       // Validate currency
       const currencyId = destOrg.base_currency_id || data.currency_id || "";
@@ -1223,13 +1224,15 @@ export class BalanceOperationService {
         },
       });
 
-      let oldBalance = 0;
-      let newBalance = 0;
+      let oldBalance = new Decimal(0);
+      let newBalance = new Decimal(0);
+      let limit = new Decimal(0);
 
       if (orgFloatBalance) {
         // Update existing balance
-        oldBalance = parseFloat(orgFloatBalance.balance.toString());
-        newBalance = oldBalance + data.amount;
+        oldBalance = new Decimal(orgFloatBalance.balance || 0);
+        newBalance = oldBalance.add(new Decimal(data.amount || 0));
+        limit = new Decimal(orgFloatBalance.limit || 0);
 
         orgFloatBalance = await tx.orgBalance.update({
           where: { id: orgFloatBalance.id },
@@ -1243,8 +1246,9 @@ export class BalanceOperationService {
           },
         });
       } else {
-        oldBalance = 0;
-        newBalance = oldBalance + data.amount;
+        oldBalance = new Decimal(0);
+        newBalance = oldBalance.add(new Decimal(data.amount || 0));
+        limit = new Decimal(data.limit || 0);
         // Create new float balance
         orgFloatBalance = await tx.orgBalance.create({
           data: {
@@ -1254,6 +1258,7 @@ export class BalanceOperationService {
             balance: data.amount,
             locked_balance: 0, // Default locked balance is zero
             created_by: userId,
+            limit: limit,
           },
           include: {
             base_org: true,
@@ -1341,6 +1346,65 @@ export class BalanceOperationService {
         success: true,
         message: "Agency float balance created successfully",
         data: orgFloatBalance as unknown as OrgBalance,
+      };
+    });
+  }
+
+  async updateFloatLimit(
+    balanceId: string,
+    limit: number,
+    userId: string
+  ): Promise<OrgBalanceResponse> {
+    return await prisma.$transaction(async (tx) => {
+      // Find the balance
+      const balance = await tx.orgBalance.findUnique({
+        where: { id: balanceId },
+        include: {
+          base_org: true,
+          dest_org: true,
+          currency: true,
+        },
+      });
+
+      if (!balance) {
+        throw new NotFoundError("Organisation balance not found");
+      }
+
+      // Update the limit
+      const updatedBalance = await tx.orgBalance.update({
+        where: { id: balanceId },
+        data: {
+          limit: limit,
+        },
+        include: {
+          base_org: true,
+          dest_org: true,
+          currency: true,
+        },
+      });
+
+      // Create balance history record
+      await tx.balanceHistory.create({
+        data: {
+          action_type: BalanceHistoryAction.SETTLEMENT,
+          entity_type: "ORG_BALANCE",
+          entity_id: balanceId,
+          currency_id: balance.currency_id,
+          old_balance: balance.limit || 0,
+          new_balance: limit,
+          change_amount: limit - parseFloat((balance.limit || 0).toString()),
+          description: `Float limit updated from ${
+            balance.limit || 0
+          } to ${limit}`,
+          created_by: userId,
+          org_balance_id: balanceId,
+        },
+      });
+
+      return {
+        success: true,
+        message: "Float limit updated successfully",
+        data: updatedBalance as unknown as OrgBalance,
       };
     });
   }

@@ -1242,6 +1242,7 @@ model OrgBalance {
   created_by        String?          @db.Uuid
   created_by_user   User?            @relation(fields: [created_by], references: [id])
   gl_accounts       GlAccount[]
+  limit             Decimal?         @db.Decimal(22, 9)
 
   @@unique([base_org_id, dest_org_id, currency_id])
   @@index([base_org_id])

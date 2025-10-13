@@ -290,8 +290,12 @@ export interface TransactionChargeCalculation {
     rate: number | null;
     internal_amount: number | null;
     internal_percentage: number | null;
-    external_amount: number | null;
-    external_percentage: number | null;
+    external_amount?: number | null;
+    external_percentage?: number | null;
+    origin_amount: number | null;
+    origin_percentage?: number | null;
+    destination_amount?: number | null;
+    destination_percentage?: number | null;
     description: string;
     is_reversible: boolean;
     negotiated_rate: number | null;

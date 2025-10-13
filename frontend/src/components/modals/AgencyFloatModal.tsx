@@ -39,6 +39,7 @@ const AgencyFloatModal: React.FC<AgencyFloatModalProps> = ({
       dest_org_id: "",
       currency_id: "",
       bank_account_id: "",
+      limit: 0,
       description: "",
     },
   });
@@ -169,6 +170,32 @@ const AgencyFloatModal: React.FC<AgencyFloatModalProps> = ({
                 placeholder="Select bank account to deposit (optional)"
                 disabled={isLoading}
                 invalid={!!errors.bank_account_id}
+              />
+            )}
+          />
+        </FormItem>
+
+        <FormItem
+          label="Float Limit (Optional)"
+          invalid={!!errors.limit}
+          errorMessage={errors.limit?.message}
+        >
+          <Controller
+            name="limit"
+            control={control}
+            rules={{
+              min: { value: 0, message: "Limit must be non-negative" },
+            }}
+            render={({ field }) => (
+              <Input
+                {...field}
+                type="number"
+                step="0.01"
+                placeholder="Enter float limit (optional)"
+                disabled={isLoading}
+                onChange={(e) =>
+                  field.onChange(parseFloat(e.target.value) || 0)
+                }
               />
             )}
           />
