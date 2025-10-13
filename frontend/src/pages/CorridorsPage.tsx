@@ -13,8 +13,6 @@ import {
   useUpdateCorridor,
   useDeleteCorridor,
   useSession,
-  useCountries,
-  useCurrencies,
 } from "../hooks";
 import type {
   Corridor,
@@ -34,10 +32,6 @@ const CorridorsPage: React.FC = () => {
     limit: 10,
     search: "",
     status: undefined,
-    origin_country_id: "",
-    destination_country_id: "",
-    base_currency_id: "",
-    organisation_id: currentUser?.organisation_id || "",
   });
 
   const statsFilters: CorridorStatsFilters = {
@@ -55,8 +49,6 @@ const CorridorsPage: React.FC = () => {
   // Data fetching
   const { data: corridorsData, isLoading } = useCorridors(filters);
   const { data: statsData } = useCorridorStats(statsFilters);
-  const { data: countriesData } = useCountries({ limit: 1000 });
-  const { data: currenciesData } = useCurrencies({ limit: 1000 });
 
   // Mutations
   const createCorridorMutation = useCreateCorridor();
@@ -66,8 +58,6 @@ const CorridorsPage: React.FC = () => {
   const corridors = corridorsData?.data?.corridors || [];
   const pagination = corridorsData?.data?.pagination;
   const stats = statsData?.data;
-  const countries = countriesData?.data?.countries || [];
-  const currencies = currenciesData?.data?.currencies || [];
 
   // Filter options
   const statusOptions = [
@@ -76,22 +66,6 @@ const CorridorsPage: React.FC = () => {
     { value: "INACTIVE", label: "Inactive" },
     { value: "PENDING", label: "Pending" },
     { value: "BLOCKED", label: "Blocked" },
-  ];
-
-  const countryOptions = [
-    { value: "", label: "All Countries" },
-    ...countries.map((country) => ({
-      value: country.id,
-      label: country.name,
-    })),
-  ];
-
-  const currencyOptions = [
-    { value: "", label: "All Currencies" },
-    ...currencies.map((currency) => ({
-      value: currency.id,
-      label: `${currency.currency_code} - ${currency.currency_name}`,
-    })),
   ];
 
   // Handlers
@@ -253,29 +227,8 @@ const CorridorsPage: React.FC = () => {
             options={statusOptions}
             placeholder="Filter by status"
           />
-          <SearchableSelect
-            value={filters.origin_country_id || ""}
-            onChange={(value) => handleFilterChange("origin_country_id", value)}
-            options={countryOptions}
-            placeholder="Filter by origin country"
-          />
-          <SearchableSelect
-            value={filters.destination_country_id || ""}
-            onChange={(value) =>
-              handleFilterChange("destination_country_id", value)
-            }
-            options={countryOptions}
-            placeholder="Filter by destination country"
-          />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <SearchableSelect
-            value={filters.base_currency_id || ""}
-            onChange={(value) => handleFilterChange("base_currency_id", value)}
-            options={currencyOptions}
-            placeholder="Filter by origin currency"
-          />
-        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
       </div>
 
       {/* Table */}
