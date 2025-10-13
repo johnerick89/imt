@@ -8,6 +8,7 @@ import type {
   TillTopupRequest,
   VaultTopupRequest,
   OpeningBalanceRequest,
+  AgencyFloatRequest,
 } from "../types/BalanceOperationsTypes";
 
 export const useOrgBalances = (filters: OrgBalanceFilters) => {
@@ -259,6 +260,36 @@ export const useSetOpeningBalance = () => {
           ? error.message
           : "Failed to set opening balance";
       showError("Opening Balance Set Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
+    },
+  });
+};
+
+// Agency Float Balance Hook
+export const useCreateAgencyFloat = () => {
+  const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
+
+  return useMutation({
+    mutationFn: (data: AgencyFloatRequest) =>
+      BalanceOperationsService.createAgencyFloat(data),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ["orgBalances"] });
+      queryClient.invalidateQueries({ queryKey: ["orgBalanceStats"] });
+      queryClient.invalidateQueries({ queryKey: ["bankAccounts"] });
+      showSuccess(
+        "Agency Float Added Successfully",
+        response.message || "The agency float has been added successfully."
+      );
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to add agency float";
+      showError("Agency Float Failed", errorMessage);
       return {
         success: false,
         message: errorMessage,

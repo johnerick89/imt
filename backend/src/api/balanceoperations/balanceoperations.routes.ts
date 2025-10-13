@@ -29,6 +29,13 @@ router.get(
   balanceOperationController.getOrgBalanceStats.bind(balanceOperationController)
 );
 
+router.post(
+  "/organisations/agency-float",
+  balanceOperationController.createOrgFloatBalance.bind(
+    balanceOperationController
+  )
+);
+
 router.get(
   "/organisations/:orgId/balance-history",
   balanceOperationController.getOrgBalanceHistory.bind(

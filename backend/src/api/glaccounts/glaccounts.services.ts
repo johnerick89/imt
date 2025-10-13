@@ -471,6 +471,7 @@ export class GlAccountService {
         generate_for_org_balances,
         generate_for_charges_payments,
         generate_for_inbound_beneficiary_payments,
+        generate_for_agency_floats,
       } = data;
 
       const generatedAccounts: IGlAccount[] = [];
@@ -524,6 +525,61 @@ export class GlAccountService {
                   ? parseFloat(glAccount.min_balance.toString())
                   : null,
               });
+            }
+          }
+        }
+        // Generate for Agency Floats
+        if (generate_for_agency_floats) {
+          const floatParameter = await tx.parameter.findFirst({
+            where: { name: "BALANCE_MODE_SETTING" },
+          });
+
+          if (floatParameter?.value === "F") {
+            const agencyFloats = await tx.orgBalance.findMany({
+              where: { base_org_id: organisation_id },
+              include: { currency: true, base_org: true, dest_org: true },
+            });
+
+            console.log("agencyFloats", agencyFloats);
+
+            for (const agencyFloat of agencyFloats) {
+              const existingAccount = await tx.glAccount.findFirst({
+                where: { org_balance_id: agencyFloat.id, organisation_id },
+              });
+
+              console.log("existingAccount", existingAccount);
+
+              if (!existingAccount) {
+                const glAccount = await tx.glAccount.create({
+                  data: {
+                    name: `Agency Float - ${agencyFloat.base_org.name} to ${agencyFloat.dest_org.name} for ${agencyFloat.currency.currency_code}`,
+                    type: "LIABILITY",
+                    balance: agencyFloat.balance
+                      ? parseFloat(agencyFloat.balance.toString())
+                      : 0,
+                    currency_id: agencyFloat.currency_id,
+                    org_balance_id: agencyFloat.id,
+                    organisation_id,
+                    opened_by: userId,
+                  },
+                });
+
+                generatedAccounts.push({
+                  ...glAccount,
+                  balance: glAccount.balance
+                    ? parseFloat(glAccount.balance.toString())
+                    : null,
+                  locked_balance: glAccount.locked_balance
+                    ? parseFloat(glAccount.locked_balance.toString())
+                    : null,
+                  max_balance: glAccount.max_balance
+                    ? parseFloat(glAccount.max_balance.toString())
+                    : null,
+                  min_balance: glAccount.min_balance
+                    ? parseFloat(glAccount.min_balance.toString())
+                    : null,
+                });
+              }
             }
           }
         }
@@ -749,52 +805,57 @@ export class GlAccountService {
 
         // Generate for Org Balances
         if (generate_for_org_balances) {
-          const orgBalances = await tx.orgBalance.findMany({
-            where: { base_org_id: organisation_id },
-            include: { currency: true, base_org: true, dest_org: true },
+          const floatParameter = await tx.parameter.findFirst({
+            where: { name: "BALANCE_MODE_SETTING" },
           });
-
-          for (const orgBalance of orgBalances) {
-            const existingAccount = await tx.glAccount.findFirst({
-              where: { org_balance_id: orgBalance.id, organisation_id },
+          if (floatParameter?.value !== "F") {
+            const orgBalances = await tx.orgBalance.findMany({
+              where: { base_org_id: organisation_id },
+              include: { currency: true, base_org: true, dest_org: true },
             });
 
-            if (!existingAccount) {
-              const glAccount = await tx.glAccount.create({
-                data: {
-                  name: `Org Balance - ${orgBalance.base_org.name} to ${orgBalance.dest_org.name} for ${orgBalance.currency.currency_code}`,
-                  type: "ASSET",
-                  balance: orgBalance.balance
-                    ? parseFloat(orgBalance.balance.toString())
-                    : 0,
-                  currency_id: orgBalance.currency_id,
-                  org_balance_id: orgBalance.id,
-                  organisation_id,
-                  opened_by: userId,
-                },
-                include: {
-                  currency: true,
-                  organisation: true,
-                  opened_by_user: true,
-                  org_balance: true,
-                },
+            for (const orgBalance of orgBalances) {
+              const existingAccount = await tx.glAccount.findFirst({
+                where: { org_balance_id: orgBalance.id, organisation_id },
               });
 
-              generatedAccounts.push({
-                ...glAccount,
-                balance: glAccount.balance
-                  ? parseFloat(glAccount.balance.toString())
-                  : null,
-                locked_balance: glAccount.locked_balance
-                  ? parseFloat(glAccount.locked_balance.toString())
-                  : null,
-                max_balance: glAccount.max_balance
-                  ? parseFloat(glAccount.max_balance.toString())
-                  : null,
-                min_balance: glAccount.min_balance
-                  ? parseFloat(glAccount.min_balance.toString())
-                  : null,
-              });
+              if (!existingAccount) {
+                const glAccount = await tx.glAccount.create({
+                  data: {
+                    name: `Org Balance - ${orgBalance.base_org.name} to ${orgBalance.dest_org.name} for ${orgBalance.currency.currency_code}`,
+                    type: "ASSET",
+                    balance: orgBalance.balance
+                      ? parseFloat(orgBalance.balance.toString())
+                      : 0,
+                    currency_id: orgBalance.currency_id,
+                    org_balance_id: orgBalance.id,
+                    organisation_id,
+                    opened_by: userId,
+                  },
+                  include: {
+                    currency: true,
+                    organisation: true,
+                    opened_by_user: true,
+                    org_balance: true,
+                  },
+                });
+
+                generatedAccounts.push({
+                  ...glAccount,
+                  balance: glAccount.balance
+                    ? parseFloat(glAccount.balance.toString())
+                    : null,
+                  locked_balance: glAccount.locked_balance
+                    ? parseFloat(glAccount.locked_balance.toString())
+                    : null,
+                  max_balance: glAccount.max_balance
+                    ? parseFloat(glAccount.max_balance.toString())
+                    : null,
+                  min_balance: glAccount.min_balance
+                    ? parseFloat(glAccount.min_balance.toString())
+                    : null,
+                });
+              }
             }
           }
         }

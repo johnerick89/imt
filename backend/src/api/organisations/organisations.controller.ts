@@ -16,7 +16,6 @@ export class OrganisationsController {
   createOrganisation = asyncHandler(
     async (req: Request, res: Response): Promise<void> => {
       // Validate request body
-      console.log(req.body);
       const validatedData = createOrganisationSchema.parse(req.body);
 
       // Get user ID from request (set by auth middleware)

@@ -13,6 +13,9 @@ export default function ChargeActionCell({
   onDelete,
 }: ChargeActionCellProps) {
   const { canEditCharges, canDeleteCharges } = usePermissions();
+  const deletingChargesAllowed = false;
+  const canReallyDelete = canDeleteCharges() && deletingChargesAllowed;
+  console.log("canReallyDelete", canReallyDelete);
   return {
     id: "actions",
     header: "Actions",
@@ -50,7 +53,7 @@ export default function ChargeActionCell({
             </button>
           )}
 
-          {canDeleteCharges() && (
+          {canReallyDelete && (
             <button
               onClick={() => onDelete(charge)}
               className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"

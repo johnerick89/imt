@@ -14,6 +14,8 @@ import {
   useDeleteCharge,
   useSession,
   useCurrencies,
+  useStandardCharges,
+  useCreateStandardCharge,
 } from "../hooks";
 import type {
   Charge,
@@ -37,24 +39,40 @@ const Charges: React.FC = () => {
     origin_organisation_id: currentUser?.organisation_id || "",
   });
 
+  // Standard charges filter state
+  const [standardFilters, setStandardFilters] = useState<ChargeFilters>({
+    page: 1,
+    limit: 10,
+    search: "",
+    type: "" as ChargeType,
+    status: undefined,
+    currency_id: "",
+  });
+
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCreateStandardModal, setShowCreateStandardModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedCharge, setSelectedCharge] = useState<Charge | null>(null);
 
   // Data fetching
   const { data: chargesData, isLoading } = useCharges(filters);
+  const { data: standardChargesData, isLoading: isLoadingStandard } =
+    useStandardCharges(standardFilters);
   const { data: statsData } = useChargeStats();
   const { data: currenciesData } = useCurrencies({ limit: 1000 });
 
   // Mutations
   const createChargeMutation = useCreateCharge();
+  const createStandardChargeMutation = useCreateStandardCharge();
   const updateChargeMutation = useUpdateCharge();
   const deleteChargeMutation = useDeleteCharge();
 
   const charges = chargesData?.data?.charges || [];
   const pagination = chargesData?.data?.pagination;
+  const standardCharges = standardChargesData?.data?.charges || [];
+  const standardPagination = standardChargesData?.data?.pagination;
   const stats = statsData?.data;
   const currencies = currenciesData?.data?.currencies || [];
 
@@ -103,6 +121,28 @@ const Charges: React.FC = () => {
     } catch (error) {
       console.error("Failed to create charge:", error);
     }
+  };
+
+  const handleCreateStandardCharge = async (data: CreateChargeRequest) => {
+    try {
+      const result = await createStandardChargeMutation.mutateAsync(data);
+      if (result.success) {
+        setShowCreateStandardModal(false);
+      }
+    } catch (error) {
+      console.error("Failed to create standard charge:", error);
+    }
+  };
+
+  const handleStandardFilterChange = (
+    field: keyof ChargeFilters,
+    value: string | number
+  ) => {
+    setStandardFilters((prev) => ({
+      ...prev,
+      [field]: value,
+      page: field === "page" ? (value as number) : 1,
+    }));
   };
 
   const handleEditCharge = async (data: UpdateChargeRequest) => {
@@ -165,11 +205,153 @@ const Charges: React.FC = () => {
   // Loading state
   const isAnyMutationLoading =
     createChargeMutation.isPending ||
+    createStandardChargeMutation.isPending ||
     updateChargeMutation.isPending ||
     deleteChargeMutation.isPending;
 
   return (
     <>
+      {/* Standard Charges Section */}
+      <div className="mt-8">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">
+              Standard Charges
+            </h2>
+            <p className="text-gray-600">
+              Standard charges apply to all origin-destination agencies
+            </p>
+          </div>
+          {canCreateCharges() && (
+            <button
+              onClick={() => setShowCreateStandardModal(true)}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center gap-2"
+            >
+              <FiPlus className="h-4 w-4" />
+              Create Standard Charge
+            </button>
+          )}
+        </div>
+
+        {/* Standard Charges Filters */}
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Search
+              </label>
+              <div className="relative">
+                <FiSearch className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="Search standard charges..."
+                  value={standardFilters.search || ""}
+                  onChange={(e) =>
+                    handleStandardFilterChange("search", e.target.value)
+                  }
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Type
+              </label>
+              <SearchableSelect
+                value={standardFilters.type || ""}
+                onChange={(value) => handleStandardFilterChange("type", value)}
+                options={typeOptions}
+                placeholder="Filter by type"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Status
+              </label>
+              <SearchableSelect
+                value={standardFilters.status || ""}
+                onChange={(value) =>
+                  handleStandardFilterChange("status", value)
+                }
+                options={statusOptions}
+                placeholder="Filter by status"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Currency
+              </label>
+              <SearchableSelect
+                value={standardFilters.currency_id || ""}
+                onChange={(value) =>
+                  handleStandardFilterChange("currency_id", value)
+                }
+                options={currencyOptions}
+                placeholder="Filter by currency"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Standard Charges Table */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          <ChargesTable
+            data={standardCharges}
+            isLoading={isLoadingStandard}
+            onEdit={openEditModal}
+            onDelete={openDeleteModal}
+            onToggleStatus={handleToggleStatus}
+          />
+
+          {/* Standard Charges Pagination */}
+          {standardPagination && standardPagination.totalPages > 1 && (
+            <div className="flex justify-between items-center px-6 py-3 border-t border-gray-200">
+              <div className="text-sm text-gray-700">
+                Showing{" "}
+                {(standardPagination.page - 1) * standardPagination.limit + 1}{" "}
+                to{" "}
+                {Math.min(
+                  standardPagination.page * standardPagination.limit,
+                  standardPagination.total
+                )}{" "}
+                of {standardPagination.total} results
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() =>
+                    handleStandardFilterChange(
+                      "page",
+                      standardPagination.page - 1
+                    )
+                  }
+                  disabled={standardPagination.page <= 1}
+                  className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                >
+                  Previous
+                </button>
+                <span className="px-3 py-1 text-sm">
+                  Page {standardPagination.page} of{" "}
+                  {standardPagination.totalPages}
+                </span>
+                <button
+                  onClick={() =>
+                    handleStandardFilterChange(
+                      "page",
+                      standardPagination.page + 1
+                    )
+                  }
+                  disabled={
+                    standardPagination.page >= standardPagination.totalPages
+                  }
+                  className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
@@ -358,6 +540,22 @@ const Charges: React.FC = () => {
         message={`Are you sure you want to delete the charge "${selectedCharge?.name}"? This action cannot be undone.`}
         isLoading={isAnyMutationLoading}
       />
+
+      {/* Create Standard Charge Modal */}
+      <Modal
+        isOpen={showCreateStandardModal}
+        onClose={() => setShowCreateStandardModal(false)}
+        title="Create Standard Charge"
+        size="lg"
+      >
+        <ChargeForm
+          onSubmit={(data: CreateChargeRequest | UpdateChargeRequest) =>
+            handleCreateStandardCharge(data as CreateChargeRequest)
+          }
+          isLoading={isAnyMutationLoading}
+          isStandard={true}
+        />
+      </Modal>
     </>
   );
 };

@@ -3,12 +3,7 @@ import { useForm, Controller } from "react-hook-form";
 import { FormItem } from "./ui/FormItem";
 import { Input } from "./ui/Input";
 import { SearchableSelect } from "./ui/SearchableSelect";
-import {
-  useCurrencies,
-  useOrganisation,
-  useOrganisations,
-  useSession,
-} from "../hooks";
+import { useCurrencies, useOrganisations, useSession } from "../hooks";
 import type {
   CreateBankAccountRequest,
   UpdateBankAccountRequest,
@@ -32,20 +27,19 @@ const BankAccountForm: React.FC<BankAccountFormProps> = ({
   const { data: organisationsData } = useOrganisations({ limit: 100 });
   const { user } = useSession();
   const organisationId = user?.organisation_id;
-  const { data: userOrganisationData } = useOrganisation(organisationId || "");
-  const userOrganisation = userOrganisationData?.data;
 
   const currencies = currenciesData?.data?.currencies || [];
   const organisations = organisationsData?.data?.organisations || [];
-  const organisationName = organisations.find(
+  const userOrganisation = organisations.find(
     (org) => org.id === organisationId
-  )?.name;
+  );
+  const organisationName = userOrganisation?.name;
   console.log(
     "organisationId",
     organisationId,
     user,
-    "organisationName",
-    organisationName
+    "userOrganisation",
+    userOrganisation
   );
   const {
     control,

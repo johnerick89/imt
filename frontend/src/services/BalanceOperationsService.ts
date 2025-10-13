@@ -2,6 +2,7 @@ import apiClient from "./AxiosBase";
 import type {
   OrgBalanceListResponse,
   OrgBalanceStatsResponse,
+  OrgBalanceResponse,
   BalanceOperationResponse,
   BalanceHistoryResponse,
   OrgBalanceFilters,
@@ -10,6 +11,7 @@ import type {
   TillTopupRequest,
   VaultTopupRequest,
   OpeningBalanceRequest,
+  AgencyFloatRequest,
 } from "../types/BalanceOperationsTypes";
 
 export const BalanceOperationsService = {
@@ -137,6 +139,17 @@ export const BalanceOperationsService = {
   ): Promise<BalanceOperationResponse> {
     const response = await apiClient.post(
       `/api/v1/balance/organisations/${orgId}/opening-balance`,
+      data
+    );
+    return response.data;
+  },
+
+  // Agency Float Balance Operations
+  async createAgencyFloat(
+    data: AgencyFloatRequest
+  ): Promise<OrgBalanceResponse> {
+    const response = await apiClient.post(
+      `/api/v1/balance/organisations/agency-float`,
       data
     );
     return response.data;

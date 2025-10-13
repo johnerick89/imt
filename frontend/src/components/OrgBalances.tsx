@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FiFilter, FiRefreshCw } from "react-icons/fi";
+import { FiFilter, FiRefreshCw, FiPlus } from "react-icons/fi";
 import { SearchableSelect } from "../components/ui/SearchableSelect";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
@@ -14,16 +14,21 @@ import {
   useOrgBalances,
   useOrgBalanceStats,
   usePrefundOrganisation,
+  useCreateAgencyFloat,
 } from "../hooks/useBalanceOperations";
 import { formatToCurrency } from "../utils/textUtils";
 import type {
   OrgBalanceFilters,
   PrefundRequest,
+  AgencyFloatRequest,
 } from "../types/BalanceOperationsTypes";
 import PrefundModal from "./modals/PrefundModal";
+import AgencyFloatModal from "./modals/AgencyFloatModal";
+import { usePermissions } from "../hooks/usePermissions";
 
 const OrgBalances: React.FC = () => {
   const { user } = useSession();
+  const { canCreateOrgFloatBalances } = usePermissions();
 
   // Filter state
   const [filters, setFilters] = useState<OrgBalanceFilters>({
@@ -35,6 +40,7 @@ const OrgBalances: React.FC = () => {
 
   // Modal states
   const [showPrefundModal, setShowPrefundModal] = useState(false);
+  const [showAgencyFloatModal, setShowAgencyFloatModal] = useState(false);
   const [selectedOrganisation, setSelectedOrganisation] = useState<
     string | null
   >(null);
@@ -61,6 +67,7 @@ const OrgBalances: React.FC = () => {
 
   // Mutations
   const prefundOrganisationMutation = usePrefundOrganisation();
+  const createAgencyFloatMutation = useCreateAgencyFloat();
 
   // Handlers
   const handleFilterChange = (
@@ -89,23 +96,43 @@ const OrgBalances: React.FC = () => {
     }
   };
 
+  const handleCreateAgencyFloat = async (data: AgencyFloatRequest) => {
+    try {
+      await createAgencyFloatMutation.mutateAsync(data);
+      setShowAgencyFloatModal(false);
+    } catch (error) {
+      console.error("Failed to create agency float:", error);
+    }
+  };
+
   const openPrefundModal = (orgId: string) => {
     setSelectedOrganisation(orgId);
     setShowPrefundModal(true);
   };
+
+  const agencyOrganisations = organisations.filter(
+    (org) => org.type === "AGENCY" || org.type === "PARTNER"
+  );
 
   return (
     <>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Organisation Balances
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900">Float Balances</h1>
           <p className="text-gray-600">
-            Manage organisation balances and prefunding
+            Manage organisation float balances and prefunding
           </p>
         </div>
+        {canCreateOrgFloatBalances() && (
+          <button
+            onClick={() => setShowAgencyFloatModal(true)}
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center gap-2"
+          >
+            <FiPlus className="h-4 w-4" />
+            Add Agency Float
+          </button>
+        )}
       </div>
 
       {/* Stats */}
@@ -298,6 +325,16 @@ const OrgBalances: React.FC = () => {
         isLoading={prefundOrganisationMutation.isPending}
         bankAccounts={bankAccounts}
         currencies={currencies}
+      />
+
+      {/* Agency Float Modal */}
+      <AgencyFloatModal
+        isOpen={showAgencyFloatModal}
+        onClose={() => setShowAgencyFloatModal(false)}
+        onSubmit={handleCreateAgencyFloat}
+        isLoading={createAgencyFloatMutation.isPending}
+        bankAccounts={bankAccounts}
+        agencies={agencyOrganisations}
       />
     </>
   );

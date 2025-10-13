@@ -53,6 +53,19 @@ class CorridorsService {
     });
     return response.data;
   }
+
+  async getCorridorsForTransaction(
+    origin_organisation_id: string,
+    destination_organisation_id: string
+  ): Promise<CorridorListResponse> {
+    const response = await apiClient.get("/api/v1/corridors/for-transaction", {
+      params: {
+        origin_organisation_id,
+        destination_organisation_id,
+      },
+    });
+    return response.data;
+  }
 }
 
 export default new CorridorsService();

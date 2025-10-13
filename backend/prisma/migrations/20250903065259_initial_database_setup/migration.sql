@@ -263,7 +263,7 @@ CREATE TABLE "public"."corridors" (
     "id" UUID NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT NOT NULL,
-    "base_country_id" UUID NOT NULL,
+    "origin_country_id" UUID NOT NULL,
     "destination_country_id" UUID NOT NULL,
     "base_currency_id" UUID NOT NULL,
     "organisation_id" UUID NOT NULL,
@@ -682,7 +682,7 @@ CREATE INDEX "transaction_channels_created_by_idx" ON "public"."transaction_chan
 CREATE INDEX "corridors_name_idx" ON "public"."corridors"("name");
 
 -- CreateIndex
-CREATE INDEX "corridors_base_country_id_idx" ON "public"."corridors"("base_country_id");
+CREATE INDEX "corridors_origin_country_id_idx" ON "public"."corridors"("origin_country_id");
 
 -- CreateIndex
 CREATE INDEX "corridors_destination_country_id_idx" ON "public"."corridors"("destination_country_id");
@@ -991,7 +991,7 @@ ALTER TABLE "public"."branches" ADD CONSTRAINT "branches_organisation_id_fkey" F
 ALTER TABLE "public"."transaction_channels" ADD CONSTRAINT "transaction_channels_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."corridors" ADD CONSTRAINT "corridors_base_country_id_fkey" FOREIGN KEY ("base_country_id") REFERENCES "public"."countries"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."corridors" ADD CONSTRAINT "corridors_origin_country_id_fkey" FOREIGN KEY ("origin_country_id") REFERENCES "public"."countries"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."corridors" ADD CONSTRAINT "corridors_destination_country_id_fkey" FOREIGN KEY ("destination_country_id") REFERENCES "public"."countries"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

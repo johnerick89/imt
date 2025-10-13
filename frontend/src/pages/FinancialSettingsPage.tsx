@@ -49,7 +49,7 @@ const FinancialSettingsPage: React.FC = () => {
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
               >
-                Org Balances
+                Float Balances
               </button>
             )}
           </nav>

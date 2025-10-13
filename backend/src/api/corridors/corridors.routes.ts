@@ -16,6 +16,10 @@ router.get(
   "/stats",
   corridorController.getCorridorStats.bind(corridorController)
 );
+router.get(
+  "/for-transaction",
+  corridorController.getCorridorsForTransaction.bind(corridorController)
+);
 router.get("/:id", corridorController.getCorridorById.bind(corridorController));
 router.put(
   "/:id",

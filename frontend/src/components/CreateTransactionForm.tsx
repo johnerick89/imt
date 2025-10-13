@@ -6,7 +6,7 @@ import { Input } from "./ui/Input";
 import { SearchableSelect } from "./ui/SearchableSelect";
 import { Textarea } from "./ui/Textarea";
 import { Button } from "./ui/Button";
-import { useCorridors } from "../hooks/useCorridors";
+import { useCorridorsForTransaction } from "../hooks/useCorridors";
 import { useUserTills } from "../hooks/useTills";
 import { useCustomers, useCreateCustomer } from "../hooks/useCustomers";
 import {
@@ -264,20 +264,21 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
   //watch for organisation (partner/agency) changes
   const watchedOrganisationId = watch("destination_organisation_id");
-  const { data: corridorsData } = useCorridors({
-    organisation_id: watchedOrganisationId,
-  });
+  const { data: corridorsData } = useCorridorsForTransaction(
+    organisationId, // origin_organisation_id (current user's org)
+    watchedOrganisationId || "" // destination_organisation_id (selected partner/agency)
+  );
   const corridors = useMemo(
     () => corridorsData?.data?.corridors || [],
     [corridorsData]
   );
 
-  console.log("corridors", corridors);
-
   const { data: chargesData } = useCharges({
     origin_organisation_id: organisationId,
     destination_organisation_id: watchedOrganisationId,
   });
+
+  console.log("chargesData", chargesData);
 
   const charges = useMemo(
     () => chargesData?.data?.charges || [],
@@ -296,7 +297,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           (rate) =>
             rate.from_currency_id === currentOrganisation.base_currency_id &&
             rate.to_currency_id === selectedCorridor.base_currency_id &&
-            rate.origin_country_id === selectedCorridor.base_country_id &&
+            rate.origin_country_id === selectedCorridor.origin_country_id &&
             rate.destination_country_id ===
               selectedCorridor.destination_country_id &&
             ["ACTIVE", "APPROVED"].includes(rate.status)
@@ -346,6 +347,16 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       setChargesWithRates(applicableCharges);
     }
   }, [charges, organisationId]);
+
+  useEffect(() => {
+    if (channels.length > 0) {
+      const cashChannel = channels.find((channel) => channel.name === "Cash");
+      if (cashChannel) {
+        setValue("origin_channel_id", cashChannel.id);
+        setValue("dest_channel_id", cashChannel.id);
+      }
+    }
+  }, [channels, setValue]);
 
   // Calculate charges and amounts using negotiated rates
   const calculateChargesAndAmounts = () => {
@@ -733,7 +744,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 <SearchableSelect
                   options={corridors.map((corridor) => ({
                     value: corridor.id,
-                    label: `${corridor.name} (${corridor?.base_country?.code} → ${corridor?.destination_country?.code})`,
+                    label: `${corridor.name} (${corridor?.origin_country?.code} → ${corridor?.destination_country?.code})`,
                   }))}
                   value={field.value}
                   onChange={(value) => {
@@ -745,7 +756,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                     if (selectedCorridor) {
                       setValue(
                         "origin_country_id",
-                        selectedCorridor.base_country_id
+                        selectedCorridor.origin_country_id
                       );
                       setValue(
                         "destination_country_id",
@@ -753,22 +764,22 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                       );
                       setValue(
                         "dest_currency_id",
-                        selectedCorridor.base_currency_id
+                        selectedCorridor?.destination_currency_id || ""
                       );
                       setValue(
                         "origin_currency_id",
-                        currentOrganisation?.base_currency_id || ""
+                        selectedCorridor?.origin_currency_id || ""
                       );
 
                       // Auto-populate exchange rate
                       const activeExchangeRate = exchangeRates.find(
                         (rate) =>
                           rate.from_currency_id ===
-                            currentOrganisation?.base_currency_id &&
+                            selectedCorridor?.origin_currency_id &&
                           rate.to_currency_id ===
-                            selectedCorridor.base_currency_id &&
+                            selectedCorridor?.destination_currency_id &&
                           rate.origin_country_id ===
-                            selectedCorridor.base_country_id &&
+                            selectedCorridor.origin_country_id &&
                           rate.destination_country_id ===
                             selectedCorridor.destination_country_id &&
                           ["ACTIVE", "APPROVED"].includes(rate.status)

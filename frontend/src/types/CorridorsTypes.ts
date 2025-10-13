@@ -16,7 +16,7 @@ export interface Corridor {
   id: string;
   name: string;
   description: string;
-  base_country_id: string;
+  origin_country_id: string;
   destination_country_id: string;
   base_currency_id: string;
   organisation_id: string;
@@ -25,35 +25,46 @@ export interface Corridor {
   updated_at: string;
   created_by: string;
   updated_by?: string | null;
-  base_country?: Country;
+  origin_country?: Country;
   destination_country?: Country;
   base_currency?: Currency;
   organisation?: Organisation;
   created_by_user?: User;
   origin_organisation_id?: string;
   origin_organisation?: Organisation;
+  destination_organisation?: Organisation;
+  origin_currency?: Currency;
+  destination_currency?: Currency;
+  origin_currency_id?: string;
+  destination_currency_id?: string;
 }
 
 export interface CreateCorridorRequest {
   name: string;
   description: string;
-  base_country_id: string;
+  origin_country_id: string;
   destination_country_id: string;
+  origin_currency_id: string;
+  destination_currency_id: string;
   base_currency_id: string;
   organisation_id: string;
   status: CorridorStatus;
   origin_organisation_id?: string;
+  destination_organisation_id?: string;
 }
 
 export interface UpdateCorridorRequest {
   name?: string;
   description?: string;
-  base_country_id?: string;
+  origin_country_id?: string;
   destination_country_id?: string;
   base_currency_id?: string;
+  origin_currency_id?: string;
+  destination_currency_id?: string;
   organisation_id?: string;
   status?: CorridorStatus;
   origin_organisation_id?: string;
+  destination_organisation_id?: string;
 }
 
 export interface CorridorFilters {
@@ -61,12 +72,9 @@ export interface CorridorFilters {
   limit?: number;
   search?: string;
   status?: "ACTIVE" | "INACTIVE" | "PENDING" | "BLOCKED";
-  base_country_id?: string;
-  destination_country_id?: string;
-  base_currency_id?: string;
+  country_id?: string;
+  currency_id?: string;
   organisation_id?: string;
-  created_by?: string;
-  origin_organisation_id?: string;
 }
 
 export interface CorridorStatsFilters {

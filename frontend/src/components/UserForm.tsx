@@ -1,11 +1,18 @@
 import React, { useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
-import { useCreateUser, useUpdateUser, useUser } from "../hooks";
+import {
+  useCreateUser,
+  useUpdateUser,
+  useUser,
+  useRoles,
+  useSession,
+  useOrganisation,
+  useAllOrganisations,
+} from "../hooks";
 import { FormItem } from "./ui/FormItem";
 import { Input } from "./ui/Input";
 import { Select } from "./ui/Select";
 import type { UpdateUserRequest } from "../types/UsersTypes";
-import { useRoles, useSession } from "../hooks";
 import { useToast } from "../contexts/ToastContext";
 
 interface UserFormProps {
@@ -38,12 +45,26 @@ const UserForm: React.FC<UserFormProps> = ({
   const isEditMode = mode === "edit";
   const { user } = useSession();
   const organisationId = user?.organisation_id;
+  const { data: currentOrganisationData } = useOrganisation(
+    organisationId || ""
+  );
+  const currentOrganisation = currentOrganisationData?.data;
+  const customerOrganisation = currentOrganisation?.type === "CUSTOMER";
   const { showToast } = useToast();
   // React Query hooks
   const { data: userData, isLoading: userLoading } = useUser(userId || "");
   const createUserMutation = useCreateUser();
   const updateUserMutation = useUpdateUser();
   const { data: rolesData, isLoading: rolesLoading } = useRoles();
+  const roles = rolesData?.data?.roles.filter(
+    (role) => role.name !== "System Engineer" && role.name !== "Super Admin"
+  );
+  const { data: allOrganisationsData, isLoading: allOrganisationsLoading } =
+    useAllOrganisations();
+  const allOrganisations = !customerOrganisation
+    ? [currentOrganisation]
+    : allOrganisationsData?.data?.organisations;
+
   const {
     control,
     handleSubmit,
@@ -156,7 +177,7 @@ const UserForm: React.FC<UserFormProps> = ({
     }
   };
 
-  if ((isEditMode && userLoading) || rolesLoading) {
+  if ((isEditMode && userLoading) || rolesLoading || allOrganisationsLoading) {
     return (
       <div className="animate-pulse">
         <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
@@ -305,9 +326,28 @@ const UserForm: React.FC<UserFormProps> = ({
               render={({ field }) => (
                 <Select invalid={Boolean(errors.role_id)} {...field}>
                   <option value="">Select a role</option>
-                  {rolesData?.data?.roles.map((role) => (
+                  {roles?.map((role) => (
                     <option key={role.id} value={role.id}>
                       {role.name}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            />
+          </FormItem>
+        )}
+
+        {/* Organisation */}
+        {customerOrganisation && (
+          <FormItem label="Organisation">
+            <Controller
+              name="organisation_id"
+              control={control}
+              render={({ field }) => (
+                <Select {...field}>
+                  {allOrganisations?.map((organisation) => (
+                    <option key={organisation?.id} value={organisation?.id}>
+                      {organisation?.name}
                     </option>
                   ))}
                 </Select>

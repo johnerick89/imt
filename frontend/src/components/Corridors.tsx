@@ -40,11 +40,9 @@ const Corridors: React.FC = () => {
     limit: 10,
     search: "",
     status: undefined,
-    base_country_id: currentOrganisation?.country_id || "",
-    destination_country_id: "",
-    base_currency_id: "",
-    organisation_id: "",
-    origin_organisation_id: currentOrganisationId || "",
+    country_id: currentOrganisation?.country_id || "",
+    currency_id: currentOrganisation?.base_currency_id || "",
+    organisation_id: currentOrganisationId || "",
   });
 
   const statsFilters: CorridorStatsFilters = {
@@ -272,42 +270,27 @@ const Corridors: React.FC = () => {
             />
           </div>
 
-          {/* <div>
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Origin Country
+              Country
             </label>
             <SearchableSelect
-              value={filters.base_country_id || ""}
-              onChange={(value) => handleFilterChange("base_country_id", value)}
+              value={filters.country_id || ""}
+              onChange={(value) => handleFilterChange("country_id", value)}
               options={countryOptions}
-              placeholder="Select origin country..."
+              placeholder="Select country..."
             />
-          </div> */}
+          </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Destination Country
+              Currency
             </label>
             <SearchableSelect
-              value={filters.destination_country_id || ""}
-              onChange={(value) =>
-                handleFilterChange("destination_country_id", value)
-              }
-              options={countryOptions}
-              placeholder="Select destination country..."
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Destination Currency
-            </label>
-            <SearchableSelect
-              value={filters.base_currency_id || ""}
-              onChange={(value) =>
-                handleFilterChange("base_currency_id", value)
-              }
+              value={filters.currency_id || ""}
+              onChange={(value) => handleFilterChange("currency_id", value)}
               options={currencyOptions}
-              placeholder="Select origin currency..."
+              placeholder="Select currency..."
             />
           </div>
 
@@ -350,16 +333,14 @@ const Corridors: React.FC = () => {
                 limit: 10,
                 search: "",
                 status: undefined,
-                base_country_id: "",
-                destination_country_id: "",
-                base_currency_id: "",
-                organisation_id: "",
-                origin_organisation_id: currentOrganisationId || "",
+                country_id: currentOrganisation?.country_id || "",
+                currency_id: currentOrganisation?.base_currency_id || "",
+                organisation_id: currentOrganisationId || "",
               })
             }
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            Clear Filters
+            Reset Filters
           </button>
         </div>
       </div>

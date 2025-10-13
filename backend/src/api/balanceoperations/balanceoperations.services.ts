@@ -1,9 +1,12 @@
 import { prisma } from "../../lib/prisma.lib";
 import { GlTransactionService } from "../gltransactions/gltransactions.services";
+import { BalanceHistoryAction } from "@prisma/client";
 import type {
   BalanceOperationRequest,
   BalanceOperationResponse,
   OrgBalanceOperationRequest,
+  OrgFloatBalanceRequest,
+  OrgBalanceResponse,
   TillBalanceOperationRequest,
   VaultBalanceOperationRequest,
   OrgBalance,
@@ -115,6 +118,7 @@ export class BalanceOperationService {
       // Create balance history records
       await tx.balanceHistory.create({
         data: {
+          action_type: BalanceHistoryAction.TOPUP,
           entity_type: "ORG_BALANCE",
           entity_id: orgBalance.id,
           currency_id: sourceBankAccount.currency_id,
@@ -129,6 +133,7 @@ export class BalanceOperationService {
 
       await tx.balanceHistory.create({
         data: {
+          action_type: BalanceHistoryAction.WITHDRAWAL,
           entity_type: "BANK_ACCOUNT",
           entity_id: data.source_id,
           currency_id: sourceBankAccount.currency_id,
@@ -145,12 +150,14 @@ export class BalanceOperationService {
       const orgGlAccountId = await glTransactionService.getGlAccountForEntity(
         "ORG_BALANCE",
         orgBalance.id,
-        baseOrgId
+        baseOrgId,
+        tx
       );
       const bankGlAccountId = await glTransactionService.getGlAccountForEntity(
         "BANK_ACCOUNT",
         data.source_id,
-        baseOrgId
+        baseOrgId,
+        tx
       );
 
       if (orgGlAccountId && bankGlAccountId) {
@@ -190,7 +197,7 @@ export class BalanceOperationService {
           change_amount: data.amount,
           operation_type: "TOPUP",
           source_entity: {
-            type: "BANK_ACCOUNT",
+            type: "AGENCY_FLOAT",
             id: data.source_id,
             name: sourceBankAccount.name,
           },
@@ -273,6 +280,7 @@ export class BalanceOperationService {
       // Create balance history records
       await tx.balanceHistory.create({
         data: {
+          action_type: BalanceHistoryAction.TOPUP,
           entity_type: "TILL",
           entity_id: tillId,
           currency_id: till.currency_id!,
@@ -287,6 +295,7 @@ export class BalanceOperationService {
 
       await tx.balanceHistory.create({
         data: {
+          action_type: BalanceHistoryAction.WITHDRAWAL,
           entity_type: "VAULT",
           entity_id: data.source_id,
           currency_id: till.currency_id!,
@@ -421,6 +430,7 @@ export class BalanceOperationService {
       // Create balance history records
       await tx.balanceHistory.create({
         data: {
+          action_type: BalanceHistoryAction.TOPUP,
           entity_type: "VAULT",
           entity_id: vaultId,
           currency_id: sourceBankAccount.currency_id,
@@ -435,6 +445,7 @@ export class BalanceOperationService {
 
       await tx.balanceHistory.create({
         data: {
+          action_type: BalanceHistoryAction.WITHDRAWAL,
           entity_type: "BANK_ACCOUNT",
           entity_id: data.source_id,
           currency_id: sourceBankAccount.currency_id,
@@ -586,6 +597,7 @@ export class BalanceOperationService {
       // Create balance history records
       await tx.balanceHistory.create({
         data: {
+          action_type: BalanceHistoryAction.WITHDRAWAL,
           entity_type: "TILL",
           entity_id: tillId,
           currency_id: till.currency_id!,
@@ -600,6 +612,7 @@ export class BalanceOperationService {
 
       await tx.balanceHistory.create({
         data: {
+          action_type: BalanceHistoryAction.DEPOSIT,
           entity_type: "VAULT",
           entity_id: data.source_id,
           currency_id: till.currency_id!,
@@ -730,6 +743,7 @@ export class BalanceOperationService {
       // Create balance history records
       await tx.balanceHistory.create({
         data: {
+          action_type: BalanceHistoryAction.WITHDRAWAL,
           entity_type: "VAULT",
           entity_id: vaultId,
           currency_id: destBankAccount.currency_id,
@@ -744,6 +758,7 @@ export class BalanceOperationService {
 
       await tx.balanceHistory.create({
         data: {
+          action_type: BalanceHistoryAction.DEPOSIT,
           entity_type: "BANK_ACCOUNT",
           entity_id: data.source_id,
           currency_id: destBankAccount.currency_id,
@@ -1119,5 +1134,214 @@ export class BalanceOperationService {
         },
       },
     };
+  }
+
+  async createOrgFloatBalance(
+    baseOrgId: string, // Customer organisation ID
+    data: OrgFloatBalanceRequest,
+    userId: string
+  ): Promise<OrgBalanceResponse> {
+    return await prisma.$transaction(async (tx) => {
+      // Validate organisations
+      const baseOrg = await tx.organisation.findUnique({
+        where: { id: baseOrgId },
+      });
+
+      if (!baseOrg) {
+        throw new NotFoundError("Customer organisation not found");
+      }
+
+      if (baseOrg.type !== "CUSTOMER") {
+        throw new AppError(
+          "Base organisation must be a CUSTOMER organisation",
+          400
+        );
+      }
+
+      const destOrg = await tx.organisation.findUnique({
+        where: { id: data.dest_org_id },
+        include: { base_currency: true },
+      });
+
+      if (!destOrg) {
+        throw new NotFoundError("Agency organisation not found");
+      }
+
+      if (destOrg.type !== "AGENCY" && destOrg.type !== "PARTNER") {
+        throw new AppError(
+          "Destination organisation must be an AGENCY or PARTNER",
+          400
+        );
+      }
+
+      // Validate currency
+      const currencyId = destOrg.base_currency_id || data.currency_id || "";
+      if (!currencyId) {
+        throw new AppError("Currency ID is required", 400);
+      }
+      const currency = await tx.currency.findUnique({
+        where: { id: currencyId },
+      });
+
+      if (!currency) {
+        throw new NotFoundError("Currency not found");
+      }
+
+      // If bank_account_id provided, validate and add to bank account (float is a liability)
+      let bankAccount = null;
+      let bankAccountOldBalance = 0;
+      let bankAccountNewBalance = 0;
+      if (data.bank_account_id) {
+        bankAccount = await tx.bankAccount.findUnique({
+          where: { id: data.bank_account_id },
+        });
+
+        if (!bankAccount) {
+          throw new NotFoundError("Bank account not found");
+        }
+
+        bankAccountOldBalance = parseFloat(
+          bankAccount?.balance.toString() || "0"
+        );
+        bankAccountNewBalance = bankAccountOldBalance + data.amount;
+
+        // Deduct from bank account
+        await tx.bankAccount.update({
+          where: { id: data.bank_account_id },
+          data: {
+            balance: bankAccountNewBalance,
+          },
+        });
+      }
+
+      // Check if float balance already exists
+      let orgFloatBalance = await tx.orgBalance.findFirst({
+        where: {
+          base_org_id: baseOrgId,
+          dest_org_id: data.dest_org_id,
+          currency_id: currencyId,
+        },
+      });
+
+      let oldBalance = 0;
+      let newBalance = 0;
+
+      if (orgFloatBalance) {
+        // Update existing balance
+        oldBalance = parseFloat(orgFloatBalance.balance.toString());
+        newBalance = oldBalance + data.amount;
+
+        orgFloatBalance = await tx.orgBalance.update({
+          where: { id: orgFloatBalance.id },
+          data: {
+            balance: newBalance,
+          },
+          include: {
+            base_org: true,
+            dest_org: true,
+            currency: true,
+          },
+        });
+      } else {
+        oldBalance = 0;
+        newBalance = oldBalance + data.amount;
+        // Create new float balance
+        orgFloatBalance = await tx.orgBalance.create({
+          data: {
+            base_org_id: baseOrgId,
+            dest_org_id: data.dest_org_id,
+            currency_id: currencyId,
+            balance: data.amount,
+            locked_balance: 0, // Default locked balance is zero
+            created_by: userId,
+          },
+          include: {
+            base_org: true,
+            dest_org: true,
+            currency: true,
+          },
+        });
+      }
+
+      // Create balance history records
+      await tx.balanceHistory.create({
+        data: {
+          action_type: BalanceHistoryAction.TOPUP,
+          entity_type: "AGENCY_FLOAT",
+          entity_id: orgFloatBalance.id,
+          currency_id: currencyId,
+          old_balance: oldBalance,
+          new_balance: newBalance,
+          change_amount: data.amount,
+          description: data.description,
+          created_by: userId,
+          org_balance_id: orgFloatBalance.id,
+          float_org_id: destOrg.id,
+        },
+      });
+      if (data.bank_account_id) {
+        await tx.balanceHistory.create({
+          data: {
+            action_type: BalanceHistoryAction.DEPOSIT,
+            entity_type: "BANK_ACCOUNT",
+            entity_id: data.bank_account_id,
+            currency_id: currencyId,
+            old_balance: bankAccountOldBalance,
+            new_balance: bankAccountNewBalance,
+            change_amount: data.amount,
+            description: data.description,
+            created_by: userId,
+            bank_account_id: data.bank_account_id,
+          },
+        });
+      }
+
+      // Create GL Transaction for Organisation Prefund
+
+      const bankGlAccountId = await glTransactionService.getGlAccountForEntity(
+        "BANK_ACCOUNT",
+        data.bank_account_id || "",
+        baseOrgId
+      );
+      const agencyFloatGlAccountId =
+        await glTransactionService.getGlAccountForEntity(
+          "AGENCY_FLOAT",
+          destOrg.id,
+          baseOrgId
+        );
+
+      if (bankGlAccountId && agencyFloatGlAccountId) {
+        await glTransactionService.createGlTransaction(
+          baseOrgId,
+          {
+            transaction_type: "AGENCY_FLOAT_TOPUP", // Using closest match for org prefund
+            amount: data.amount,
+            currency_id: currencyId,
+            description: `Agency float topup: ${data.description}`,
+            gl_entries: [
+              {
+                gl_account_id: bankGlAccountId,
+                amount: data.amount,
+                dr_cr: "DR",
+                description: `Cash balance increased by ${data.amount}`,
+              },
+              {
+                gl_account_id: agencyFloatGlAccountId,
+                amount: data.amount,
+                dr_cr: "CR",
+                description: `Agency float increased by ${data.amount}`,
+              },
+            ],
+          },
+          userId
+        );
+      }
+
+      return {
+        success: true,
+        message: "Agency float balance created successfully",
+        data: orgFloatBalance as unknown as OrgBalance,
+      };
+    });
   }
 }

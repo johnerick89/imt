@@ -50,7 +50,7 @@ export interface UpdateUserRequest {
 
 export interface UserFilters {
   search?: string;
-  role?: string;
+  role_id?: string;
   status?: "ACTIVE" | "INACTIVE" | "PENDING" | "BLOCKED";
   organisation_id?: string;
   page?: number;

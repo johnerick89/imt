@@ -34,6 +34,7 @@ export interface ICharge {
   direction: ApplicableDirection;
   origin_share_percentage?: number | null;
   destination_share_percentage?: number | null;
+  internal_share_percentage?: number | null;
   created_at: Date;
   created_by?: string | null;
   updated_at: Date;
@@ -66,6 +67,7 @@ export interface CreateChargeRequest {
   min_amount?: number;
   max_amount?: number;
   payment_authority?: string;
+  internal_share_percentage?: number;
 }
 
 export interface UpdateChargeRequest {
@@ -85,6 +87,7 @@ export interface UpdateChargeRequest {
   min_amount?: number;
   max_amount?: number;
   payment_authority?: string;
+  internal_share_percentage?: number;
 }
 
 export interface ChargeFilters {

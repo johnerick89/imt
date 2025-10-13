@@ -34,7 +34,7 @@ const CorridorsPage: React.FC = () => {
     limit: 10,
     search: "",
     status: undefined,
-    base_country_id: "",
+    origin_country_id: "",
     destination_country_id: "",
     base_currency_id: "",
     organisation_id: currentUser?.organisation_id || "",
@@ -254,8 +254,8 @@ const CorridorsPage: React.FC = () => {
             placeholder="Filter by status"
           />
           <SearchableSelect
-            value={filters.base_country_id || ""}
-            onChange={(value) => handleFilterChange("base_country_id", value)}
+            value={filters.origin_country_id || ""}
+            onChange={(value) => handleFilterChange("origin_country_id", value)}
             options={countryOptions}
             placeholder="Filter by origin country"
           />

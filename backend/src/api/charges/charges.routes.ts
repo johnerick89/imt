@@ -11,11 +11,17 @@ router.post(
   authMiddleware,
   chargeController.createCharge.bind(chargeController)
 );
+router.post(
+  "/standard",
+  authMiddleware,
+  chargeController.createStandardCharge.bind(chargeController)
+);
 router.get("/", chargeController.getCharges.bind(chargeController));
 router.get(
-  "/stats",
-  chargeController.getChargeStats.bind(chargeController)
+  "/standard",
+  chargeController.getStandardCharges.bind(chargeController)
 );
+router.get("/stats", chargeController.getChargeStats.bind(chargeController));
 router.get("/:id", chargeController.getChargeById.bind(chargeController));
 router.put(
   "/:id",

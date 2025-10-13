@@ -1,4 +1,10 @@
-import { OrganisationStatus, IntegrationMethod } from "@prisma/client";
+import {
+  OrganisationStatus,
+  IntegrationMethod,
+  ChargeStatus,
+  CorridorStatus,
+  Prisma,
+} from "@prisma/client";
 import { prisma } from "../../lib/prisma.lib";
 import {
   ICreateOrganisationRequest,
@@ -17,7 +23,6 @@ export class OrganisationsService {
     createdBy: string
   ): Promise<IOrganisationResponse> {
     return await prisma.$transaction(async (tx) => {
-      console.log(organisationData);
       const integrationMode = organisationData.integration_mode;
       const { base_currency_id, country_id, contact_password, ...rest } =
         organisationData;
@@ -41,7 +46,13 @@ export class OrganisationsService {
             : undefined,
 
           status: OrganisationStatus.ACTIVE,
-          created_by: createdBy,
+          created_by_user: createdBy
+            ? {
+                connect: {
+                  id: createdBy,
+                },
+              }
+            : undefined,
         },
         include: {
           base_currency: true,
@@ -54,9 +65,146 @@ export class OrganisationsService {
         await createContactPerson(organisationData, organisation.id, tx);
       }
 
+      // Get all standard charges (those with no origin and destination organisations)
+      const standardCharges = await tx.charge.findMany({
+        where: {
+          origin_organisation_id: null,
+          destination_organisation_id: null,
+          status: "ACTIVE",
+        },
+      });
+
+      // Get all existing active organisations (excluding the newly created one)
+      const existingOrganisations = await tx.organisation.findMany({
+        where: {
+          id: { not: organisation.id },
+          status: OrganisationStatus.ACTIVE,
+        },
+        include: {
+          country: true,
+          base_currency: true,
+        },
+      });
+
+      // Build array of charges to create
+      const chargesToCreate: Prisma.ChargeCreateManyInput[] = [];
+      for (const standardCharge of standardCharges) {
+        for (const existingOrg of existingOrganisations) {
+          // Charge with new org as origin and existing org as destination
+          chargesToCreate.push({
+            name: `${standardCharge.name} (${organisation.name} → ${existingOrg.name})`,
+            description: standardCharge.description,
+            application_method: standardCharge.application_method,
+            currency_id: standardCharge.currency_id,
+            type: standardCharge.type,
+            rate: standardCharge.rate,
+            origin_organisation_id: organisation.id,
+            destination_organisation_id: existingOrg.id,
+            is_reversible: standardCharge.is_reversible,
+            direction: standardCharge.direction,
+            internal_share_percentage: standardCharge.internal_share_percentage,
+            origin_share_percentage: standardCharge.origin_share_percentage,
+            destination_share_percentage:
+              standardCharge.destination_share_percentage,
+            status: ChargeStatus.ACTIVE,
+            min_amount: standardCharge.min_amount,
+            max_amount: standardCharge.max_amount,
+            payment_authority: standardCharge.payment_authority,
+            created_by: createdBy,
+          });
+
+          // Charge with existing org as origin and new org as destination
+          chargesToCreate.push({
+            name: `${standardCharge.name} (${existingOrg.name} → ${organisation.name})`,
+            description: standardCharge.description,
+            application_method: standardCharge.application_method,
+            currency_id: standardCharge.currency_id,
+            type: standardCharge.type,
+            rate: standardCharge.rate,
+            origin_organisation_id: existingOrg.id,
+            destination_organisation_id: organisation.id,
+            is_reversible: standardCharge.is_reversible,
+            direction: standardCharge.direction,
+            internal_share_percentage: standardCharge.internal_share_percentage,
+            origin_share_percentage: standardCharge.origin_share_percentage,
+            destination_share_percentage:
+              standardCharge.destination_share_percentage,
+            status: ChargeStatus.ACTIVE,
+            min_amount: standardCharge.min_amount,
+            max_amount: standardCharge.max_amount,
+            payment_authority: standardCharge.payment_authority,
+            created_by: createdBy,
+          });
+        }
+      }
+
+      // Bulk insert all charges
+      if (chargesToCreate.length > 0) {
+        console.log("chargesToCreate", chargesToCreate);
+        await tx.charge.createMany({
+          data: chargesToCreate,
+        });
+      }
+
+      // Build array of corridors to create
+      const corridorsToCreate: Prisma.CorridorCreateManyInput[] = [];
+      for (const existingOrg of existingOrganisations) {
+        // Corridor from new org to existing org
+        if (
+          organisation.country_id &&
+          organisation.base_currency_id &&
+          existingOrg.country_id &&
+          existingOrg.base_currency_id
+        ) {
+          corridorsToCreate.push({
+            name: `${organisation.name} to ${existingOrg.name}`,
+            description: `Corridor from ${organisation.name} to ${existingOrg.name}`,
+            origin_country_id: organisation.country_id,
+            origin_currency_id: organisation.base_currency_id,
+            origin_organisation_id: organisation.id,
+            destination_country_id: existingOrg.country_id,
+            destination_currency_id: existingOrg.base_currency_id,
+            destination_organisation_id: existingOrg.id,
+            organisation_id: organisation.id,
+            status: CorridorStatus.ACTIVE,
+            created_by: createdBy,
+          });
+        }
+
+        // Corridor from existing org to new org
+        if (
+          existingOrg.country_id &&
+          existingOrg.base_currency_id &&
+          organisation.country_id &&
+          organisation.base_currency_id
+        ) {
+          corridorsToCreate.push({
+            name: `${existingOrg.name} to ${organisation.name}`,
+            description: `Corridor from ${existingOrg.name} to ${organisation.name}`,
+            origin_country_id: existingOrg.country_id,
+            origin_currency_id: existingOrg.base_currency_id,
+            origin_organisation_id: existingOrg.id,
+            destination_country_id: organisation.country_id,
+            destination_currency_id: organisation.base_currency_id,
+            destination_organisation_id: organisation.id,
+            organisation_id: existingOrg.id,
+            status: CorridorStatus.ACTIVE,
+            created_by: createdBy,
+          });
+        }
+      }
+
+      // Bulk insert all corridors
+      if (corridorsToCreate.length > 0) {
+        console.log("corridorsToCreate", corridorsToCreate);
+        await tx.corridor.createMany({
+          data: corridorsToCreate,
+        });
+      }
+
       return {
         success: true,
-        message: "Organisation created successfully",
+        message: "Organisation created successfully with charges and corridors",
         data: organisation,
       };
     });

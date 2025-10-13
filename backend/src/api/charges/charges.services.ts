@@ -38,27 +38,37 @@ export class ChargeService {
       if (!destOrg) {
         throw new NotFoundError("Destination organisation not found");
       }
-      if (data?.origin_share_percentage && data?.destination_share_percentage) {
+      if (
+        data?.origin_share_percentage &&
+        data?.destination_share_percentage &&
+        data?.internal_share_percentage
+      ) {
         if (
-          data?.origin_share_percentage + data?.destination_share_percentage !==
+          data?.origin_share_percentage +
+            data?.destination_share_percentage +
+            data?.internal_share_percentage !==
           100
         ) {
           throw new AppError(
-            "Origin and destination share percentages must add up to 100",
+            "Origin, destination and internal share percentages must add up to 100",
             400
           );
         }
       } else {
         if (data?.type === "COMMISSION") {
-          data.origin_share_percentage = 60;
-          data.destination_share_percentage = 40;
+          data.internal_share_percentage = 30;
+          data.origin_share_percentage = 40;
+          data.destination_share_percentage = 30;
         } else if (data?.type === "TAX") {
+          data.internal_share_percentage = 100;
           data.origin_share_percentage = 0;
-          data.destination_share_percentage = 100;
+          data.destination_share_percentage = 0;
         } else if (data?.type === "INTERNAL_FEE") {
-          data.origin_share_percentage = 100;
+          data.internal_share_percentage = 100;
+          data.origin_share_percentage = 0;
           data.destination_share_percentage = 0;
         } else {
+          data.internal_share_percentage = 0;
           data.origin_share_percentage = 0;
           data.destination_share_percentage = 0;
         }
@@ -367,6 +377,179 @@ export class ChargeService {
         taxCharges: tax,
         feeCharges: fee,
         commissionCharges: commission,
+      },
+    };
+  }
+
+  async createStandardCharge(
+    data: CreateChargeRequest,
+    userId: string
+  ): Promise<ChargeResponse> {
+    return await prisma.$transaction(async (tx) => {
+      if (
+        data?.origin_share_percentage &&
+        data?.destination_share_percentage &&
+        data?.internal_share_percentage
+      ) {
+        if (
+          data?.origin_share_percentage +
+            data?.destination_share_percentage +
+            data?.internal_share_percentage !==
+          100
+        ) {
+          throw new AppError(
+            "Origin, destination and internal share percentages must add up to 100",
+            400
+          );
+        }
+      } else {
+        if (data?.type === "COMMISSION") {
+          data.internal_share_percentage = 30;
+          data.origin_share_percentage = 40;
+          data.destination_share_percentage = 30;
+        } else if (data?.type === "TAX") {
+          data.internal_share_percentage = 100;
+          data.origin_share_percentage = 0;
+          data.destination_share_percentage = 0;
+        } else if (data?.type === "INTERNAL_FEE") {
+          data.internal_share_percentage = 100;
+          data.origin_share_percentage = 0;
+          data.destination_share_percentage = 0;
+        } else {
+          data.internal_share_percentage = 0;
+          data.origin_share_percentage = 0;
+          data.destination_share_percentage = 0;
+        }
+      }
+
+      const charge = await tx.charge.create({
+        data: {
+          ...data,
+          created_by: userId,
+          status: "ACTIVE",
+        },
+        include: {
+          currency: {
+            select: {
+              id: true,
+              currency_name: true,
+              currency_code: true,
+              currency_symbol: true,
+            },
+          },
+          created_by_user: {
+            select: {
+              id: true,
+              first_name: true,
+              last_name: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      return {
+        success: true,
+        message: "Standard charge created successfully",
+        data: charge as ICharge,
+      };
+    });
+  }
+
+  async getStandardCharges(
+    filters: ChargeFilters
+  ): Promise<ChargeListResponse> {
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      type,
+      status,
+      application_method,
+      direction,
+      currency_id,
+      created_by,
+    } = filters;
+
+    const skip = (page - 1) * limit;
+
+    const where: any = {
+      origin_organisation_id: null,
+      destination_organisation_id: null,
+    };
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
+    if (type) {
+      where.type = type;
+    }
+
+    if (status) {
+      where.status = status;
+    }
+
+    if (application_method) {
+      where.application_method = application_method;
+    }
+
+    if (direction) {
+      where.direction = direction;
+    }
+
+    if (currency_id) {
+      where.currency_id = currency_id;
+    }
+
+    if (created_by) {
+      where.created_by = created_by;
+    }
+
+    const [charges, total] = await Promise.all([
+      prisma.charge.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { created_at: "desc" },
+        include: {
+          currency: {
+            select: {
+              id: true,
+              currency_name: true,
+              currency_code: true,
+              currency_symbol: true,
+            },
+          },
+          created_by_user: {
+            select: {
+              id: true,
+              first_name: true,
+              last_name: true,
+              email: true,
+            },
+          },
+        },
+      }),
+      prisma.charge.count({ where }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      success: true,
+      message: "Standard charges retrieved successfully",
+      data: {
+        charges: charges as ICharge[],
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages,
+        },
       },
     };
   }

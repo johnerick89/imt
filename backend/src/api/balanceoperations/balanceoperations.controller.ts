@@ -2,6 +2,7 @@ import { Response } from "express";
 import { BalanceOperationService } from "./balanceoperations.services";
 import {
   orgBalanceOperationSchema,
+  orgFloatBalanceSchema,
   tillBalanceOperationSchema,
   vaultBalanceOperationSchema,
   orgBalanceFiltersSchema,
@@ -231,6 +232,37 @@ export class BalanceOperationController {
         filters
       );
       res.json(result);
+    }
+  );
+
+  // Create agency float balance
+  createOrgFloatBalance = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
+      const validation = orgFloatBalanceSchema.safeParse(req.body);
+
+      if (!validation.success) {
+        console.log("body", req.body);
+        console.log("validation error", validation.error);
+        throw new AppError("Validation error", 400);
+      }
+
+      const userId = req.user?.id;
+      const baseOrgId = req.user?.organisation_id;
+
+      if (!userId) {
+        throw new AppError("User not authenticated", 401);
+      }
+
+      if (!baseOrgId) {
+        throw new AppError("User organisation not found", 400);
+      }
+
+      const result = await balanceOperationService.createOrgFloatBalance(
+        baseOrgId,
+        validation.data,
+        userId
+      );
+      res.status(201).json(result);
     }
   );
 }

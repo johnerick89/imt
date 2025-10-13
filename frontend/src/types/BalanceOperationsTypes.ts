@@ -168,3 +168,19 @@ export interface OpeningBalanceRequest {
   currency_id: string;
   description?: string;
 }
+
+// Agency Float Balance Types
+export interface AgencyFloatRequest {
+  amount: number;
+  dest_org_id: string; // Agency organisation ID
+  currency_id: string; // Agency base currency
+  bank_account_id?: string; // Optional bank account ID to deposit the float
+  description?: string;
+}
+
+export interface OrgBalanceResponse {
+  success: boolean;
+  message: string;
+  data: OrgBalance;
+  error?: string;
+}

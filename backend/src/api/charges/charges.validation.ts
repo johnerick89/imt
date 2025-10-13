@@ -31,7 +31,8 @@ export const createChargeSchema = z.object({
     .optional(),
   destination_organisation_id: z
     .string()
-    .uuid("Destination organisation ID must be a valid UUID")
+    .transform((val) => (val === "" ? undefined : val))
+    .pipe(z.string().uuid("Destination organisation ID must be a valid UUID"))
     .optional(),
   is_reversible: z
     .union([z.boolean(), z.string()])
@@ -52,6 +53,14 @@ export const createChargeSchema = z.object({
     return val;
   }, z.number().nonnegative().optional()),
   destination_share_percentage: z.preprocess((val) => {
+    if (typeof val === "string") {
+      if (val === "") return undefined;
+      const parsed = parseFloat(val);
+      return isNaN(parsed) ? undefined : parsed;
+    }
+    return val;
+  }, z.number().nonnegative().optional()),
+  internal_share_percentage: z.preprocess((val) => {
     if (typeof val === "string") {
       if (val === "") return undefined;
       const parsed = parseFloat(val);
@@ -125,6 +134,14 @@ export const updateChargeSchema = z.object({
     return val;
   }, z.number().nonnegative().optional()),
   destination_share_percentage: z.preprocess((val) => {
+    if (typeof val === "string") {
+      if (val === "") return undefined;
+      const parsed = parseFloat(val);
+      return isNaN(parsed) ? undefined : parsed;
+    }
+    return val;
+  }, z.number().nonnegative().optional()),
+  internal_share_percentage: z.preprocess((val) => {
     if (typeof val === "string") {
       if (val === "") return undefined;
       const parsed = parseFloat(val);

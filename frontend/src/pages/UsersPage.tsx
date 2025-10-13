@@ -7,6 +7,9 @@ import {
   useToggleUserStatus,
   useDeleteUser,
   useSession,
+  useOrganisation,
+  useAllOrganisations,
+  useRoles,
 } from "../hooks";
 import { DataTable } from "../components/ui/DataTable";
 import { StatusBadge } from "../components/ui/StatusBadge";
@@ -24,11 +27,20 @@ const UsersPage: React.FC = () => {
   const organisationId = currentUser?.organisation_id;
   const navigate = useNavigate();
   const { canCreateUsers } = usePermissions();
+  const { data: myOrganisationData } = useOrganisation(organisationId || "");
+  const myOrganisation = myOrganisationData?.data;
+  const customerOrganisation = myOrganisation?.type === "CUSTOMER";
+  const { data: rolesData } = useRoles();
+  const roles = rolesData?.data?.roles;
+  const { data: allOrganisationsData } = useAllOrganisations();
+  const allOrganisations = !customerOrganisation
+    ? [myOrganisation]
+    : allOrganisationsData?.data?.organisations;
   const [filters, setFilters] = useState<UserFilters>({
     search: "",
-    role: "",
+    role_id: "",
     status: undefined,
-    ...(organisationId && { organisation_id: organisationId }),
+    ...(!customerOrganisation && { organisation_id: organisationId }),
     page: 1,
     limit: 10,
   });
@@ -354,20 +366,21 @@ const UsersPage: React.FC = () => {
               Role
             </label>
             <Select
-              value={filters.role || ""}
+              value={filters.role_id || ""}
               onChange={(e) =>
                 setFilters((prev) => ({
                   ...prev,
-                  role: e.target.value || undefined,
+                  role_id: e.target.value || undefined,
                   page: 1,
                 }))
               }
             >
               <option value="">All Roles</option>
-              <option value="ADMIN">Admin</option>
-              <option value="USER">User</option>
-              <option value="MANAGER">Manager</option>
-              <option value="SYSTEM">System</option>
+              {roles?.map((role) => (
+                <option key={role?.id} value={role?.id}>
+                  {role?.name}
+                </option>
+              ))}
             </Select>
           </div>
           <div>
@@ -405,8 +418,15 @@ const UsersPage: React.FC = () => {
                 }))
               }
             >
-              <option value="">All Organisations</option>
+              {customerOrganisation ? (
+                <option value="">All Organisations</option>
+              ) : null}
               {/* TODO: Add organisation options */}
+              {allOrganisations?.map((organisation) => (
+                <option key={organisation?.id} value={organisation?.id}>
+                  {organisation?.name}
+                </option>
+              ))}
             </Select>
           </div>
         </div>

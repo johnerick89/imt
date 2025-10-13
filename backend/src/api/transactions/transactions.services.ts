@@ -314,7 +314,7 @@ export class TransactionService {
         include: {
           corridor: {
             include: {
-              base_country: true,
+              origin_country: true,
               destination_country: true,
               base_currency: true,
             },
@@ -435,7 +435,7 @@ export class TransactionService {
         include: {
           corridor: {
             include: {
-              base_country: true,
+              origin_country: true,
               destination_country: true,
               base_currency: true,
             },
@@ -710,7 +710,7 @@ export class TransactionService {
         include: {
           corridor: {
             include: {
-              base_country: true,
+              origin_country: true,
               destination_country: true,
               base_currency: true,
             },
@@ -857,7 +857,7 @@ export class TransactionService {
         include: {
           corridor: {
             include: {
-              base_country: true,
+              origin_country: true,
               destination_country: true,
               base_currency: true,
             },
@@ -952,7 +952,7 @@ export class TransactionService {
         include: {
           corridor: {
             include: {
-              base_country: true,
+              origin_country: true,
               destination_country: true,
               base_currency: true,
             },
@@ -1140,7 +1140,7 @@ export class TransactionService {
         include: {
           corridor: {
             include: {
-              base_country: true,
+              origin_country: true,
               destination_country: true,
               base_currency: true,
             },
@@ -1262,7 +1262,7 @@ export class TransactionService {
         include: {
           corridor: {
             include: {
-              base_country: true,
+              origin_country: true,
               destination_country: true,
               base_currency: true,
             },
@@ -1360,7 +1360,7 @@ export class TransactionService {
       include: {
         corridor: {
           include: {
-            base_country: true,
+            origin_country: true,
             destination_country: true,
             base_currency: true,
           },
@@ -2239,7 +2239,7 @@ export class TransactionService {
         include: {
           corridor: {
             include: {
-              base_country: true,
+              origin_country: true,
               destination_country: true,
               base_currency: true,
             },
@@ -2343,7 +2343,7 @@ export class TransactionService {
       include: {
         corridor: {
           include: {
-            base_country: true,
+            origin_country: true,
             destination_country: true,
             base_currency: true,
           },
@@ -2619,7 +2619,7 @@ export class TransactionService {
         include: {
           corridor: {
             include: {
-              base_country: true,
+              origin_country: true,
               destination_country: true,
               base_currency: true,
             },
@@ -2774,7 +2774,7 @@ export class TransactionService {
         include: {
           corridor: {
             include: {
-              base_country: true,
+              origin_country: true,
               destination_country: true,
               base_currency: true,
             },

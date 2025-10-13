@@ -58,8 +58,10 @@ const CorridorForm: React.FC<CorridorFormProps> = ({
       ? {
           name: initialData.name,
           description: initialData.description,
-          base_country_id:
-            initialData.base_country?.id || userOrganisation?.country_id || "",
+          origin_country_id:
+            initialData.origin_country?.id ||
+            userOrganisation?.country_id ||
+            "",
           destination_country_id: initialData.destination_country?.id || "",
           base_currency_id:
             initialData.base_currency?.id ||
@@ -72,7 +74,7 @@ const CorridorForm: React.FC<CorridorFormProps> = ({
       : {
           name: "",
           description: "",
-          base_country_id: userOrganisation?.country_id || "",
+          origin_country_id: userOrganisation?.country_id || "",
           destination_country_id: "",
           base_currency_id: "",
           organisation_id: "",
@@ -89,9 +91,10 @@ const CorridorForm: React.FC<CorridorFormProps> = ({
 
   const handleFormSubmit = (data: CreateCorridorRequest) => {
     console.log("data", data);
-    const { base_country_id, ...rest } = data;
+    const { origin_country_id, ...rest } = data;
     onSubmit({
-      base_country_id: base_country_id || userOrganisation?.country_id || "",
+      origin_country_id:
+        origin_country_id || userOrganisation?.country_id || "",
       ...rest,
     });
   };
@@ -145,11 +148,11 @@ const CorridorForm: React.FC<CorridorFormProps> = ({
         {/* <FormItem
           label="Base Country"
           required
-          invalid={!!errors.base_country_id}
-          errorMessage={errors.base_country_id?.message}
+          invalid={!!errors.origin_country_id}
+          errorMessage={errors.origin_country_id?.message}
         >
           <Controller
-            name="base_country_id"
+            name="origin_country_id"
             control={control}
             rules={{ required: "Base country is required" }}
             render={({ field }) => (
@@ -165,7 +168,7 @@ const CorridorForm: React.FC<CorridorFormProps> = ({
                 placeholder="Select base country"
                 searchPlaceholder="Search countries..."
                 disabled={isLoading}
-                invalid={!!errors.base_country_id}
+                invalid={!!errors.origin_country_id}
               />
             )}
           />

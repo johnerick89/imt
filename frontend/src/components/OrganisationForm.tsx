@@ -64,6 +64,9 @@ const OrganisationForm: React.FC<OrganisationFormProps> = ({
   const { data: countriesData, isLoading: countriesLoading } =
     useAllCountries();
   const { data: rolesData, isLoading: rolesLoading } = useRoles();
+  const roles = rolesData?.data?.roles.filter(
+    (role) => role.name !== "System Engineer" && role.name !== "Super Admin"
+  );
   const createOrganisationMutation = useCreateOrganisation();
   const updateOrganisationMutation = useUpdateOrganisation();
   const { data: userOrganisationData, isLoading: userOrganisationLoading } =
@@ -83,7 +86,7 @@ const OrganisationForm: React.FC<OrganisationFormProps> = ({
     defaultValues: {
       name: "",
       description: "",
-      type: "PARTNER" as OrganisationType,
+      type: "AGENCY" as OrganisationType,
       integration_mode: "INTERNAL" as IntegrationMode,
       contact_person: "",
       contact_email: "",
@@ -231,25 +234,27 @@ const OrganisationForm: React.FC<OrganisationFormProps> = ({
         </div>
 
         {/* Type */}
-        <FormItem
-          label="Organisation Type"
-          invalid={Boolean(errors.type)}
-          errorMessage={errors.type?.message}
-          required
-        >
-          <Controller
-            name="type"
-            control={control}
-            rules={{ required: "Organisation type is required" }}
-            render={({ field }) => (
-              <Select invalid={Boolean(errors.type)} {...field}>
-                <option value="">Select organisation type</option>
-                <option value="PARTNER">Partner</option>
-                <option value="AGENCY">Agency</option>
-              </Select>
-            )}
-          />
-        </FormItem>
+        {!isEditMode && (
+          <FormItem
+            label="Organisation Type"
+            invalid={Boolean(errors.type)}
+            errorMessage={errors.type?.message}
+            required
+          >
+            <Controller
+              name="type"
+              control={control}
+              rules={{ required: "Organisation type is required" }}
+              render={({ field }) => (
+                <Select invalid={Boolean(errors.type)} {...field}>
+                  <option value="">Select organisation type</option>
+                  <option value="PARTNER">Partner</option>
+                  <option value="AGENCY">Agency</option>
+                </Select>
+              )}
+            />
+          </FormItem>
+        )}
 
         {/* Integration Mode */}
         <FormItem
@@ -303,6 +308,7 @@ const OrganisationForm: React.FC<OrganisationFormProps> = ({
                 placeholder="email@example.com"
                 invalid={Boolean(errors.contact_email)}
                 {...field}
+                disabled={isEditMode}
               />
             )}
           />
@@ -354,7 +360,7 @@ const OrganisationForm: React.FC<OrganisationFormProps> = ({
                 <SearchableSelect
                   placeholder="Select a role for the contact person"
                   options={
-                    rolesData?.data?.roles?.map((role) => ({
+                    roles?.map((role) => ({
                       value: role.id,
                       label: role.name,
                     })) || []
