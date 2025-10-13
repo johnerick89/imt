@@ -118,6 +118,8 @@ model Currency {
   balance_histories     BalanceHistory[]
   bank_accounts         BankAccount[]
   charges_payments      ChargesPayment[]
+  origin_corridors      Corridor[]       @relation("OriginCurrency")
+  destination_corridors Corridor[]       @relation("DestinationCurrency")
 
   @@index([currency_name])
   @@index([currency_code])
@@ -136,7 +138,7 @@ model Country {
   organisations              Organisation[]
   created_by                 String?            @db.Uuid
   created_by_user            User?              @relation(fields: [created_by], references: [id])
-  base_corridors             Corridor[]         @relation("BaseCountry")
+  origin_corridors           Corridor[]         @relation("OriginCountry")
   destination_corridors      Corridor[]         @relation("DestinationCountry")
   customers_nationality      Customer[]         @relation("CustomerNationality")
   customers_residence        Customer[]         @relation("CustomerResidenceCountry")
@@ -150,6 +152,7 @@ model Country {
   transaction_parties        TransactionParty[]
   origin_transactions        Transaction[]      @relation("OriginCountry")
   destination_transactions   Transaction[]      @relation("DestinationCountry")
+  base_corridors             Corridor[]         @relation("BaseCountry")
 
   @@index([name])
   @@index([code])
@@ -228,6 +231,9 @@ model Organisation {
   amount_to_send_base_currency        Decimal?            @db.Decimal(18, 9)
   amount_to_send_destination_currency Decimal?            @db.Decimal(18, 9)
   counter_party_organisation          GlAccount[]         @relation("CounterPartyOrganisation")
+  corridors                           Corridor[]          @relation("Organisation")
+  agency_float_accounts               GlAccount[]         @relation("FloatOrganisation")
+  balance_histories                   BalanceHistory[]
 
   @@index([id])
   @@index([description])
@@ -409,28 +415,36 @@ enum CorridorStatus {
 }
 
 model Corridor {
-  id                     String         @id @default(uuid()) @db.Uuid
-  name                   String
-  description            String
-  base_country_id        String         @db.Uuid
-  base_country           Country        @relation("BaseCountry", fields: [base_country_id], references: [id])
-  destination_country_id String         @db.Uuid
-  destination_country    Country        @relation("DestinationCountry", fields: [destination_country_id], references: [id])
-  base_currency_id       String         @db.Uuid
-  base_currency          Currency       @relation("BaseCurrency", fields: [base_currency_id], references: [id])
-  organisation_id        String         @db.Uuid
-  organisation           Organisation   @relation("DestinationOrganisation", fields: [organisation_id], references: [id])
-  created_at             DateTime       @default(now())
-  created_by             String?        @db.Uuid
-  created_by_user        User?          @relation(fields: [created_by], references: [id])
-  updated_at             DateTime       @updatedAt
-  status                 CorridorStatus @default(ACTIVE)
-  transactions           Transaction[]
-  origin_organisation_id String?        @db.Uuid
-  origin_organisation    Organisation?  @relation("OriginOrganisation", fields: [origin_organisation_id], references: [id])
+  id                          String         @id @default(uuid()) @db.Uuid
+  name                        String
+  description                 String
+  base_country_id             String?        @db.Uuid
+  base_country                Country?       @relation("BaseCountry", fields: [base_country_id], references: [id])
+  origin_country_id           String?        @db.Uuid
+  origin_country              Country?       @relation("OriginCountry", fields: [origin_country_id], references: [id])
+  destination_country_id      String?        @db.Uuid
+  destination_country         Country?       @relation("DestinationCountry", fields: [destination_country_id], references: [id])
+  origin_currency_id          String?        @db.Uuid
+  origin_currency             Currency?      @relation("OriginCurrency", fields: [origin_currency_id], references: [id])
+  destination_currency_id     String?        @db.Uuid
+  destination_currency        Currency?      @relation("DestinationCurrency", fields: [destination_currency_id], references: [id])
+  base_currency_id            String?        @db.Uuid
+  base_currency               Currency?      @relation("BaseCurrency", fields: [base_currency_id], references: [id])
+  organisation_id             String?        @db.Uuid
+  organisation                Organisation?  @relation("Organisation", fields: [organisation_id], references: [id])
+  destination_organisation_id String?        @db.Uuid
+  destination_organisation    Organisation?  @relation("DestinationOrganisation", fields: [destination_organisation_id], references: [id])
+  created_at                  DateTime       @default(now())
+  created_by                  String?        @db.Uuid
+  created_by_user             User?          @relation(fields: [created_by], references: [id])
+  updated_at                  DateTime       @updatedAt
+  status                      CorridorStatus @default(ACTIVE)
+  transactions                Transaction[]
+  origin_organisation_id      String?        @db.Uuid
+  origin_organisation         Organisation?  @relation("OriginOrganisation", fields: [origin_organisation_id], references: [id])
 
   @@index([name])
-  @@index([base_country_id])
+  @@index([origin_country_id])
   @@index([destination_country_id])
   @@index([base_currency_id])
   @@index([status])
@@ -477,6 +491,7 @@ model Charge {
   destination_organisation     Organisation?       @relation("DestinationOrganisation", fields: [destination_organisation_id], references: [id])
   is_reversible                Boolean             @default(false)
   direction                    ApplicableDirection @default(OUTBOUND)
+  internal_share_percentage    Float?
   origin_share_percentage      Float?
   destination_share_percentage Float?
   created_at                   DateTime            @default(now())
@@ -1031,6 +1046,10 @@ model TransactionCharge {
   internal_percentage         Decimal?                @db.Decimal(18, 9)
   external_amount             Decimal?                @db.Decimal(22, 9)
   external_percentage         Decimal?                @db.Decimal(18, 9)
+  origin_amount               Decimal?                @db.Decimal(22, 9)
+  origin_percentage           Decimal?                @db.Decimal(18, 9)
+  destination_amount          Decimal?                @db.Decimal(22, 9)
+  destination_percentage      Decimal?                @db.Decimal(18, 9)
   rate                        Decimal?                @db.Decimal(18, 9) // Percentage rate if applicable
   is_reversible               Boolean                 @default(true) // Taxes are not reversible
   description                 String?                 @db.VarChar(256)
@@ -1115,6 +1134,8 @@ model GlAccount {
   gl_entries                    GlEntry[]
   counter_party_organisation_id String?       @db.Uuid
   counter_party_organisation    Organisation? @relation("CounterPartyOrganisation", fields: [counter_party_organisation_id], references: [id])
+  float_org_id                  String?       @db.Uuid
+  float_org                     Organisation? @relation("FloatOrganisation", fields: [float_org_id], references: [id])
 
   @@index([created_at])
   @@index([updated_at])
@@ -1135,6 +1156,7 @@ enum GLTransactionType {
   INBOUND_TRANSACTION
   INBOUND_TRANSACTION_REVERSAL
   ORG_BALANCE_TOPUP
+  AGENCY_FLOAT_TOPUP
   CHARGES_PAYMENT
   CHARGES_PAYMENT_REVERSAL
 }
@@ -1220,10 +1242,13 @@ model OrgBalance {
   created_by        String?          @db.Uuid
   created_by_user   User?            @relation(fields: [created_by], references: [id])
   gl_accounts       GlAccount[]
+  limit             Decimal?         @db.Decimal(22, 9)
 
+  @@unique([base_org_id, dest_org_id, currency_id])
   @@index([base_org_id])
   @@index([dest_org_id])
   @@index([currency_id])
+  @@index([dest_org_id, base_org_id])
   @@map("org_balances")
 }
 
@@ -1232,34 +1257,51 @@ enum BalanceHistoryType {
   TILL
   VAULT
   BANK_ACCOUNT
+  AGENCY_FLOAT
+}
+
+enum BalanceHistoryAction {
+  INITIAL
+  DEPOSIT
+  RECEIPT
+  PAYOUT
+  LOCK
+  UNLOCK
+  SETTLEMENT
+  TOPUP
+  WITHDRAWAL
+  REVERSAL
 }
 
 model BalanceHistory {
-  id              String             @id @default(uuid()) @db.Uuid
+  id              String                @id @default(uuid()) @db.Uuid
+  action_type     BalanceHistoryAction? // Optional, for FLOAT-specific actions
   entity_type     BalanceHistoryType
-  entity_id       String             @db.Uuid
-  currency_id     String             @db.Uuid
-  currency        Currency           @relation(fields: [currency_id], references: [id])
-  old_balance     Decimal?           @db.Decimal(22, 9)
-  new_balance     Decimal            @db.Decimal(22, 9)
-  change_amount   Decimal            @db.Decimal(22, 9)
-  transaction_id  String?            @db.Uuid
-  transaction     Transaction?       @relation(fields: [transaction_id], references: [id])
-  created_at      DateTime           @default(now())
-  created_by      String?            @db.Uuid
-  created_by_user User?              @relation(fields: [created_by], references: [id])
-  gl_entry_id     String?            @db.Uuid
-  gl_entry        GlEntry?           @relation(fields: [gl_entry_id], references: [id])
-  org_balance     OrgBalance?        @relation(fields: [org_balance_id], references: [id])
-  org_balance_id  String?            @db.Uuid
-  till            Till?              @relation(fields: [till_id], references: [id])
-  till_id         String?            @db.Uuid
-  vault           Vault?             @relation(fields: [vault_id], references: [id])
-  vault_id        String?            @db.Uuid
-  bank_account    BankAccount?       @relation(fields: [bank_account_id], references: [id])
-  bank_account_id String?            @db.Uuid
+  entity_id       String                @db.Uuid
+  currency_id     String                @db.Uuid
+  currency        Currency              @relation(fields: [currency_id], references: [id])
+  old_balance     Decimal?              @db.Decimal(22, 9)
+  new_balance     Decimal               @db.Decimal(22, 9)
+  change_amount   Decimal               @db.Decimal(22, 9)
+  transaction_id  String?               @db.Uuid
+  transaction     Transaction?          @relation(fields: [transaction_id], references: [id])
+  created_at      DateTime              @default(now())
+  created_by      String?               @db.Uuid
+  created_by_user User?                 @relation(fields: [created_by], references: [id])
+  gl_entry_id     String?               @db.Uuid
+  gl_entry        GlEntry?              @relation(fields: [gl_entry_id], references: [id])
+  org_balance     OrgBalance?           @relation(fields: [org_balance_id], references: [id])
+  org_balance_id  String?               @db.Uuid
+  till            Till?                 @relation(fields: [till_id], references: [id])
+  till_id         String?               @db.Uuid
+  vault           Vault?                @relation(fields: [vault_id], references: [id])
+  vault_id        String?               @db.Uuid
+  bank_account    BankAccount?          @relation(fields: [bank_account_id], references: [id])
+  bank_account_id String?               @db.Uuid
+  float_org       Organisation?         @relation(fields: [float_org_id], references: [id])
+  float_org_id    String?               @db.Uuid
   gl_transactions GLTransaction[]
-  description     String?            @db.VarChar(256)
+  description     String?               @db.VarChar(256)
 
   @@index([entity_type, entity_id])
   @@index([currency_id])
@@ -1369,15 +1411,17 @@ model ChargesPayment {
 }
 
 model ChargesPaymentItem {
-  id                      String            @id @default(uuid()) @db.Uuid
-  charges_payment_id      String            @db.Uuid
-  charges_payment         ChargesPayment    @relation(fields: [charges_payment_id], references: [id], onDelete: Cascade)
-  transaction_charges_id  String            @db.Uuid
-  transaction_charges     TransactionCharge @relation(fields: [transaction_charges_id], references: [id], onDelete: Cascade)
-  internal_amount_settled Decimal           @db.Decimal(22, 9) // Portion of internal_amount marked paid in this batch
-  external_amount_settled Decimal           @db.Decimal(22, 9) // Portion of external_amount marked paid
-  created_at              DateTime          @default(now())
-  amount_settled          Decimal           @default(0) @db.Decimal(22, 9) // Portion of amount marked paid in this batch
+  id                         String            @id @default(uuid()) @db.Uuid
+  charges_payment_id         String            @db.Uuid
+  charges_payment            ChargesPayment    @relation(fields: [charges_payment_id], references: [id], onDelete: Cascade)
+  transaction_charges_id     String            @db.Uuid
+  transaction_charges        TransactionCharge @relation(fields: [transaction_charges_id], references: [id], onDelete: Cascade)
+  internal_amount_settled    Decimal           @default(0) @db.Decimal(22, 9) // Portion of internal_amount marked paid in this batch
+  external_amount_settled    Decimal           @default(0) @db.Decimal(22, 9) // Portion of external_amount marked paid
+  origin_amount_settled      Decimal?          @default(0) @db.Decimal(22, 9) // Portion of origin_amount marked paid
+  destination_amount_settled Decimal?          @default(0) @db.Decimal(22, 9) // Portion of destination_amount marked paid
+  created_at                 DateTime          @default(now())
+  amount_settled             Decimal           @default(0) @db.Decimal(22, 9) // Portion of amount marked paid in this batch
 
   @@unique([charges_payment_id, transaction_charges_id]) // One item per transaction_charge per payment
   @@index([charges_payment_id])

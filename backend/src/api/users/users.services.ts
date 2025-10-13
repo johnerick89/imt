@@ -83,8 +83,8 @@ export class UsersService {
       ];
     }
 
-    if (filters.role) {
-      where.role = filters.role;
+    if (filters.role_id) {
+      where.role_id = filters.role_id;
     }
 
     if (filters.status) {

@@ -143,6 +143,8 @@ export interface GenerateAccountsRequest {
   generate_for_org_balances?: boolean;
   generate_for_charges_payments?: boolean;
   generate_for_inbound_beneficiary_payments?: boolean;
+  generate_for_agency_floats?: boolean;
+  generate_for_float_transit_payables?: boolean;
 }
 
 export interface GenerateAccountsResponse {

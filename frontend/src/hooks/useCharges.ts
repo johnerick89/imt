@@ -14,6 +14,9 @@ export const chargeKeys = {
   details: () => [...chargeKeys.all, "detail"] as const,
   detail: (id: string) => [...chargeKeys.details(), id] as const,
   stats: () => [...chargeKeys.all, "stats"] as const,
+  standardLists: () => [...chargeKeys.all, "standard", "list"] as const,
+  standardList: (filters: ChargeFilters) =>
+    [...chargeKeys.standardLists(), filters] as const,
 };
 
 export const useCharges = (filters: ChargeFilters = {}) => {
@@ -110,6 +113,42 @@ export const useDeleteCharge = () => {
       const errorMessage =
         error instanceof Error ? error.message : "Failed to delete charge";
       showError("Charge Deletion Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
+    },
+  });
+};
+
+export const useStandardCharges = (filters: ChargeFilters = {}) => {
+  return useQuery({
+    queryKey: chargeKeys.standardList(filters),
+    queryFn: () => ChargesService.getStandardCharges(filters),
+  });
+};
+
+export const useCreateStandardCharge = () => {
+  const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
+  return useMutation({
+    mutationFn: (data: CreateChargeRequest) =>
+      ChargesService.createStandardCharge(data),
+    onSuccess: (response) => {
+      showSuccess(
+        "Standard Charge Created Successfully",
+        response.message || "The standard charge has been created successfully."
+      );
+      queryClient.invalidateQueries({ queryKey: chargeKeys.standardLists() });
+      queryClient.invalidateQueries({ queryKey: chargeKeys.stats() });
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to create standard charge";
+      showError("Standard Charge Creation Failed", errorMessage);
       return {
         success: false,
         message: errorMessage,

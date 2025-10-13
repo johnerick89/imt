@@ -16,6 +16,16 @@ export const corridorKeys = {
   details: () => [...corridorKeys.all, "detail"] as const,
   detail: (id: string) => [...corridorKeys.details(), id] as const,
   stats: () => [...corridorKeys.all, "stats"] as const,
+  forTransaction: (
+    origin_organisation_id: string,
+    destination_organisation_id: string
+  ) =>
+    [
+      ...corridorKeys.all,
+      "for-transaction",
+      origin_organisation_id,
+      destination_organisation_id,
+    ] as const,
 };
 
 export const useCorridors = (filters: CorridorFilters = {}) => {
@@ -39,6 +49,25 @@ export const useCorridorStats = (filters: CorridorStatsFilters) => {
   return useQuery({
     queryKey: corridorKeys.stats(),
     queryFn: () => CorridorsService.getCorridorStats(filters),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+export const useCorridorsForTransaction = (
+  origin_organisation_id: string,
+  destination_organisation_id: string
+) => {
+  return useQuery({
+    queryKey: corridorKeys.forTransaction(
+      origin_organisation_id,
+      destination_organisation_id
+    ),
+    queryFn: () =>
+      CorridorsService.getCorridorsForTransaction(
+        origin_organisation_id,
+        destination_organisation_id
+      ),
+    enabled: !!origin_organisation_id && !!destination_organisation_id,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };

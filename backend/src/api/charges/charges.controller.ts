@@ -72,4 +72,31 @@ export class ChargeController {
       res.status(200).json(result);
     }
   );
+
+  createStandardCharge = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
+      const userId = req.user?.id;
+      if (!userId) {
+        throw new AppError("User not authenticated", 401);
+      }
+      console.log("req.body", req.body);
+      const validatedData = createChargeSchema.parse(req.body);
+
+      const result = await this.chargeService.createStandardCharge(
+        validatedData,
+        userId
+      );
+      res.status(201).json(result);
+    }
+  );
+
+  getStandardCharges = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
+      const validatedFilters = chargeFiltersSchema.parse(req.query);
+      const result = await this.chargeService.getStandardCharges(
+        validatedFilters
+      );
+      res.status(200).json(result);
+    }
+  );
 }

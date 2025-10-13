@@ -7,16 +7,43 @@ export const createCorridorSchema = z.object({
     .min(1, "Name is required")
     .max(256, "Name must be less than 256 characters"),
   description: z.string().min(1, "Description is required"),
-  base_country_id: z.string().uuid("Base country ID must be a valid UUID"),
+  base_country_id: z
+    .string()
+    .uuid("Base country ID must be a valid UUID")
+    .optional(),
+  origin_country_id: z
+    .string()
+    .uuid("Origin country ID must be a valid UUID")
+    .optional(),
   destination_country_id: z
     .string()
-    .uuid("Destination country ID must be a valid UUID"),
-  base_currency_id: z.string().uuid("Base currency ID must be a valid UUID"),
-  organisation_id: z.string().uuid("Organisation ID must be a valid UUID"),
+    .uuid("Destination country ID must be a valid UUID")
+    .optional(),
+  origin_currency_id: z
+    .string()
+    .uuid("Origin currency ID must be a valid UUID")
+    .optional(),
+  destination_currency_id: z
+    .string()
+    .uuid("Destination currency ID must be a valid UUID")
+    .optional(),
+  base_currency_id: z
+    .string()
+    .uuid("Base currency ID must be a valid UUID")
+    .optional(),
+  organisation_id: z
+    .string()
+    .uuid("Organisation ID must be a valid UUID")
+    .optional(),
   status: z.enum(CorridorStatus).default("ACTIVE"),
   origin_organisation_id: z
     .string()
-    .uuid("Origin organisation ID must be a valid UUID"),
+    .uuid("Origin organisation ID must be a valid UUID")
+    .optional(),
+  destination_organisation_id: z
+    .string()
+    .uuid("Destination organisation ID must be a valid UUID")
+    .optional(),
 });
 
 export const updateCorridorSchema = z.object({
@@ -30,9 +57,21 @@ export const updateCorridorSchema = z.object({
     .string()
     .uuid("Base country ID must be a valid UUID")
     .optional(),
+  origin_country_id: z
+    .string()
+    .uuid("Origin country ID must be a valid UUID")
+    .optional(),
   destination_country_id: z
     .string()
     .uuid("Destination country ID must be a valid UUID")
+    .optional(),
+  origin_currency_id: z
+    .string()
+    .uuid("Origin currency ID must be a valid UUID")
+    .optional(),
+  destination_currency_id: z
+    .string()
+    .uuid("Destination currency ID must be a valid UUID")
     .optional(),
   base_currency_id: z
     .string()
@@ -46,6 +85,10 @@ export const updateCorridorSchema = z.object({
   origin_organisation_id: z
     .string()
     .uuid("Origin organisation ID must be a valid UUID")
+    .optional(),
+  destination_organisation_id: z
+    .string()
+    .uuid("Destination organisation ID must be a valid UUID")
     .optional(),
 });
 
@@ -62,17 +105,12 @@ export const corridorFiltersSchema = z.object({
     .default(10),
   search: z.string().optional(),
   status: z.enum(CorridorStatus).optional(),
-  base_country_id: z
+  country_id: z
     .string()
     .optional()
     .transform((val) => (val === "" ? null : val))
     .pipe(z.string().uuid().nullable().optional()),
-  destination_country_id: z
-    .string()
-    .optional()
-    .transform((val) => (val === "" ? null : val))
-    .pipe(z.string().uuid().nullable().optional()),
-  base_currency_id: z
+  currency_id: z
     .string()
     .optional()
     .transform((val) => (val === "" ? null : val))
@@ -87,17 +125,6 @@ export const corridorFiltersSchema = z.object({
     .optional()
     .transform((val) => (val === "" ? null : val))
     .pipe(z.string().uuid().nullable().optional()),
-  origin_organisation_id: z
-    .string()
-    .optional()
-    .transform((val) => (val === "" ? null : val))
-    .pipe(
-      z
-        .string()
-        .uuid("Origin organisation ID must be a valid UUID")
-        .nullable()
-        .optional()
-    ),
 });
 
 export const corridorStatsFiltersSchema = z.object({

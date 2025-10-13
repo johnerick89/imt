@@ -80,4 +80,23 @@ export class CorridorController {
       res.status(200).json(result);
     }
   );
+
+  getCorridorsForTransaction = asyncHandler(
+    async (req: Request, res: Response): Promise<void> => {
+      const { origin_organisation_id, destination_organisation_id } = req.query;
+
+      if (!origin_organisation_id || !destination_organisation_id) {
+        throw new AppError(
+          "Origin and destination organisation IDs are required",
+          400
+        );
+      }
+
+      const result = await this.corridorService.getCorridorsForTransaction({
+        origin_organisation_id: origin_organisation_id as string,
+        destination_organisation_id: destination_organisation_id as string,
+      });
+      res.status(200).json(result);
+    }
+  );
 }

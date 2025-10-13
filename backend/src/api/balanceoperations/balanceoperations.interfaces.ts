@@ -38,6 +38,23 @@ export interface OrgBalanceOperationRequest {
   description?: string;
 }
 
+export interface OrgFloatBalanceRequest {
+  amount: number;
+  dest_org_id: string; // Agency organisation ID
+  currency_id: string; // Agency base currency
+  source_id?: string; // Optional bank account ID
+  description?: string;
+  bank_account_id?: string;
+  limit?: number;
+}
+
+export interface OrgBalanceResponse {
+  success: boolean;
+  message: string;
+  data: OrgBalance;
+  error?: string;
+}
+
 export interface TillBalanceOperationRequest {
   amount: number;
   source_type: "VAULT";

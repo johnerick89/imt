@@ -1,5 +1,5 @@
 import React from "react";
-import { FiEdit, FiTrash2, FiCheckCircle, FiXCircle } from "react-icons/fi";
+import { FiEdit, FiCheckCircle, FiXCircle } from "react-icons/fi";
 import { usePermissions } from "../hooks/usePermissions";
 interface CorridorActionCellProps {
   onEdit: () => void;
@@ -16,6 +16,7 @@ const CorridorActionCell: React.FC<CorridorActionCellProps> = ({
 }) => {
   const isActive = status === "ACTIVE";
   const { canEditCorridors, canDeleteCorridors } = usePermissions();
+  console.log("canDeleteCorridors", canDeleteCorridors(), "onDelete", onDelete);
   return (
     <div className="flex items-center space-x-2">
       {canEditCorridors() && (
@@ -46,7 +47,7 @@ const CorridorActionCell: React.FC<CorridorActionCellProps> = ({
         </button>
       )}
 
-      {canDeleteCorridors() && (
+      {/* {canDeleteCorridors() && (
         <button
           onClick={onDelete}
           className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
@@ -54,7 +55,7 @@ const CorridorActionCell: React.FC<CorridorActionCellProps> = ({
         >
           <FiTrash2 className="w-4 h-4" />
         </button>
-      )}
+      )} */}
     </div>
   );
 };

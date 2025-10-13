@@ -65,6 +65,35 @@ export class ChargesService {
     const response = await apiClient.get("/api/v1/charges/stats");
     return response.data;
   }
+
+  async createStandardCharge(
+    data: CreateChargeRequest
+  ): Promise<ChargeResponse> {
+    const response = await apiClient.post("/api/v1/charges/standard", data);
+    return response.data;
+  }
+
+  async getStandardCharges(
+    filters: ChargeFilters
+  ): Promise<ChargeListResponse> {
+    const params = new URLSearchParams();
+
+    if (filters.page) params.append("page", filters.page.toString());
+    if (filters.limit) params.append("limit", filters.limit.toString());
+    if (filters.search) params.append("search", filters.search);
+    if (filters.type) params.append("type", filters.type);
+    if (filters.status) params.append("status", filters.status);
+    if (filters.application_method)
+      params.append("application_method", filters.application_method);
+    if (filters.direction) params.append("direction", filters.direction);
+    if (filters.currency_id) params.append("currency_id", filters.currency_id);
+    if (filters.created_by) params.append("created_by", filters.created_by);
+
+    const response = await apiClient.get(
+      `/api/v1/charges/standard?${params.toString()}`
+    );
+    return response.data;
+  }
 }
 
 export default new ChargesService();

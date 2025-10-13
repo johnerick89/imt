@@ -8,6 +8,7 @@ import type {
   TillTopupRequest,
   VaultTopupRequest,
   OpeningBalanceRequest,
+  AgencyFloatRequest,
 } from "../types/BalanceOperationsTypes";
 
 export const useOrgBalances = (filters: OrgBalanceFilters) => {
@@ -259,6 +260,65 @@ export const useSetOpeningBalance = () => {
           ? error.message
           : "Failed to set opening balance";
       showError("Opening Balance Set Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
+    },
+  });
+};
+
+// Agency Float Balance Hook
+export const useCreateAgencyFloat = () => {
+  const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
+
+  return useMutation({
+    mutationFn: (data: AgencyFloatRequest) =>
+      BalanceOperationsService.createAgencyFloat(data),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ["orgBalances"] });
+      queryClient.invalidateQueries({ queryKey: ["orgBalanceStats"] });
+      queryClient.invalidateQueries({ queryKey: ["bankAccounts"] });
+      showSuccess(
+        "Agency Float Added Successfully",
+        response.message || "The agency float has been added successfully."
+      );
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to add agency float";
+      showError("Agency Float Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
+    },
+  });
+};
+
+// Update Float Limit Hook
+export const useUpdateFloatLimit = () => {
+  const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
+
+  return useMutation({
+    mutationFn: ({ balanceId, limit }: { balanceId: string; limit: number }) =>
+      BalanceOperationsService.updateFloatLimit(balanceId, limit),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ["orgBalances"] });
+      queryClient.invalidateQueries({ queryKey: ["orgBalanceStats"] });
+      showSuccess(
+        "Float Limit Updated Successfully",
+        response.message || "The float limit has been updated successfully."
+      );
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to update float limit";
+      showError("Update Failed", errorMessage);
       return {
         success: false,
         message: errorMessage,

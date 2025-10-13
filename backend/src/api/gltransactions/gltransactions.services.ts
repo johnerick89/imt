@@ -1,4 +1,5 @@
 import { prisma } from "../../lib/prisma.lib";
+import type { Prisma } from "@prisma/client";
 import {
   IGlTransaction,
   GlTransactionFilters,
@@ -10,6 +11,11 @@ import {
   ReverseGlTransactionRequest,
   ReverseGlTransactionResponse,
 } from "./gltransactions.interfaces";
+
+type Tx = Omit<
+  Prisma.TransactionClient,
+  "$connect" | "$disconnect" | "$on" | "$transaction" | "$extends"
+>;
 
 export class GlTransactionService {
   // Get GL Transactions
@@ -582,16 +588,19 @@ export class GlTransactionService {
       | "CHARGE"
       | "CUSTOMER"
       | "ORG_BALANCE"
-      | "INBOUND_BENEFICIARY_PAYMENT",
+      | "INBOUND_BENEFICIARY_PAYMENT"
+      | "AGENCY_FLOAT",
     entityId: string,
-    organisationId: string
+    organisationId: string,
+    tx?: Tx
   ): Promise<string | null> {
     try {
+      const db = tx || prisma;
       let glAccount = null;
 
       switch (entityType) {
         case "VAULT":
-          glAccount = await prisma.glAccount.findFirst({
+          glAccount = await db.glAccount.findFirst({
             where: {
               vault_id: entityId,
               organisation_id: organisationId,
@@ -599,7 +608,7 @@ export class GlTransactionService {
           });
           break;
         case "TILL":
-          glAccount = await prisma.glAccount.findFirst({
+          glAccount = await db.glAccount.findFirst({
             where: {
               till_id: entityId,
               organisation_id: organisationId,
@@ -607,7 +616,7 @@ export class GlTransactionService {
           });
           break;
         case "BANK_ACCOUNT":
-          glAccount = await prisma.glAccount.findFirst({
+          glAccount = await db.glAccount.findFirst({
             where: {
               bank_account_id: entityId,
               organisation_id: organisationId,
@@ -615,7 +624,7 @@ export class GlTransactionService {
           });
           break;
         case "CHARGE":
-          glAccount = await prisma.glAccount.findFirst({
+          glAccount = await db.glAccount.findFirst({
             where: {
               charge_id: entityId,
               organisation_id: organisationId,
@@ -625,7 +634,7 @@ export class GlTransactionService {
         case "CUSTOMER":
           // For customers, we might need a different approach
           // This could be a customer-specific GL account or a general customer account
-          glAccount = await prisma.glAccount.findFirst({
+          glAccount = await db.glAccount.findFirst({
             where: {
               name: { contains: "Customer", mode: "insensitive" },
               organisation_id: organisationId,
@@ -634,15 +643,24 @@ export class GlTransactionService {
           break;
         case "ORG_BALANCE":
           // For organisation balances, look for org balance GL account
-          glAccount = await prisma.glAccount.findFirst({
+          glAccount = await db.glAccount.findFirst({
             where: {
               org_balance_id: entityId,
               organisation_id: organisationId,
             },
           });
           break;
+        case "AGENCY_FLOAT":
+          glAccount = await db.glAccount.findFirst({
+            where: {
+              float_org_id: entityId,
+              organisation_id: organisationId,
+              type: "LIABILITY",
+            },
+          });
+          break;
         case "INBOUND_BENEFICIARY_PAYMENT":
-          glAccount = await prisma.glAccount.findFirst({
+          glAccount = await db.glAccount.findFirst({
             where: {
               counter_party_organisation_id: entityId,
               organisation_id: organisationId,

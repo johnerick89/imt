@@ -37,11 +37,11 @@ const CorridorsTable: React.FC<CorridorsTableProps> = ({
         ),
       },
       {
-        accessorKey: "base_country",
+        accessorKey: "origin_country",
         header: "Base Country",
         cell: ({ row }) => (
           <span className="text-sm text-gray-900">
-            {row.original.base_country?.name || "N/A"}
+            {row.original.origin_country?.name || "N/A"}
           </span>
         ),
       },
@@ -55,11 +55,20 @@ const CorridorsTable: React.FC<CorridorsTableProps> = ({
         ),
       },
       {
-        accessorKey: "base_currency",
-        header: "Dest. Currency",
+        accessorKey: "origin_currency",
+        header: "Origin Currency",
         cell: ({ row }) => (
           <span className="text-sm text-gray-900">
-            {row.original.base_currency?.currency_code || "N/A"}
+            {row.original.origin_currency?.currency_code || "N/A"}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "destination_currency",
+        header: "Destination Currency",
+        cell: ({ row }) => (
+          <span className="text-sm text-gray-900">
+            {row.original.destination_currency?.currency_code || "N/A"}
           </span>
         ),
       },

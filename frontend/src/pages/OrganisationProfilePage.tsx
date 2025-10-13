@@ -149,7 +149,6 @@ const OrganisationProfilePage: React.FC<OrganisationProfilePageProps> = ({
   const { data: corridorsData, isLoading: corridorsLoading } = useCorridors({
     organisation_id: finalId,
     limit: 100,
-    origin_organisation_id: user?.organisation_id,
   });
 
   const createCorridorMutation = useCreateCorridor();

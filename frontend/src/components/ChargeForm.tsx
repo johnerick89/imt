@@ -24,6 +24,7 @@ interface ChargeFormProps {
   isLoading?: boolean;
   isEdit?: boolean;
   currentOrganisationId?: string;
+  isStandard?: boolean;
 }
 
 export default function ChargeForm({
@@ -32,7 +33,9 @@ export default function ChargeForm({
   isLoading = false,
   isEdit = false,
   currentOrganisationId,
+  isStandard = false,
 }: ChargeFormProps) {
+  console.log("isStandard", isStandard);
   const { user } = useSession();
   const userOrganisationId = user?.organisation_id;
   const { data: userOrganisationData } = useOrganisation(
@@ -45,14 +48,6 @@ export default function ChargeForm({
   const currentOrganisation = currentOrganisationData?.data;
   const { data: currenciesData } = useAllCurrencies();
   const { data: organisationsData } = useAllOrganisations();
-  console.log(
-    "organisationsData",
-    organisationsData,
-    "currentOrganisationId",
-    currentOrganisationId,
-    "userOrganisationId",
-    userOrganisationId
-  );
 
   const {
     control,
@@ -89,6 +84,8 @@ export default function ChargeForm({
           min_amount: initialData.min_amount || undefined,
           max_amount: initialData.max_amount || undefined,
           payment_authority: initialData.payment_authority || undefined,
+          internal_share_percentage:
+            initialData.internal_share_percentage || undefined,
         }
       : {
           name: "",
@@ -110,6 +107,7 @@ export default function ChargeForm({
           min_amount: undefined,
           max_amount: undefined,
           payment_authority: undefined,
+          internal_share_percentage: undefined,
         },
   });
 
@@ -117,20 +115,24 @@ export default function ChargeForm({
 
   useEffect(() => {
     if (watchedType === "COMMISSION") {
-      setValue("origin_share_percentage", 60);
-      setValue("destination_share_percentage", 40);
+      setValue("origin_share_percentage", 40);
+      setValue("destination_share_percentage", 30);
+      setValue("internal_share_percentage", 30);
       setValue("payment_authority", undefined);
     } else if (watchedType === "TAX") {
       setValue("origin_share_percentage", 0);
-      setValue("destination_share_percentage", 100);
+      setValue("destination_share_percentage", 0);
+      setValue("internal_share_percentage", 100);
       // Keep payment_authority as is for TAX type
     } else if (watchedType === "INTERNAL_FEE") {
       setValue("origin_share_percentage", 100);
       setValue("destination_share_percentage", 0);
+      setValue("internal_share_percentage", 0);
       setValue("payment_authority", undefined);
     } else if (watchedType === "OTHER") {
       setValue("origin_share_percentage", 0);
       setValue("destination_share_percentage", 0);
+      setValue("internal_share_percentage", 0);
       setValue("payment_authority", undefined);
     }
   }, [watchedType, setValue]);
@@ -153,13 +155,22 @@ export default function ChargeForm({
     const { origin_organisation_id, destination_organisation_id, ...rest } =
       data;
 
-    onSubmit({
-      origin_organisation_id:
-        origin_organisation_id || userOrganisationId || "",
-      destination_organisation_id:
-        destination_organisation_id || currentOrganisationId || "",
-      ...rest,
-    });
+    // If isStandard, set organizations to undefined (null)
+    if (isStandard) {
+      onSubmit({
+        origin_organisation_id: undefined,
+        destination_organisation_id: undefined,
+        ...rest,
+      });
+    } else {
+      onSubmit({
+        origin_organisation_id:
+          origin_organisation_id || userOrganisationId || "",
+        destination_organisation_id:
+          destination_organisation_id || currentOrganisationId || "",
+        ...rest,
+      });
+    }
   };
 
   return (
@@ -322,6 +333,64 @@ export default function ChargeForm({
           />
         </FormItem>
 
+        {!isStandard && (
+          <>
+            <FormItem
+              label="Origin Organisation"
+              invalid={!!errors.origin_organisation_id}
+              errorMessage={errors.origin_organisation_id?.message}
+            >
+              <Controller
+                name="origin_organisation_id"
+                control={control}
+                render={({ field }) => (
+                  <SearchableSelect
+                    value={field.value}
+                    onChange={field.onChange}
+                    options={
+                      organisationsData?.data?.organisations?.map((org) => ({
+                        value: org.id,
+                        label: org.name,
+                      })) || []
+                    }
+                    placeholder="Select origin organisation"
+                    searchPlaceholder="Search organisations..."
+                    disabled={isLoading}
+                    invalid={!!errors.origin_organisation_id}
+                  />
+                )}
+              />
+            </FormItem>
+
+            <FormItem
+              label="Destination Organisation"
+              invalid={!!errors.destination_organisation_id}
+              errorMessage={errors.destination_organisation_id?.message}
+            >
+              <Controller
+                name="destination_organisation_id"
+                control={control}
+                render={({ field }) => (
+                  <SearchableSelect
+                    value={field.value}
+                    onChange={field.onChange}
+                    options={
+                      organisationsData?.data?.organisations?.map((org) => ({
+                        value: org.id,
+                        label: org.name,
+                      })) || []
+                    }
+                    placeholder="Select destination organisation"
+                    searchPlaceholder="Search organisations..."
+                    disabled={isLoading}
+                    invalid={!!errors.destination_organisation_id}
+                  />
+                )}
+              />
+            </FormItem>
+          </>
+        )}
+
         <FormItem
           label="Min Amount"
           invalid={!!errors.min_amount}
@@ -382,13 +451,15 @@ export default function ChargeForm({
               validate: (value) => {
                 const originShare = value;
                 const destinationShare = watch("destination_share_percentage");
+                const internalShare = watch("internal_share_percentage");
                 if (
                   originShare !== undefined &&
-                  destinationShare !== undefined
+                  destinationShare !== undefined &&
+                  internalShare !== undefined
                 ) {
-                  const total = originShare + destinationShare;
+                  const total = originShare + destinationShare + internalShare;
                   if (total !== 100) {
-                    return "Origin and destination percentages must sum to 100";
+                    return "Origin, destination and internal percentages must sum to 100";
                   }
                 }
                 return true;
@@ -420,13 +491,15 @@ export default function ChargeForm({
               validate: (value) => {
                 const destinationShare = value;
                 const originShare = watch("origin_share_percentage");
+                const internalShare = watch("internal_share_percentage");
                 if (
                   originShare !== undefined &&
-                  destinationShare !== undefined
+                  destinationShare !== undefined &&
+                  internalShare !== undefined
                 ) {
-                  const total = originShare + destinationShare;
+                  const total = originShare + destinationShare + internalShare;
                   if (total !== 100) {
-                    return "Origin and destination percentages must sum to 100";
+                    return "Origin, destination and internal percentages must sum to 100";
                   }
                 }
                 return true;
@@ -438,6 +511,46 @@ export default function ChargeForm({
                 type="number"
                 step="0.01"
                 placeholder="Enter destination share % (optional)"
+                disabled={isLoading}
+              />
+            )}
+          />
+        </FormItem>
+
+        <FormItem
+          label="Internal Share Percentage"
+          invalid={!!errors.internal_share_percentage}
+          errorMessage={errors.internal_share_percentage?.message}
+        >
+          <Controller
+            name="internal_share_percentage"
+            control={control}
+            rules={{
+              min: { value: 0, message: "Percentage must be non-negative" },
+              max: { value: 100, message: "Percentage cannot exceed 100" },
+              validate: (value) => {
+                const internalShare = value;
+                const destinationShare = watch("destination_share_percentage");
+                const originShare = watch("origin_share_percentage");
+                if (
+                  originShare !== undefined &&
+                  destinationShare !== undefined &&
+                  internalShare !== undefined
+                ) {
+                  const total = originShare + destinationShare + internalShare;
+                  if (total !== 100) {
+                    return "Origin, destination and internal percentages must sum to 100";
+                  }
+                }
+                return true;
+              },
+            }}
+            render={({ field }) => (
+              <Input
+                {...field}
+                type="number"
+                step="0.01"
+                placeholder="Enter internal share % (optional)"
                 disabled={isLoading}
               />
             )}

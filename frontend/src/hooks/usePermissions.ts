@@ -142,6 +142,8 @@ export const usePermissions = () => {
     // Organisation Balance Management
     canViewOrgBalances: () => hasPermission(user, "admin.orgBalances.view"),
     canCreateOrgBalances: () => hasPermission(user, "admin.orgBalances.create"),
+    canCreateOrgFloatBalances: () =>
+      hasPermission(user, "admin.orgBalances.create"),
 
     // Bank Account Management
     canViewBankAccounts: () => hasPermission(user, "admin.bankAccounts.view"),

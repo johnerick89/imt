@@ -593,7 +593,7 @@ const ReportsPage: React.FC = () => {
           `${item.sender_trasaction_party?.name}`,
           `${item.receiver_trasaction_party?.name}`,
           item.origin_organisation?.name,
-          item.corridor?.base_country?.name,
+          item.corridor?.origin_country?.name,
           new Date(item.created_at).toLocaleDateString(),
         ];
       case ReportType.COMMISSIONS:

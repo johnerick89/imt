@@ -96,7 +96,7 @@ export async function seedOrganisations() {
       });
 
       const adminRole = await prisma.role.findFirst({
-        where: { name: "Admin" },
+        where: { name: "Super Admin" },
       });
 
       await prisma.user.create({
@@ -105,9 +105,10 @@ export async function seedOrganisations() {
           password: await hashPassword(DEFAULT_PASSWORD),
           first_name: organisation.name,
           last_name: organisation.name,
-          role: "Admin",
+          role: "Super Admin",
           role_id: adminRole?.id,
           organisation_id: createdOrganisation.id,
+          status: "ACTIVE",
         },
       });
 

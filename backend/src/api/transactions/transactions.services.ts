@@ -1,4 +1,5 @@
 import { GlTransactionService } from "../gltransactions/gltransactions.services";
+import { Decimal } from "@prisma/client/runtime/library";
 import type {
   ITransaction,
   ITransactionCharge,
@@ -20,7 +21,13 @@ import type {
 } from "./transactions.interfaces";
 import { prisma } from "../../lib/prisma.lib";
 import { AppError } from "../../utils/AppError";
-import { Charge, Direction } from "@prisma/client";
+import {
+  Charge,
+  Direction,
+  BalanceHistoryAction,
+  Prisma,
+  OrgBalance,
+} from "@prisma/client";
 import { UserTillService } from "../usertills/usertills.services";
 import { getValidateTillParameter } from "./transactions.utils";
 
@@ -28,6 +35,8 @@ const glTransactionService = new GlTransactionService();
 const userTillService = new UserTillService();
 
 export class TransactionService {
+  private mainOrganisationId?: string | undefined;
+
   // Create Outbound Transaction
   async createOutboundTransaction(
     organisationId: string,
@@ -35,7 +44,7 @@ export class TransactionService {
     userId: string,
     ipAddress: string
   ): Promise<OutboundTransactionResult> {
-    return await prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. Validate that user has an open till
       const validateTill = await getValidateTillParameter();
 
@@ -97,33 +106,47 @@ export class TransactionService {
       }
 
       // 4. Get corridor and validate it belongs to the organisation
+
       const corridor = await tx.corridor.findFirst({
         where: {
           id: data.corridor_id,
           origin_organisation_id: organisationId,
-          organisation_id: data.destination_organisation_id,
-          base_currency_id: data.dest_currency_id,
-          destination_country_id: data.destination_country_id,
+          destination_organisation_id: data.destination_organisation_id,
           status: "ACTIVE",
         },
       });
+
+      console.log("data.corridor_id", data.corridor_id, "corridor", corridor);
 
       if (!corridor) {
         throw new AppError("Invalid or inactive corridor", 400);
       }
 
       // 5. Get customer and validate it belongs to the organisation
-      const customer = await tx.customer.findFirst({
-        where: {
-          id: data.customer_id,
-          organisation_id: organisationId,
-        },
-        include: {
-          nationality: true,
-          residence_country: true,
-          incorporation_country: true,
-        },
-      });
+      const [customer, beneficiary] = await Promise.all([
+        await tx.customer.findFirst({
+          where: {
+            id: data.customer_id,
+            organisation_id: organisationId,
+          },
+          include: {
+            nationality: true,
+            residence_country: true,
+            incorporation_country: true,
+          },
+        }),
+        await tx.beneficiary.findFirst({
+          where: {
+            id: data.beneficiary_id,
+            customer_id: data.customer_id,
+          },
+          include: {
+            nationality: true,
+            residence_country: true,
+            incorporation_country: true,
+          },
+        }),
+      ]);
 
       if (!customer) {
         throw new AppError(
@@ -132,36 +155,7 @@ export class TransactionService {
         );
       }
 
-      // 5.1. Validate customer country matches origin country
-      if (data.origin_country_id) {
-        const countryMatches =
-          (customer.nationality_id &&
-            customer.nationality_id === data.origin_country_id) ||
-          (customer.residence_country_id &&
-            customer.residence_country_id === data.origin_country_id) ||
-          (customer.incorporation_country_id &&
-            customer.incorporation_country_id === data.origin_country_id);
-
-        /*if (!countryMatches) {
-          throw new AppError(
-            "Customer's country (nationality/residence/incorporation) must match the origin country",
-            400
-          );
-        }*/
-      }
-
       // 6. Get beneficiary and validate it belongs to the customer
-      const beneficiary = await tx.beneficiary.findFirst({
-        where: {
-          id: data.beneficiary_id,
-          customer_id: data.customer_id,
-        },
-        include: {
-          nationality: true,
-          residence_country: true,
-          incorporation_country: true,
-        },
-      });
 
       if (!beneficiary) {
         throw new AppError(
@@ -170,47 +164,6 @@ export class TransactionService {
         );
       }
 
-      // 6.1. Validate beneficiary country matches destination country
-      if (data.destination_country_id) {
-        const countryMatches =
-          (beneficiary.nationality_id &&
-            beneficiary.nationality_id === data.destination_country_id) ||
-          (beneficiary.residence_country_id &&
-            beneficiary.residence_country_id === data.destination_country_id) ||
-          (beneficiary.incorporation_country_id &&
-            beneficiary.incorporation_country_id ===
-              data.destination_country_id);
-
-        // if (!countryMatches) {
-        //   throw new AppError(
-        //     "Beneficiary's country (nationality/residence/incorporation) must match the destination country",
-        //     400
-        //   );
-        // }
-      }
-
-      // 7. Check organisation balance for destination organisation
-      if (data.destination_organisation_id) {
-        const orgBalance = await tx.orgBalance.findFirst({
-          where: {
-            base_org_id: organisationId,
-            dest_org_id: data.destination_organisation_id,
-            currency_id: data.origin_currency_id,
-          },
-        });
-
-        if (
-          !orgBalance ||
-          parseFloat(orgBalance.balance.toString()) < data.origin_amount
-        ) {
-          throw new AppError(
-            "Insufficient organisation balance for this transaction",
-            400
-          );
-        }
-      }
-
-      // 8. Calculate transaction charges
       const chargeCalculation = await this.calculateTransactionCharges({
         originAmount: data.origin_amount,
         originCurrencyId: data.origin_currency_id,
@@ -222,6 +175,112 @@ export class TransactionService {
       const totalAllCharges = chargeCalculation.totalCharges;
       const totalCommissions = chargeCalculation.totalCommissions;
       const totalTaxes = chargeCalculation.totalTaxes;
+      const amountPayable = data.origin_amount + totalAllCharges;
+
+      // 7. Check organisation balance for destination organisation
+
+      const mainOrganisation = await prisma.organisation.findFirst({
+        where: {
+          type: "CUSTOMER",
+        },
+      });
+      if (mainOrganisation) {
+        this.mainOrganisationId = mainOrganisation.id;
+      } else {
+        throw new AppError("Main organisation not found", 400);
+      }
+
+      console.log(
+        "data.destination_organisation_id",
+        data.destination_organisation_id,
+        "organisationId",
+        organisationId,
+        "data.origin_currency_id",
+        data.origin_currency_id,
+        "this.mainOrganisationId",
+        this.mainOrganisationId
+      );
+      if (
+        data.destination_organisation_id &&
+        organisationId &&
+        data.origin_currency_id &&
+        this.mainOrganisationId
+      ) {
+        const [originOrgBalance, destinationOrgBalance] = await Promise.all([
+          tx.orgBalance.findUnique({
+            where: {
+              base_org_id_dest_org_id_currency_id: {
+                base_org_id: this.mainOrganisationId,
+                dest_org_id: organisationId,
+                currency_id: data.origin_currency_id,
+              },
+            },
+          }),
+          tx.orgBalance.findUnique({
+            where: {
+              base_org_id_dest_org_id_currency_id: {
+                base_org_id: this.mainOrganisationId,
+                dest_org_id: data.destination_organisation_id,
+                currency_id: data.origin_currency_id, // Or data.destination_currency_id if different
+              },
+            },
+          }),
+        ]);
+
+        if (!originOrgBalance) {
+          throw new AppError("Origin agency must deposit float first", 400);
+        }
+
+        if (!destinationOrgBalance) {
+          throw new AppError(
+            "Destination agency must deposit float first",
+            400
+          );
+        }
+
+        const balance = parseFloat(
+          originOrgBalance?.balance?.toString() || "0"
+        );
+        const lockedBalance = parseFloat(
+          originOrgBalance?.locked_balance?.toString() || "0"
+        );
+        const totalAvailableBalance = balance - lockedBalance;
+
+        if (totalAvailableBalance < amountPayable) {
+          throw new AppError(
+            "Insufficient organisation balance for this transaction",
+            400
+          );
+        }
+        const destinationLockedBalance = parseFloat(
+          destinationOrgBalance.locked_balance?.toString() || "0"
+        );
+        const destiantionBalance = parseFloat(
+          destinationOrgBalance.balance.toString()
+        );
+
+        const destinationLimit = parseFloat(
+          destinationOrgBalance.limit?.toString() || "0"
+        );
+
+        const totalAvailableLimit =
+          destinationLimit - destiantionBalance - destinationLockedBalance;
+        const destinationAmount = data.origin_amount;
+        if (totalAvailableLimit < destinationAmount) {
+          throw new AppError(
+            "Insufficient destination organisation limit for this transaction. Destination organisation limit is " +
+              destinationOrgBalance.limit?.toString() || "0",
+            400
+          );
+        }
+      } else {
+        throw new AppError(
+          "Origin organisation or destination organisation or origin currency not found",
+          400
+        );
+      }
+
+      // 8. Calculate transaction charges
 
       // 9. Generate transaction number
       const transactionNo = await this.generateTransactionNumber(
@@ -258,7 +317,7 @@ export class TransactionService {
           destination_organisation_id: data.destination_organisation_id,
           origin_country_id: data.origin_country_id,
           destination_country_id: data.destination_country_id,
-          amount_payable: data.origin_amount + totalAllCharges,
+          amount_payable: amountPayable,
           status: "PENDING_APPROVAL",
           remittance_status: "PENDING",
           request_status: "UNDER_REVIEW",
@@ -288,6 +347,10 @@ export class TransactionService {
               internal_percentage: charge.internal_percentage,
               external_amount: charge.external_amount,
               external_percentage: charge.external_percentage,
+              origin_amount: charge.origin_amount,
+              origin_percentage: charge.origin_percentage,
+              destination_amount: charge.destination_amount,
+              destination_percentage: charge.destination_percentage,
             },
           })
         )
@@ -314,7 +377,7 @@ export class TransactionService {
         include: {
           corridor: {
             include: {
-              base_country: true,
+              origin_country: true,
               destination_country: true,
               base_currency: true,
             },
@@ -435,7 +498,7 @@ export class TransactionService {
         include: {
           corridor: {
             include: {
-              base_country: true,
+              origin_country: true,
               destination_country: true,
               base_currency: true,
             },
@@ -519,6 +582,100 @@ export class TransactionService {
         throw new AppError("Transaction is already approved", 400);
       }
 
+      let originBalance: OrgBalance | null = null;
+      let destinationBalance: OrgBalance | null = null;
+      const mainOrganisation = await prisma.organisation.findFirst({
+        where: {
+          type: "CUSTOMER",
+        },
+      });
+      if (mainOrganisation) {
+        this.mainOrganisationId = mainOrganisation.id;
+      } else {
+        throw new AppError("Main organisation not found", 400);
+      }
+
+      if (
+        transaction.destination_organisation_id &&
+        transaction.origin_organisation_id &&
+        transaction.origin_currency_id &&
+        this.mainOrganisationId
+      ) {
+        const [originOrgBalance, destinationOrgBalance] = await Promise.all([
+          tx.orgBalance.findUnique({
+            where: {
+              base_org_id_dest_org_id_currency_id: {
+                base_org_id: this.mainOrganisationId,
+                dest_org_id: transaction.origin_organisation_id,
+                currency_id: transaction.origin_currency_id,
+              },
+            },
+          }),
+          tx.orgBalance.findUnique({
+            where: {
+              base_org_id_dest_org_id_currency_id: {
+                base_org_id: this.mainOrganisationId,
+                dest_org_id: transaction.destination_organisation_id,
+                currency_id: transaction.origin_currency_id, // Or data.destination_currency_id if different
+              },
+            },
+          }),
+        ]);
+
+        if (!originOrgBalance) {
+          throw new AppError("Origin agency must deposit float first", 400);
+        }
+
+        if (!destinationOrgBalance) {
+          throw new AppError(
+            "Destination agency must deposit float first",
+            400
+          );
+        }
+        originBalance = originOrgBalance;
+        destinationBalance = destinationOrgBalance;
+
+        const balance = new Decimal(originOrgBalance?.balance);
+        const lockedBalance = new Decimal(
+          originOrgBalance?.locked_balance || 0
+        );
+        const totalAvailableBalance = balance.sub(lockedBalance);
+
+        if (
+          totalAvailableBalance.lt(new Decimal(transaction.amount_payable || 0))
+        ) {
+          throw new AppError(
+            "Insufficient organisation balance for this transaction",
+            400
+          );
+        }
+        const destinationLockedBalance = new Decimal(
+          destinationOrgBalance.locked_balance || 0
+        );
+        const destiantionBalance = new Decimal(
+          destinationOrgBalance.balance || new Decimal(0)
+        );
+
+        const destinationLimit = new Decimal(destinationOrgBalance.limit || 0);
+
+        const totalAvailableLimit = destinationLimit
+          .sub(destiantionBalance)
+          .sub(destinationLockedBalance);
+        const destinationAmount = new Decimal(transaction.origin_amount || 0);
+        if (totalAvailableLimit.lt(destinationAmount)) {
+          throw new AppError(
+            "Insufficient destination organisation limit for this transaction. Destination organisation limit is " +
+              destinationOrgBalance.limit?.toString() || "0",
+            400
+          );
+        }
+      } else {
+        throw new AppError(
+          "Origin organisation or destination organisation or origin currency not found",
+          400
+        );
+      }
+
       // Update transaction status
       const updatedTransaction = await tx.transaction.update({
         where: { id: transactionId },
@@ -547,75 +704,37 @@ export class TransactionService {
       });
 
       //update org balance for outbound transaction
-      if (
-        updatedTransaction.destination_organisation_id &&
-        updatedTransaction.origin_currency_id &&
-        updatedTransaction.origin_organisation_id
-      ) {
-        let orgBalance = await tx.orgBalance.findFirst({
-          where: {
-            base_org_id: updatedTransaction.origin_organisation_id,
-            dest_org_id: updatedTransaction.destination_organisation_id,
-            currency_id: updatedTransaction.origin_currency_id,
-          },
-        });
-
-        if (!orgBalance) {
-          orgBalance = await tx.orgBalance.create({
-            data: {
-              base_org_id: updatedTransaction.origin_organisation_id,
-              dest_org_id: updatedTransaction.destination_organisation_id,
-              currency_id: updatedTransaction.origin_currency_id,
-              balance: 0,
-              locked_balance: 0,
-            },
-          });
-        }
-
-        const oldBalance = parseFloat(orgBalance?.balance?.toString() || "0");
-        const totalCharges = parseFloat(
-          updatedTransaction.total_all_charges?.toString() || "0"
+      if (originBalance) {
+        const orgBalance = originBalance;
+        const lockedBalance = new Decimal(orgBalance?.locked_balance || 0);
+        const totalCharges = new Decimal(
+          updatedTransaction.total_all_charges || 0
         );
-        const totalTaxes = parseFloat(
-          updatedTransaction.total_taxes?.toString() || "0"
-        );
-        const transactionAmount =
-          parseFloat(updatedTransaction.origin_amount?.toString() || "0") +
-          totalCharges -
-          totalTaxes;
-        const newBalance = oldBalance - transactionAmount;
+        const totalTaxes = new Decimal(updatedTransaction.total_taxes || 0);
+        const transactionAmount = new Decimal(
+          updatedTransaction.origin_amount || 0
+        )
+          .add(totalCharges)
+          .sub(totalTaxes);
 
-        /*if (1 === 1) {
-          console.log(
-            "Am just stopping here, testing, newBalance",
-            newBalance,
-            "totalTaxes",
-            totalTaxes,
-            "totalCharges",
-            totalCharges,
-            "transactionAmount",
-            transactionAmount,
-            "oldBalance",
-            oldBalance
-          );
-          throw new AppError("Am just stopping here, testing", 400);
-        }*/
+        const newLockedBalance = lockedBalance.add(transactionAmount);
 
         await tx.orgBalance.update({
           where: { id: orgBalance.id },
           data: {
-            balance: newBalance,
+            locked_balance: newLockedBalance,
             updated_at: new Date(),
           },
         });
 
         await tx.balanceHistory.create({
           data: {
-            entity_type: "ORG_BALANCE",
+            action_type: BalanceHistoryAction.LOCK,
+            entity_type: "AGENCY_FLOAT",
             entity_id: orgBalance.id,
             currency_id: updatedTransaction.origin_currency_id,
-            old_balance: oldBalance,
-            new_balance: newBalance,
+            old_balance: lockedBalance,
+            new_balance: newLockedBalance,
             change_amount: -transactionAmount,
             description: `Outbound transaction approved: ${updatedTransaction.id}`,
             created_by: userId,
@@ -630,11 +749,11 @@ export class TransactionService {
         });
 
         if (till) {
-          const currentBalance = parseFloat(till.balance?.toString() || "0");
-          const transactionAmount = parseFloat(
-            transaction.amount_payable?.toString() || "0"
+          const currentBalance = new Decimal(till.balance || 0);
+          const transactionAmount = new Decimal(
+            transaction.amount_payable || 0
           );
-          const newBalance = currentBalance + transactionAmount;
+          const newBalance = currentBalance.add(transactionAmount);
 
           // Update till balance
           await tx.till.update({
@@ -710,7 +829,7 @@ export class TransactionService {
         include: {
           corridor: {
             include: {
-              base_country: true,
+              origin_country: true,
               destination_country: true,
               base_currency: true,
             },
@@ -857,7 +976,7 @@ export class TransactionService {
         include: {
           corridor: {
             include: {
-              base_country: true,
+              origin_country: true,
               destination_country: true,
               base_currency: true,
             },
@@ -952,7 +1071,7 @@ export class TransactionService {
         include: {
           corridor: {
             include: {
-              base_country: true,
+              origin_country: true,
               destination_country: true,
               base_currency: true,
             },
@@ -999,6 +1118,16 @@ export class TransactionService {
     ipAddress: string
   ): Promise<TransactionResponse> {
     return await prisma.$transaction(async (tx) => {
+      const mainOrganisation = await tx.organisation.findFirst({
+        where: {
+          type: "CUSTOMER",
+        },
+      });
+      if (mainOrganisation) {
+        this.mainOrganisationId = mainOrganisation.id;
+      } else {
+        throw new AppError("Main organisation not found", 400);
+      }
       // Get transaction with charges
       const transaction = await tx.transaction.findUnique({
         where: { id: transactionId },
@@ -1058,6 +1187,69 @@ export class TransactionService {
         },
       });
 
+      if (
+        updatedTransaction.destination_organisation_id &&
+        updatedTransaction.origin_currency_id &&
+        updatedTransaction.origin_organisation_id
+      ) {
+        let orgBalance = await tx.orgBalance.findFirst({
+          where: {
+            base_org_id: this.mainOrganisationId,
+            dest_org_id: updatedTransaction.destination_organisation_id,
+            currency_id: updatedTransaction.origin_currency_id,
+          },
+        });
+
+        if (!orgBalance) {
+          orgBalance = await tx.orgBalance.create({
+            data: {
+              base_org_id: this.mainOrganisationId,
+              dest_org_id: updatedTransaction.destination_organisation_id,
+              currency_id: updatedTransaction.origin_currency_id,
+              balance: 0,
+              locked_balance: 0,
+            },
+          });
+        }
+
+        const oldBalance = new Decimal(orgBalance?.balance || 0);
+        const lockedBalance = new Decimal(orgBalance?.locked_balance || 0);
+        const totalCharges = new Decimal(
+          updatedTransaction.total_all_charges || 0
+        );
+        const totalTaxes = new Decimal(updatedTransaction.total_taxes || 0);
+        const transactionAmount = new Decimal(
+          updatedTransaction.origin_amount || 0
+        )
+          .add(totalCharges)
+          .sub(totalTaxes);
+
+        const newBalance = oldBalance.sub(transactionAmount);
+        const newLockedBalance = lockedBalance.sub(transactionAmount);
+
+        await tx.orgBalance.update({
+          where: { id: orgBalance.id },
+          data: {
+            locked_balance: newLockedBalance,
+            updated_at: new Date(),
+          },
+        });
+
+        await tx.balanceHistory.create({
+          data: {
+            action_type: BalanceHistoryAction.UNLOCK,
+            entity_type: "AGENCY_FLOAT",
+            entity_id: orgBalance.id,
+            currency_id: updatedTransaction.origin_currency_id,
+            old_balance: lockedBalance,
+            new_balance: newLockedBalance,
+            change_amount: transactionAmount,
+            description: `Outbound transaction reversed: ${updatedTransaction.id}`,
+            created_by: userId,
+          },
+        });
+      }
+
       // Reverse till balance for outbound transaction
       if (transaction.till_id) {
         const till = await tx.till.findUnique({
@@ -1065,11 +1257,9 @@ export class TransactionService {
         });
 
         if (till) {
-          const currentBalance = parseFloat(till.balance?.toString() || "0");
-          const transactionAmount = parseFloat(
-            transaction.origin_amount.toString()
-          );
-          const newBalance = currentBalance + transactionAmount;
+          const currentBalance = new Decimal(till.balance || 0);
+          const transactionAmount = new Decimal(transaction.origin_amount || 0);
+          const newBalance = currentBalance.add(transactionAmount);
 
           // Update till balance
           await tx.till.update({
@@ -1140,7 +1330,7 @@ export class TransactionService {
         include: {
           corridor: {
             include: {
-              base_country: true,
+              origin_country: true,
               destination_country: true,
               base_currency: true,
             },
@@ -1262,7 +1452,7 @@ export class TransactionService {
         include: {
           corridor: {
             include: {
-              base_country: true,
+              origin_country: true,
               destination_country: true,
               base_currency: true,
             },
@@ -1360,7 +1550,7 @@ export class TransactionService {
       include: {
         corridor: {
           include: {
-            base_country: true,
+            origin_country: true,
             destination_country: true,
             base_currency: true,
           },
@@ -1645,7 +1835,10 @@ export class TransactionService {
       const internalAmount = charge.origin_share_percentage
         ? (amount * charge.origin_share_percentage) / 100
         : null;
-      const externalAmount = charge.destination_share_percentage
+      const originChargeAmount = charge.origin_share_percentage
+        ? (amount * charge.origin_share_percentage) / 100
+        : null;
+      const destinationChargeAmount = charge.destination_share_percentage
         ? (amount * charge.destination_share_percentage) / 100
         : null;
 
@@ -1661,7 +1854,14 @@ export class TransactionService {
         internal_percentage: charge.origin_share_percentage
           ? charge.origin_share_percentage
           : null,
-        external_amount: externalAmount,
+        origin_amount: originChargeAmount,
+        origin_percentage: charge.origin_share_percentage
+          ? charge.origin_share_percentage
+          : null,
+        destination_amount: destinationChargeAmount,
+        destination_percentage: charge.destination_share_percentage
+          ? charge.destination_share_percentage
+          : null,
         external_percentage: charge.destination_share_percentage
           ? charge.destination_share_percentage
           : null,
@@ -1700,7 +1900,10 @@ export class TransactionService {
       const internalAmount = charge.origin_share_percentage
         ? (amount * charge.origin_share_percentage) / 100
         : null;
-      const externalAmount = charge.destination_share_percentage
+      const originChargeAmount = charge.origin_share_percentage
+        ? (amount * charge.origin_share_percentage) / 100
+        : null;
+      const destinationChargeAmount = charge.destination_share_percentage
         ? (amount * charge.destination_share_percentage) / 100
         : null;
 
@@ -1716,7 +1919,14 @@ export class TransactionService {
         internal_percentage: charge.origin_share_percentage
           ? charge.origin_share_percentage
           : null,
-        external_amount: externalAmount,
+        origin_amount: originChargeAmount,
+        origin_percentage: charge.origin_share_percentage
+          ? charge.origin_share_percentage
+          : null,
+        destination_amount: destinationChargeAmount,
+        destination_percentage: charge.destination_share_percentage
+          ? charge.destination_share_percentage
+          : null,
         external_percentage: charge.destination_share_percentage
           ? charge.destination_share_percentage
           : null,
@@ -1782,24 +1992,55 @@ export class TransactionService {
     userId: string
   ): Promise<void> {
     const organisationId = transaction.origin_organisation_id;
-    const orgBalance = await prisma.orgBalance.findFirst({
-      where: {
-        base_org_id: organisationId,
-        dest_org_id: transaction.destination_organisation_id,
-      },
-      include: {
-        gl_accounts: true,
-      },
-    });
+    const [mainOrganisation, organisation] = await Promise.all([
+      prisma.organisation.findFirst({
+        where: {
+          type: "CUSTOMER",
+        },
+      }),
+      prisma.organisation.findUnique({
+        where: { id: organisationId },
+      }),
+    ]);
+    if (mainOrganisation) {
+      this.mainOrganisationId = mainOrganisation.id;
+    } else {
+      throw new AppError("Main organisation not found", 400);
+    }
 
-    // Get GL accounts
-    const tillGlAccountId = await glTransactionService.getGlAccountForEntity(
-      "TILL",
-      transaction.till_id,
-      organisationId
-    );
+    if (!organisation) {
+      throw new AppError("Organisation not found", 400);
+    }
+    const floatPayableName = `Float Transit Payable - ${organisation.name}`;
+    const [floatPayableAccount, orgBalance, tillGlAccountId] =
+      await Promise.all([
+        prisma.glAccount.findFirst({
+          where: {
+            organisation_id: organisationId,
+            type: "LIABILITY",
+            name: {
+              contains: floatPayableName,
+            },
+          },
+        }),
+        prisma.orgBalance.findFirst({
+          where: {
+            base_org_id: this.mainOrganisationId,
+            dest_org_id: transaction.destination_organisation_id,
+          },
+          include: {
+            gl_accounts: true,
+          },
+        }),
+        glTransactionService.getGlAccountForEntity(
+          "TILL",
+          transaction.till_id,
+          organisationId
+        ),
+      ]);
 
     const accountsReceivableGlAccountId = orgBalance?.gl_accounts[0]?.id;
+    const floatPayableGlAccountId = floatPayableAccount?.id;
 
     // Get charge GL accounts
     const chargeGlAccounts = await Promise.all(
@@ -1813,7 +2054,7 @@ export class TransactionService {
       })
     );
 
-    if (tillGlAccountId && accountsReceivableGlAccountId) {
+    if (tillGlAccountId && floatPayableGlAccountId) {
       const glEntries = [
         {
           gl_account_id: tillGlAccountId,
@@ -1822,10 +2063,10 @@ export class TransactionService {
           description: `Till cash increased by ${transaction.amount_payable}`,
         },
         {
-          gl_account_id: accountsReceivableGlAccountId,
+          gl_account_id: floatPayableGlAccountId,
           amount: transaction.origin_amount,
           dr_cr: "CR" as const,
-          description: `Parner/agency liability decreased by ${transaction.origin_amount}`,
+          description: `Parner/agency float payable decreased by ${transaction.origin_amount}`,
         },
       ];
 
@@ -2239,7 +2480,7 @@ export class TransactionService {
         include: {
           corridor: {
             include: {
-              base_country: true,
+              origin_country: true,
               destination_country: true,
               base_currency: true,
             },
@@ -2343,7 +2584,7 @@ export class TransactionService {
       include: {
         corridor: {
           include: {
-            base_country: true,
+            origin_country: true,
             destination_country: true,
             base_currency: true,
           },
@@ -2459,6 +2700,100 @@ export class TransactionService {
         );
       }
 
+      let originBalance: OrgBalance | null = null;
+      let destinationBalance: OrgBalance | null = null;
+      const mainOrganisation = await prisma.organisation.findFirst({
+        where: {
+          type: "CUSTOMER",
+        },
+      });
+      if (mainOrganisation) {
+        this.mainOrganisationId = mainOrganisation.id;
+      } else {
+        throw new AppError("Main organisation not found", 400);
+      }
+
+      if (
+        transaction.destination_organisation_id &&
+        transaction.origin_organisation_id &&
+        transaction.origin_currency_id &&
+        this.mainOrganisationId
+      ) {
+        const [originOrgBalance, destinationOrgBalance] = await Promise.all([
+          tx.orgBalance.findUnique({
+            where: {
+              base_org_id_dest_org_id_currency_id: {
+                base_org_id: this.mainOrganisationId,
+                dest_org_id: transaction.origin_organisation_id,
+                currency_id: transaction.origin_currency_id,
+              },
+            },
+          }),
+          tx.orgBalance.findUnique({
+            where: {
+              base_org_id_dest_org_id_currency_id: {
+                base_org_id: this.mainOrganisationId,
+                dest_org_id: transaction.destination_organisation_id,
+                currency_id: transaction.origin_currency_id, // Or data.destination_currency_id if different
+              },
+            },
+          }),
+        ]);
+
+        if (!originOrgBalance) {
+          throw new AppError("Origin agency must deposit float first", 400);
+        }
+
+        if (!destinationOrgBalance) {
+          throw new AppError(
+            "Destination agency must deposit float first",
+            400
+          );
+        }
+        originBalance = originOrgBalance;
+        destinationBalance = destinationOrgBalance;
+
+        const balance = new Decimal(originOrgBalance?.balance);
+        const lockedBalance = new Decimal(
+          originOrgBalance?.locked_balance || 0
+        );
+        const totalAvailableBalance = balance.sub(lockedBalance);
+
+        if (
+          totalAvailableBalance.lt(new Decimal(transaction.amount_payable || 0))
+        ) {
+          throw new AppError(
+            "Insufficient orogin organisation balance for this transaction",
+            400
+          );
+        }
+        const destinationLockedBalance = new Decimal(
+          destinationOrgBalance.locked_balance || 0
+        );
+        const destiantionBalance = new Decimal(
+          destinationOrgBalance.balance || new Decimal(0)
+        );
+
+        const destinationLimit = new Decimal(destinationOrgBalance.limit || 0);
+
+        const totalAvailableLimit = destinationLimit
+          .sub(destiantionBalance)
+          .sub(destinationLockedBalance);
+        const destinationAmount = new Decimal(transaction.origin_amount || 0);
+        if (totalAvailableLimit.lt(destinationAmount)) {
+          throw new AppError(
+            "Insufficient destination organisation limit for this transaction. Destination organisation limit is " +
+              destinationOrgBalance.limit?.toString() || "0",
+            400
+          );
+        }
+      } else {
+        throw new AppError(
+          "Origin organisation or destination organisation or origin currency not found",
+          400
+        );
+      }
+
       // Get user's open till
       let userTill = await tx.userTill.findFirst({
         where: {
@@ -2496,25 +2831,6 @@ export class TransactionService {
         throw new AppError("User till not found", 400);
       }
 
-      // Check organisation balance
-      // const orgBalance = await tx.orgBalance.findFirst({
-      //   where: {
-      //     dest_org_id: transaction.destination_organisation_id || undefined,
-      //     base_org_id: transaction.origin_organisation_id || undefined,
-      //     currency_id: transaction.origin_currency_id,
-      //   },
-      // });
-
-      // if (
-      //   !orgBalance ||
-      //   parseFloat(orgBalance.balance.toString()) <
-      //     parseFloat(transaction.origin_amount.toString())
-      // ) {
-      //   throw new AppError(
-      //     "Insufficient organisation balance for this transaction"
-      //   );
-      // }
-
       // Update transaction status and set till
       const updatedTransaction = await tx.transaction.update({
         where: { id: transactionId },
@@ -2531,9 +2847,97 @@ export class TransactionService {
       });
 
       // Update till balance for inbound transaction
-      const till = await tx.till.findUnique({
-        where: { id: userTill?.till_id },
-      });
+      let till = null;
+      if (userTill?.till_id) {
+        till = await tx.till.findUnique({
+          where: { id: userTill?.till_id },
+        });
+      }
+      if (
+        !updatedTransaction.origin_organisation_id ||
+        !updatedTransaction.destination_organisation_id ||
+        !updatedTransaction.origin_currency_id
+      ) {
+        throw new AppError(
+          "Origin organisation, destination organisation or origin currency not found",
+          400
+        );
+      }
+      if (originBalance) {
+        const orgBalance = originBalance;
+        const balance = new Decimal(orgBalance?.balance);
+        const lockedBalance = new Decimal(orgBalance?.locked_balance || 0);
+        const totalCharges = new Decimal(
+          updatedTransaction.total_all_charges || 0
+        );
+        const totalTaxes = new Decimal(updatedTransaction.total_taxes || 0);
+        const transactionAmount = new Decimal(
+          updatedTransaction.origin_amount || 0
+        )
+          .add(totalCharges)
+          .sub(totalTaxes);
+        const newBalance = balance.sub(transactionAmount);
+        const newLockedBalance = lockedBalance.sub(transactionAmount);
+
+        await tx.orgBalance.update({
+          where: { id: orgBalance.id },
+          data: {
+            balance: newBalance,
+            locked_balance: newLockedBalance,
+            updated_at: new Date(),
+          },
+        });
+
+        await tx.balanceHistory.create({
+          data: {
+            action_type: BalanceHistoryAction.PAYOUT,
+            entity_type: "AGENCY_FLOAT",
+            entity_id: orgBalance.id,
+            currency_id: updatedTransaction.origin_currency_id,
+            old_balance: balance,
+            new_balance: newBalance,
+            change_amount: -transactionAmount,
+            description: `Outbound transaction approved: ${updatedTransaction.id}`,
+            created_by: userId,
+          },
+        });
+      }
+      if (destinationBalance) {
+        const orgBalance = destinationBalance;
+        const balance = new Decimal(orgBalance?.balance);
+        const totalCharges = new Decimal(
+          updatedTransaction.total_all_charges || 0
+        );
+        const totalTaxes = new Decimal(updatedTransaction.total_taxes || 0);
+        const transactionAmount = new Decimal(
+          updatedTransaction.origin_amount || 0
+        )
+          .add(totalCharges)
+          .sub(totalTaxes);
+        const newBalance = balance.add(transactionAmount);
+
+        await tx.orgBalance.update({
+          where: { id: orgBalance.id },
+          data: {
+            balance: newBalance,
+            updated_at: new Date(),
+          },
+        });
+
+        await tx.balanceHistory.create({
+          data: {
+            action_type: BalanceHistoryAction.PAYOUT,
+            entity_type: "AGENCY_FLOAT",
+            entity_id: orgBalance.id,
+            currency_id: updatedTransaction.origin_currency_id,
+            old_balance: balance,
+            new_balance: newBalance,
+            change_amount: transactionAmount,
+            description: `Outbound transaction approved: ${updatedTransaction.id}`,
+            created_by: userId,
+          },
+        });
+      }
 
       if (till) {
         const currentBalance = parseFloat(till.balance?.toString() || "0");
@@ -2568,6 +2972,7 @@ export class TransactionService {
         // Create balance history record
         await tx.balanceHistory.create({
           data: {
+            action_type: BalanceHistoryAction.PAYOUT,
             entity_type: "TILL",
             entity_id: till.id,
             currency_id: transaction.dest_currency_id,
@@ -2619,7 +3024,7 @@ export class TransactionService {
         include: {
           corridor: {
             include: {
-              base_country: true,
+              origin_country: true,
               destination_country: true,
               base_currency: true,
             },
@@ -2748,6 +3153,7 @@ export class TransactionService {
           // Create balance history record
           await tx.balanceHistory.create({
             data: {
+              action_type: BalanceHistoryAction.REVERSAL,
               entity_type: "TILL",
               entity_id: transaction.till_id,
               currency_id: transaction.dest_currency_id,
@@ -2774,7 +3180,7 @@ export class TransactionService {
         include: {
           corridor: {
             include: {
-              base_country: true,
+              origin_country: true,
               destination_country: true,
               base_currency: true,
             },
@@ -2844,6 +3250,28 @@ export class TransactionService {
   ): Promise<void> {
     const organisationId = transaction.destination_organisation_id;
     const originOrganisationId = transaction.origin_organisation_id;
+    const [customerOrganisation, originOrganisation] = await Promise.all([
+      prisma.organisation.findFirst({
+        where: {
+          type: "CUSTOMER",
+        },
+      }),
+      prisma.organisation.findFirst({
+        where: {
+          id: originOrganisationId,
+        },
+        select: {
+          name: true,
+          id: true,
+        },
+      }),
+    ]);
+
+    if (customerOrganisation) {
+      this.mainOrganisationId = customerOrganisation.id;
+    } else {
+      throw new AppError("Customer organisation not found", 400);
+    }
 
     // Get GL accounts
     const tillGlAccountId = await glTransactionService.getGlAccountForEntity(
@@ -2882,6 +3310,67 @@ export class TransactionService {
           amount: transaction.origin_amount,
           currency_id: transaction.origin_currency_id,
           description: `Inbound transaction: ${transaction.transaction_no}`,
+          gl_entries: glEntries.map((entry) => ({
+            gl_account_id: entry.gl_account_id,
+            amount: Number(entry.amount),
+            dr_cr: entry.dr_cr,
+            description: entry.description,
+          })),
+        },
+        userId
+      );
+    }
+
+    if (!originOrganisation) {
+      throw new AppError("Origin organisation not found", 400);
+    }
+
+    const floatPayableName = `Float Transit Payable - ${originOrganisation.name}`;
+    const [originFloatPayableAccount, originOrgFloatBalance] =
+      await Promise.all([
+        prisma.glAccount.findFirst({
+          where: {
+            organisation_id: originOrganisation.id,
+            type: "LIABILITY",
+            name: {
+              contains: floatPayableName,
+            },
+          },
+        }),
+        prisma.orgBalance.findFirst({
+          where: {
+            base_org_id: this.mainOrganisationId,
+            dest_org_id: originOrganisation.id,
+          },
+          include: {
+            gl_accounts: true,
+          },
+        }),
+      ]);
+
+    if (originFloatPayableAccount && originOrgFloatBalance) {
+      const glEntries = [
+        {
+          gl_account_id: originFloatPayableAccount.id,
+          amount: transaction.origin_amount,
+          dr_cr: "DR" as const,
+          description: `Float transit payable increased by ${transaction.origin_amount}`,
+        },
+        {
+          gl_account_id: originOrgFloatBalance.id,
+          amount: transaction.origin_amount,
+          dr_cr: "CR" as const,
+          description: `Origin organisation balance decreased by ${transaction.origin_amount}`,
+        },
+      ];
+
+      await glTransactionService.createGlTransaction(
+        originOrganisation.id,
+        {
+          transaction_type: "INBOUND_TRANSACTION",
+          amount: transaction.origin_amount,
+          currency_id: transaction.origin_currency_id,
+          description: `Inbound transaction approved: ${transaction.transaction_no}`,
           gl_entries: glEntries.map((entry) => ({
             gl_account_id: entry.gl_account_id,
             amount: Number(entry.amount),

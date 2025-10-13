@@ -28,6 +28,8 @@ const GenerateAccountsModal: React.FC<GenerateAccountsModalProps> = ({
     generate_for_charges_payments: true,
     generate_for_org_balances: true,
     generate_for_inbound_beneficiary_payments: true,
+    generate_for_agency_floats: true,
+    generate_for_float_transit_payables: true,
   });
 
   const { handleSubmit, reset } = useForm<GenerateAccountsRequest>({
@@ -40,6 +42,8 @@ const GenerateAccountsModal: React.FC<GenerateAccountsModalProps> = ({
       generate_for_charges_payments: true,
       generate_for_org_balances: true,
       generate_for_inbound_beneficiary_payments: true,
+      generate_for_agency_floats: true,
+      generate_for_float_transit_payables: true,
     },
   });
 
@@ -61,6 +65,8 @@ const GenerateAccountsModal: React.FC<GenerateAccountsModalProps> = ({
       generate_for_charges_payments: true,
       generate_for_org_balances: true,
       generate_for_inbound_beneficiary_payments: false,
+      generate_for_agency_floats: true,
+      generate_for_float_transit_payables: true,
     });
     onClose();
   };
@@ -182,6 +188,36 @@ const GenerateAccountsModal: React.FC<GenerateAccountsModalProps> = ({
               />
               <span className="ml-2 text-sm text-gray-700">
                 Inbound Beneficiary Payments (Liability accounts)
+              </span>
+            </label>
+
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={selectedOptions.generate_for_agency_floats}
+                onChange={() =>
+                  handleOptionChange("generate_for_agency_floats")
+                }
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                disabled={isLoading}
+              />
+              <span className="ml-2 text-sm text-gray-700">
+                Agency Floats (Liability accounts)
+              </span>
+            </label>
+
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={selectedOptions.generate_for_float_transit_payables}
+                onChange={() =>
+                  handleOptionChange("generate_for_float_transit_payables")
+                }
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                disabled={isLoading}
+              />
+              <span className="ml-2 text-sm text-gray-700">
+                Float Transit Payables (Liability accounts)
               </span>
             </label>
           </div>

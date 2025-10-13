@@ -22,6 +22,22 @@ export const orgBalanceOperationSchema = z.object({
     .optional(),
 });
 
+export const orgFloatBalanceSchema = z.object({
+  amount: z.coerce.number().positive("Amount must be positive"),
+  dest_org_id: z.string().uuid("Agency organisation ID must be a valid UUID"),
+  currency_id: z.string().uuid("Currency ID must be a valid UUID"),
+  source_id: z.string().uuid("Bank account ID must be a valid UUID").optional(),
+  description: z
+    .string()
+    .max(500, "Description must be less than 500 characters")
+    .optional(),
+  bank_account_id: z
+    .string()
+    .uuid("Bank account ID must be a valid UUID")
+    .optional(),
+  limit: z.coerce.number().optional(),
+});
+
 export const tillBalanceOperationSchema = z.object({
   amount: z.coerce.number(),
   source_type: z.literal("VAULT").optional().default("VAULT"),

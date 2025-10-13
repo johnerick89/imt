@@ -441,7 +441,7 @@ export const TransactionDetailsModal: React.FC<
               </label>
               <p className="text-sm text-gray-900">
                 {transaction.corridor
-                  ? `${transaction?.corridor?.base_country?.code} → ${transaction.corridor.destination_country?.code}`
+                  ? `${transaction?.corridor?.origin_country?.code} → ${transaction.corridor.destination_country?.code}`
                   : "N/A"}
               </p>
             </div>

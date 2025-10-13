@@ -128,7 +128,7 @@ class ReportsService {
         dest_currency: true,
         corridor: {
           include: {
-            base_country: true,
+            origin_country: true,
           },
         },
         transaction_charges: {

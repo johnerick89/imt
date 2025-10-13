@@ -41,12 +41,14 @@ export class UsersController {
     async (req: CustomRequest, res: Response): Promise<void> => {
       const filters = {
         search: req.query.search as string,
-        role: req.query.role as string,
+        role_id: req.query.role_id as string,
         status: req.query.status as any,
         organisation_id: req.query.organisation_id as string,
         page: req.query.page ? parseInt(req.query.page as string) : 1,
         limit: req.query.limit ? parseInt(req.query.limit as string) : 10,
       };
+
+      console.log("filters", filters);
 
       const validationResult = userFiltersSchema.safeParse(filters);
       if (!validationResult.success) {

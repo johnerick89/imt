@@ -18,6 +18,12 @@ const parameters = [
     value: "false",
     value2: null,
   },
+  {
+    name: "BALANCE_MODE_SETTING",
+    description: "Balance mode setting (F - Float, B - Balance)",
+    value: "F",
+    value2: null,
+  },
 ];
 
 export default parameters;
