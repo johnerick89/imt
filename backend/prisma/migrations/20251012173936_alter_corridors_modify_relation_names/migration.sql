@@ -1,14 +1,15 @@
 -- DropForeignKey
-ALTER TABLE "public"."corridors" DROP CONSTRAINT "corridors_base_currency_id_fkey";
+ALTER TABLE "public"."corridors" DROP CONSTRAINT IF EXISTS "corridors_base_currency_id_fkey";
 
 -- DropForeignKey
-ALTER TABLE "public"."corridors" DROP CONSTRAINT "corridors_destination_country_id_fkey";
+ALTER TABLE "public"."corridors" DROP CONSTRAINT IF EXISTS "corridors_destination_country_id_fkey";
 
 -- DropForeignKey
-ALTER TABLE "public"."corridors" DROP CONSTRAINT "corridors_organisation_id_fkey";
+ALTER TABLE "public"."corridors" DROP CONSTRAINT IF EXISTS "corridors_organisation_id_fkey";
 
 -- DropForeignKey
-ALTER TABLE "public"."corridors" DROP CONSTRAINT "corridors_origin_country_id_fkey";
+ALTER TABLE "public"."corridors" DROP CONSTRAINT IF EXISTS "corridors_origin_country_id_fkey";
+
 
 -- AlterTable
 ALTER TABLE "public"."corridors" ADD COLUMN     "base_country_id" UUID,
