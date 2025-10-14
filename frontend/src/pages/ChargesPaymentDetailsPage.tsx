@@ -202,6 +202,24 @@ const ChargesPaymentDetailsPage: React.FC = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
+                Origin Total Amount
+              </label>
+              <p className="text-sm text-gray-900">
+                {formatToCurrency(payment.origin_total_amount)}{" "}
+                {payment.currency?.currency_code}
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Destination Total Amount
+              </label>
+              <p className="text-sm text-gray-900">
+                {formatToCurrency(payment.destination_total_amount)}{" "}
+                {payment.currency?.currency_code}
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Currency
               </label>
               <p className="text-sm text-gray-900">
@@ -306,6 +324,12 @@ const ChargesPaymentDetailsPage: React.FC = () => {
                   External Amount
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Origin Amount
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Destination Amount
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Amount Settled
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -338,6 +362,12 @@ const ChargesPaymentDetailsPage: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {formatToCurrency(item.external_amount_settled)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {formatToCurrency(item.origin_amount_settled)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {formatToCurrency(item.destination_amount_settled)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {formatToCurrency(item.amount_settled)}
@@ -381,6 +411,16 @@ const ChargesPaymentDetailsPage: React.FC = () => {
             <p>
               <strong>External Amount:</strong>{" "}
               {formatToCurrency(payment.external_total_amount)}{" "}
+              {payment.currency?.currency_code}
+            </p>
+            <p>
+              <strong>Origin Amount:</strong>{" "}
+              {formatToCurrency(payment.origin_total_amount)}{" "}
+              {payment.currency?.currency_code}
+            </p>
+            <p>
+              <strong>Destination Amount:</strong>{" "}
+              {formatToCurrency(payment.destination_total_amount)}{" "}
               {payment.currency?.currency_code}
             </p>
           </div>
@@ -431,8 +471,13 @@ const ChargesPaymentDetailsPage: React.FC = () => {
               {payment.currency?.currency_code}
             </p>
             <p>
-              <strong>External Amount:</strong>{" "}
-              {formatToCurrency(payment.external_total_amount)}{" "}
+              <strong>Origin Amount:</strong>{" "}
+              {formatToCurrency(payment.origin_total_amount)}{" "}
+              {payment.currency?.currency_code}
+            </p>
+            <p>
+              <strong>Destination Amount:</strong>{" "}
+              {formatToCurrency(payment.destination_total_amount)}{" "}
               {payment.currency?.currency_code}
             </p>
           </div>
