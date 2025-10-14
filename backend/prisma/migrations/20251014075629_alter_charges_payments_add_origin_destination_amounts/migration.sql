@@ -10,7 +10,4 @@ ALTER TABLE "public"."charges_payments" ADD COLUMN     "destination_total_amount
 ADD COLUMN     "origin_total_amount" DECIMAL(22,9) NOT NULL;
 
 -- AlterTable
-ALTER TABLE "public"."corridors" ADD COLUMN     "base_country_id" UUID;
-
--- AddForeignKey
-ALTER TABLE "public"."corridors" ADD CONSTRAINT "corridors_base_country_id_fkey" FOREIGN KEY ("base_country_id") REFERENCES "public"."countries"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "public"."corridors" ADD COLUMN  IF NOT EXISTS   "base_country_id" UUID;
