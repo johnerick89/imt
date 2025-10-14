@@ -42,6 +42,8 @@ export interface ChargesPayment {
   created_by_user?: User;
   organisation?: Organisation;
   payment_items?: ChargesPaymentItem[];
+  origin_total_amount: number;
+  destination_total_amount: number;
 }
 
 // Charges Payment Item Interface
@@ -52,6 +54,8 @@ export interface ChargesPaymentItem {
   internal_amount_settled: number;
   external_amount_settled: number;
   amount_settled: number;
+  origin_amount_settled: number;
+  destination_amount_settled: number;
   created_at: string;
   // Relations
   charges_payment?: ChargesPayment;
@@ -82,6 +86,8 @@ export interface TransactionCharge {
   transaction?: Transaction;
   charge?: Charge;
   organisation?: Organisation;
+  origin_amount: number | null;
+  destination_amount: number | null;
 }
 
 // Create Charges Payment Request

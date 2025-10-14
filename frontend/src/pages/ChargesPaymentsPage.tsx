@@ -540,7 +540,10 @@ const ChargesPaymentsPage: React.FC = () => {
                       Internal Amount
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      External Amount
+                      Origin Amount
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Destination Amount
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Customer
@@ -587,8 +590,13 @@ const ChargesPaymentsPage: React.FC = () => {
                           : "N/A"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {charge.external_amount
-                          ? formatToCurrency(charge.external_amount)
+                        {charge.origin_amount
+                          ? formatToCurrency(charge.origin_amount)
+                          : "N/A"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {charge.destination_amount
+                          ? formatToCurrency(charge.destination_amount)
                           : "N/A"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">

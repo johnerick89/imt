@@ -27,10 +27,6 @@ ALTER COLUMN "organisation_id" DROP NOT NULL;
 DO $$
 BEGIN
   -- For base_country_id (already exists in table)
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'corridors_base_country_id_fkey') THEN
-    ALTER TABLE "public"."corridors" ADD CONSTRAINT "corridors_base_country_id_fkey" 
-    FOREIGN KEY ("base_country_id") REFERENCES "public"."countries"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-  END IF;
 
   -- For origin_country_id (now added)
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'corridors_origin_country_id_fkey') THEN

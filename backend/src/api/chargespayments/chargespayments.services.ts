@@ -163,6 +163,12 @@ export class ChargesPaymentService {
             ? parseFloat(charge.external_amount.toString())
             : null,
           rate: charge.rate ? parseFloat(charge.rate.toString()) : null,
+          origin_amount: charge.origin_amount
+            ? parseFloat(charge.origin_amount.toString())
+            : null,
+          destination_amount: charge.destination_amount
+            ? parseFloat(charge.destination_amount.toString())
+            : null,
           created_at: charge.created_at.toISOString(),
           updated_at: charge.updated_at.toISOString(),
           transaction: charge.transaction
@@ -429,6 +435,16 @@ export class ChargesPaymentService {
           0
         );
 
+        const originTotal = charges.reduce(
+          (sum, tc) => sum + parseFloat((tc.origin_amount || 0).toString()),
+          0
+        );
+        const destinationTotal = charges.reduce(
+          (sum, tc) =>
+            sum + parseFloat((tc.destination_amount || 0).toString()),
+          0
+        );
+
         // Generate reference number
         const referenceNumber = await this.generateReferenceNumber(
           chargeType as ChargeType,
@@ -442,6 +458,8 @@ export class ChargesPaymentService {
             amount: totalCost,
             internal_total_amount: internalTotal,
             external_total_amount: externalTotal,
+            origin_total_amount: originTotal,
+            destination_total_amount: destinationTotal,
             reference_number: referenceNumber,
             currency_id: currency.id,
             destination_org_id: destOrgIdValue,
@@ -462,6 +480,8 @@ export class ChargesPaymentService {
                 transaction_charges_id: tc.id,
                 internal_amount_settled: tc.internal_amount || 0,
                 external_amount_settled: tc.external_amount || 0,
+                origin_amount_settled: tc.origin_amount || 0,
+                destination_amount_settled: tc.destination_amount || 0,
                 amount_settled: tc.amount || 0,
               },
             })
@@ -529,6 +549,12 @@ export class ChargesPaymentService {
             ),
             external_amount_settled: parseFloat(
               item.external_amount_settled.toString()
+            ),
+            origin_amount_settled: parseFloat(
+              item.origin_amount_settled?.toString() || "0"
+            ),
+            destination_amount_settled: parseFloat(
+              item.destination_amount_settled?.toString() || "0"
             ),
             amount_settled: parseFloat(item.amount_settled.toString()),
             created_at: item.created_at.toISOString(),
@@ -627,6 +653,12 @@ export class ChargesPaymentService {
           external_total_amount: parseFloat(
             payment.external_total_amount.toString()
           ),
+          origin_total_amount: parseFloat(
+            payment.origin_total_amount.toString()
+          ),
+          destination_total_amount: parseFloat(
+            payment.destination_total_amount.toString()
+          ),
           date_completed: payment.date_completed?.toISOString() || null,
           created_at: payment.created_at.toISOString(),
           updated_at: payment.updated_at.toISOString(),
@@ -700,6 +732,12 @@ export class ChargesPaymentService {
         ),
         external_total_amount: parseFloat(
           chargesPayment.external_total_amount.toString()
+        ),
+        origin_total_amount: parseFloat(
+          chargesPayment.origin_total_amount.toString()
+        ),
+        destination_total_amount: parseFloat(
+          chargesPayment.destination_total_amount.toString()
         ),
         date_completed: chargesPayment.date_completed?.toISOString() || null,
         created_at: chargesPayment.created_at.toISOString(),
@@ -875,6 +913,12 @@ export class ChargesPaymentService {
           external_total_amount: parseFloat(
             result!.external_total_amount.toString()
           ),
+          origin_total_amount: parseFloat(
+            result!.origin_total_amount.toString()
+          ),
+          destination_total_amount: parseFloat(
+            result!.destination_total_amount.toString()
+          ),
           date_completed: result!.date_completed?.toISOString() || null,
           created_at: result!.created_at.toISOString(),
           updated_at: result!.updated_at.toISOString(),
@@ -1048,6 +1092,12 @@ export class ChargesPaymentService {
           ),
           external_total_amount: parseFloat(
             result!.external_total_amount.toString()
+          ),
+          origin_total_amount: parseFloat(
+            result!.origin_total_amount.toString()
+          ),
+          destination_total_amount: parseFloat(
+            result!.destination_total_amount.toString()
           ),
           date_completed: result!.date_completed?.toISOString() || null,
           created_at: result!.created_at.toISOString(),

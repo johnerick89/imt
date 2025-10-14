@@ -1380,26 +1380,28 @@ enum ChargesPaymentStatus {
 }
 
 model ChargesPayment {
-  id                    String               @id @default(uuid()) @db.Uuid
-  type                  ChargeType // Matches charge_type from charges table
-  amount                Decimal              @db.Decimal(22, 9) // Aggregated amount
-  internal_total_amount Decimal              @db.Decimal(22, 9) // Aggregated internal share (e.g., your org's $3)
-  external_total_amount Decimal              @db.Decimal(22, 9) // Aggregated external share (e.g., partner's $2)
-  reference_number      String               @unique // e.g., "PAY-2025-09-01-COMMISSION-ORGX"
-  date_completed        DateTime             @db.Timestamp(0) // When the batch was marked paid
-  currency_id           String               @db.Uuid
-  currency              Currency             @relation(fields: [currency_id], references: [id])
-  destination_org_id    String?              @db.Uuid // Partner org (e.g., Org X)
-  destination_org       Organisation?        @relation("DestinationOrganisation", fields: [destination_org_id], references: [id], onDelete: SetNull)
-  status                ChargesPaymentStatus @default(PENDING) // e.g., "COMPLETED", "FAILED", "PENDING_REVIEW"
-  notes                 String? // Optional notes (e.g., "Monthly settlement")
-  created_at            DateTime             @default(now())
-  updated_at            DateTime             @updatedAt
-  created_by            String?              @db.Uuid
-  created_by_user       User?                @relation(fields: [created_by], references: [id])
-  organisation_id       String               @db.Uuid // Your org (multi-tenant)
-  organisation          Organisation         @relation("Organisation", fields: [organisation_id], references: [id], onDelete: Cascade)
-  payment_items         ChargesPaymentItem[] // Junction to settled transaction_charges
+  id                       String               @id @default(uuid()) @db.Uuid
+  type                     ChargeType // Matches charge_type from charges table
+  amount                   Decimal              @db.Decimal(22, 9) // Aggregated amount
+  internal_total_amount    Decimal              @db.Decimal(22, 9) // Aggregated internal share (e.g., your org's $3)
+  external_total_amount    Decimal              @db.Decimal(22, 9) // Aggregated external share (e.g., partner's $2)
+  reference_number         String               @unique // e.g., "PAY-2025-09-01-COMMISSION-ORGX"
+  date_completed           DateTime             @db.Timestamp(0) // When the batch was marked paid
+  currency_id              String               @db.Uuid
+  currency                 Currency             @relation(fields: [currency_id], references: [id])
+  destination_org_id       String?              @db.Uuid // Partner org (e.g., Org X)
+  destination_org          Organisation?        @relation("DestinationOrganisation", fields: [destination_org_id], references: [id], onDelete: SetNull)
+  status                   ChargesPaymentStatus @default(PENDING) // e.g., "COMPLETED", "FAILED", "PENDING_REVIEW"
+  notes                    String? // Optional notes (e.g., "Monthly settlement")
+  created_at               DateTime             @default(now())
+  updated_at               DateTime             @updatedAt
+  created_by               String?              @db.Uuid
+  created_by_user          User?                @relation(fields: [created_by], references: [id])
+  organisation_id          String               @db.Uuid // Your org (multi-tenant)
+  organisation             Organisation         @relation("Organisation", fields: [organisation_id], references: [id], onDelete: Cascade)
+  payment_items            ChargesPaymentItem[] // Junction to settled transaction_charges
+  origin_total_amount      Decimal              @db.Decimal(22, 9) // Aggregated origin amount
+  destination_total_amount Decimal              @db.Decimal(22, 9) // Aggregated destination amount
 
   @@index([type])
   @@index([currency_id])
