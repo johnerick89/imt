@@ -47,6 +47,7 @@ export class CorridorService {
       data: {
         ...data,
         created_by: userId,
+        base_country_id: data.base_country_id || data.origin_country_id,
       },
       include: {
         base_country: {
