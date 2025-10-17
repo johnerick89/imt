@@ -168,6 +168,7 @@ export class OrganisationsService {
             organisation_id: organisation.id,
             status: CorridorStatus.ACTIVE,
             created_by: createdBy,
+            base_country_id: organisation.country_id,
           });
         }
 
@@ -190,6 +191,7 @@ export class OrganisationsService {
             organisation_id: existingOrg.id,
             status: CorridorStatus.ACTIVE,
             created_by: createdBy,
+            base_country_id: existingOrg.country_id,
           });
         }
       }
