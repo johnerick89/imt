@@ -4,6 +4,7 @@ import type {
   CreateChargeRequest,
   UpdateChargeRequest,
   ChargeFilters,
+  ChargeStatsFilters,
 } from "../types/ChargesTypes";
 import { useToast } from "../contexts/ToastContext";
 
@@ -34,10 +35,10 @@ export const useCharge = (id: string) => {
   });
 };
 
-export const useChargeStats = () => {
+export const useChargeStats = (filters: ChargeStatsFilters = {}) => {
   return useQuery({
     queryKey: chargeKeys.stats(),
-    queryFn: () => ChargesService.getChargeStats(),
+    queryFn: () => ChargesService.getChargeStats(filters),
   });
 };
 

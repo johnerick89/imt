@@ -13,8 +13,9 @@ import {
   updateInboundTransactionReceiverDetailsSchema,
 } from "./transactions.validation";
 import type CustomRequest from "../../types/CustomReq.type";
-import { AppError } from "../../utils/AppError";
+import { AppError, ZodValidationError } from "../../utils/AppError";
 import { asyncHandler } from "../../middlewares/error.middleware";
+import { parseZodError } from "../../utils/validation.utils";
 
 const transactionService = new TransactionService();
 
@@ -29,7 +30,8 @@ export class TransactionController {
 
       const validation = createOutboundTransactionSchema.safeParse(req.body);
       if (!validation.success) {
-        throw new AppError("Validation error", 400);
+        console.log("validation error", parseZodError(validation.error));
+        throw new ZodValidationError(parseZodError(validation.error));
       }
 
       const userId = req.user?.id;

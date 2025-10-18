@@ -13,37 +13,34 @@ const chargesPaymentService = ChargesPaymentService.getInstance();
 
 // Hook to get pending transaction charges
 export const usePendingTransactionCharges = (
-  organisationId: string,
   filters?: PendingTransactionChargesFilters
 ) => {
   return useQuery({
-    queryKey: ["pendingTransactionCharges", organisationId, filters],
-    queryFn: () =>
-      chargesPaymentService.getPendingTransactionCharges(
-        organisationId,
-        filters
-      ),
-    enabled: !!organisationId,
+    queryKey: ["pendingTransactionCharges", filters],
+    queryFn: () => chargesPaymentService.getPendingTransactionCharges(filters),
+    enabled: !!filters?.organisation_id,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 
 // Hook to get pending charges stats
-export const usePendingChargesStats = (organisationId: string) => {
+export const usePendingChargesStats = (
+  filters?: PendingTransactionChargesFilters
+) => {
   return useQuery({
-    queryKey: ["pendingChargesStats", organisationId],
-    queryFn: () => chargesPaymentService.getPendingChargesStats(organisationId),
-    enabled: !!organisationId,
+    queryKey: ["pendingChargesStats", filters],
+    queryFn: () => chargesPaymentService.getPendingChargesStats(filters),
+    enabled: !!filters?.organisation_id,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 
 // Hook to get charge payments stats
-export const useChargePaymentsStats = (organisationId: string) => {
+export const useChargePaymentsStats = (filters?: ChargesPaymentFilters) => {
   return useQuery({
-    queryKey: ["chargePaymentsStats", organisationId],
-    queryFn: () => chargesPaymentService.getChargePaymentsStats(organisationId),
-    enabled: !!organisationId,
+    queryKey: ["chargePaymentsStats", filters],
+    queryFn: () => chargesPaymentService.getChargePaymentsStats(filters),
+    enabled: !!filters?.organisation_id,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
@@ -53,13 +50,8 @@ export const useCreateChargesPayment = () => {
   const queryClient = useQueryClient();
   const { showSuccess, showError } = useToast();
   return useMutation({
-    mutationFn: ({
-      organisationId,
-      data,
-    }: {
-      organisationId: string;
-      data: CreateChargesPaymentRequest;
-    }) => chargesPaymentService.createChargesPayment(organisationId, data),
+    mutationFn: (data: CreateChargesPaymentRequest) =>
+      chargesPaymentService.createChargesPayment(data),
     onSuccess: (response) => {
       showSuccess(
         "Charges Payment Created Successfully",
@@ -95,15 +87,11 @@ export const useCreateChargesPayment = () => {
 };
 
 // Hook to get charges payments
-export const useChargesPayments = (
-  organisationId: string,
-  filters?: ChargesPaymentFilters
-) => {
+export const useChargesPayments = (filters?: ChargesPaymentFilters) => {
   return useQuery({
-    queryKey: ["chargesPayments", organisationId, filters],
-    queryFn: () =>
-      chargesPaymentService.getChargesPayments(organisationId, filters),
-    enabled: !!organisationId,
+    queryKey: ["chargesPayments", filters],
+    queryFn: () => chargesPaymentService.getChargesPayments(filters),
+    enabled: !!filters?.organisation_id,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };

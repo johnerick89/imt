@@ -117,7 +117,7 @@ export interface ITransactionCharge {
 // Create Outbound Transaction Request
 export interface CreateOutboundTransactionRequest {
   corridor_id: string;
-  till_id: string;
+  till_id?: string;
   customer_id: string;
   origin_amount: number;
   origin_channel_id: string;

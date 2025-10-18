@@ -10,6 +10,7 @@ interface ChargesTableProps {
   onToggleStatus: (charge: Charge) => void;
   onDelete: (charge: Charge) => void;
   isLoading?: boolean;
+  standard?: boolean;
 }
 
 export default function ChargesTable({
@@ -18,6 +19,7 @@ export default function ChargesTable({
   onToggleStatus,
   onDelete,
   isLoading = false,
+  standard = false,
 }: ChargesTableProps) {
   const columns: ColumnDef<Charge>[] = [
     {
@@ -73,24 +75,32 @@ export default function ChargesTable({
         </span>
       ),
     },
-    {
-      accessorKey: "origin_organisation",
-      header: "Origin Org",
-      cell: ({ row }) => (
-        <span className="text-sm text-gray-900">
-          {row.original.origin_organisation?.name || "N/A"}
-        </span>
-      ),
-    },
-    {
-      accessorKey: "destination_organisation",
-      header: "Destination Org",
-      cell: ({ row }) => (
-        <span className="text-sm text-gray-900">
-          {row.original.destination_organisation?.name || "N/A"}
-        </span>
-      ),
-    },
+    ...(!standard
+      ? [
+          {
+            accessorKey: "origin_organisation",
+            header: "Origin Org",
+            cell: ({ row }: { row: { original: Charge } }) => (
+              <span className="text-sm text-gray-900">
+                {row.original.origin_organisation?.name || "N/A"}
+              </span>
+            ),
+          },
+        ]
+      : []),
+    ...(!standard
+      ? [
+          {
+            accessorKey: "destination_organisation",
+            header: "Destination Org",
+            cell: ({ row }: { row: { original: Charge } }) => (
+              <span className="text-sm text-gray-900">
+                {row.original.destination_organisation?.name || "N/A"}
+              </span>
+            ),
+          },
+        ]
+      : []),
     {
       accessorKey: "status",
       header: "Status",

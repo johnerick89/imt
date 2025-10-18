@@ -49,6 +49,7 @@ const ChargesPaymentsPage: React.FC = () => {
     useState<PendingTransactionChargesFilters>({
       page: 1,
       limit: 10,
+      organisation_id: financialOrganisationId,
     });
   const [selectedCharges, setSelectedCharges] = useState<string[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -58,6 +59,7 @@ const ChargesPaymentsPage: React.FC = () => {
   const [paymentFilters, setPaymentFilters] = useState<ChargesPaymentFilters>({
     page: 1,
     limit: 10,
+    organisation_id: financialOrganisationId,
   });
   const [selectedPayment, setSelectedPayment] = useState<ChargesPayment | null>(
     null
@@ -70,19 +72,13 @@ const ChargesPaymentsPage: React.FC = () => {
 
   // Data fetching
   const { data: pendingChargesData, refetch: refetchPending } =
-    usePendingTransactionCharges(financialOrganisationId, pendingFilters);
+    usePendingTransactionCharges(pendingFilters);
 
-  const { data: paymentsData, refetch: refetchPayments } = useChargesPayments(
-    financialOrganisationId,
-    paymentFilters
-  );
+  const { data: paymentsData, refetch: refetchPayments } =
+    useChargesPayments(paymentFilters);
 
-  const { data: pendingStatsData } = usePendingChargesStats(
-    financialOrganisationId
-  );
-  const { data: paymentsStatsData } = useChargePaymentsStats(
-    financialOrganisationId
-  );
+  const { data: pendingStatsData } = usePendingChargesStats(pendingFilters);
+  const { data: paymentsStatsData } = useChargePaymentsStats(paymentFilters);
   const { data: organisationsData } = useOrganisations();
   const { data: currenciesData } = useCurrencies({ limit: 1000 });
 
@@ -90,6 +86,25 @@ const ChargesPaymentsPage: React.FC = () => {
   const createChargesPaymentMutation = useCreateChargesPayment();
   const approveMutation = useApproveChargesPayment();
   const reverseMutation = useReverseChargesPayment();
+
+  // Helper functions to maintain organisation_id in filters
+  const updatePendingFilters = (
+    updates: Partial<PendingTransactionChargesFilters>
+  ) => {
+    setPendingFilters((prev) => ({
+      ...prev,
+      ...updates,
+      organisation_id: financialOrganisationId,
+    }));
+  };
+
+  const updatePaymentFilters = (updates: Partial<ChargesPaymentFilters>) => {
+    setPaymentFilters((prev) => ({
+      ...prev,
+      ...updates,
+      organisation_id: financialOrganisationId,
+    }));
+  };
 
   // Computed values
   const pendingCharges = useMemo(
@@ -152,10 +167,7 @@ const ChargesPaymentsPage: React.FC = () => {
         notes: notes || undefined,
       };
 
-      await createChargesPaymentMutation.mutateAsync({
-        organisationId: financialOrganisationId,
-        data,
-      });
+      await createChargesPaymentMutation.mutateAsync(data);
 
       setShowCreateModal(false);
       setSelectedCharges([]);
@@ -401,8 +413,7 @@ const ChargesPaymentsPage: React.FC = () => {
                 placeholder="Search charges..."
                 value={pendingFilters.search || ""}
                 onChange={(e) =>
-                  setPendingFilters({
-                    ...pendingFilters,
+                  updatePendingFilters({
                     search: e.target.value,
                     page: 1,
                   })
@@ -412,8 +423,7 @@ const ChargesPaymentsPage: React.FC = () => {
                 placeholder="Select charge type"
                 value={pendingFilters.type || ""}
                 onChange={(value) =>
-                  setPendingFilters({
-                    ...pendingFilters,
+                  updatePendingFilters({
                     type: value as ChargeType,
                     page: 1,
                   })
@@ -429,8 +439,7 @@ const ChargesPaymentsPage: React.FC = () => {
                 placeholder="Select destination org"
                 value={pendingFilters.destination_org_id || ""}
                 onChange={(value) =>
-                  setPendingFilters({
-                    ...pendingFilters,
+                  updatePendingFilters({
                     destination_org_id: value,
                     page: 1,
                   })
@@ -444,8 +453,7 @@ const ChargesPaymentsPage: React.FC = () => {
                 placeholder="Select currency"
                 value={pendingFilters.currency_id || ""}
                 onChange={(value) =>
-                  setPendingFilters({
-                    ...pendingFilters,
+                  updatePendingFilters({
                     currency_id: value,
                     page: 1,
                   })
@@ -462,8 +470,7 @@ const ChargesPaymentsPage: React.FC = () => {
                 placeholder="From Date"
                 value={pendingFilters.date_from || ""}
                 onChange={(e) =>
-                  setPendingFilters({
-                    ...pendingFilters,
+                  updatePendingFilters({
                     date_from: e.target.value,
                     page: 1,
                   })
@@ -474,8 +481,7 @@ const ChargesPaymentsPage: React.FC = () => {
                 placeholder="To Date"
                 value={pendingFilters.date_to || ""}
                 onChange={(e) =>
-                  setPendingFilters({
-                    ...pendingFilters,
+                  updatePendingFilters({
                     date_to: e.target.value,
                     page: 1,
                   })
@@ -528,6 +534,9 @@ const ChargesPaymentsPage: React.FC = () => {
                       Transaction
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Origin Organisation
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Destination Organisation
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -546,7 +555,10 @@ const ChargesPaymentsPage: React.FC = () => {
                       Destination Amount
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Customer
+                      Sender
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Receiver
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Date
@@ -566,6 +578,9 @@ const ChargesPaymentsPage: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {charge.transaction?.transaction_no || "N/A"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {charge.transaction?.origin_organisation?.name || "N/A"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {charge.transaction?.destination_organisation?.name ||
@@ -604,6 +619,11 @@ const ChargesPaymentsPage: React.FC = () => {
                           ? `${charge.transaction.customer.full_name}`
                           : "N/A"}
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {charge.transaction?.beneficiary
+                          ? `${charge.transaction.beneficiary.name}`
+                          : "N/A"}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {charge.created_at
                           ? new Date(charge.created_at).toLocaleDateString()
@@ -623,8 +643,7 @@ const ChargesPaymentsPage: React.FC = () => {
                     variant="outline"
                     disabled={pendingFilters.page === 1}
                     onClick={() =>
-                      setPendingFilters({
-                        ...pendingFilters,
+                      updatePendingFilters({
                         page: (pendingFilters.page || 1) - 1,
                       })
                     }
@@ -637,8 +656,7 @@ const ChargesPaymentsPage: React.FC = () => {
                       pendingFilters.page === pendingPagination.totalPages
                     }
                     onClick={() =>
-                      setPendingFilters({
-                        ...pendingFilters,
+                      updatePendingFilters({
                         page: (pendingFilters.page || 1) + 1,
                       })
                     }
@@ -679,8 +697,7 @@ const ChargesPaymentsPage: React.FC = () => {
                         size="sm"
                         disabled={pendingFilters.page === 1}
                         onClick={() =>
-                          setPendingFilters({
-                            ...pendingFilters,
+                          updatePendingFilters({
                             page: (pendingFilters.page || 1) - 1,
                           })
                         }
@@ -694,8 +711,7 @@ const ChargesPaymentsPage: React.FC = () => {
                           pendingFilters.page === pendingPagination.totalPages
                         }
                         onClick={() =>
-                          setPendingFilters({
-                            ...pendingFilters,
+                          updatePendingFilters({
                             page: (pendingFilters.page || 1) + 1,
                           })
                         }
@@ -840,8 +856,7 @@ const ChargesPaymentsPage: React.FC = () => {
                 placeholder="Search payments..."
                 value={paymentFilters.search || ""}
                 onChange={(e) =>
-                  setPaymentFilters({
-                    ...paymentFilters,
+                  updatePaymentFilters({
                     search: e.target.value,
                     page: 1,
                   })
@@ -851,8 +866,7 @@ const ChargesPaymentsPage: React.FC = () => {
                 placeholder="Select charge type"
                 value={paymentFilters.type || ""}
                 onChange={(value) =>
-                  setPaymentFilters({
-                    ...paymentFilters,
+                  updatePaymentFilters({
                     type: value as ChargeType,
                     page: 1,
                   })
@@ -868,8 +882,7 @@ const ChargesPaymentsPage: React.FC = () => {
                 placeholder="Select status"
                 value={paymentFilters.status || ""}
                 onChange={(value) =>
-                  setPaymentFilters({
-                    ...paymentFilters,
+                  updatePaymentFilters({
                     status: value as ChargesPaymentStatus,
                     page: 1,
                   })
@@ -884,8 +897,7 @@ const ChargesPaymentsPage: React.FC = () => {
                 placeholder="Select destination org"
                 value={paymentFilters.destination_org_id || ""}
                 onChange={(value) =>
-                  setPaymentFilters({
-                    ...paymentFilters,
+                  updatePaymentFilters({
                     destination_org_id: value,
                     page: 1,
                   })
@@ -901,8 +913,7 @@ const ChargesPaymentsPage: React.FC = () => {
                 placeholder="Select currency"
                 value={paymentFilters.currency_id || ""}
                 onChange={(value) =>
-                  setPaymentFilters({
-                    ...paymentFilters,
+                  updatePaymentFilters({
                     currency_id: value,
                     page: 1,
                   })
@@ -917,8 +928,7 @@ const ChargesPaymentsPage: React.FC = () => {
                 placeholder="From Date"
                 value={paymentFilters.date_from || ""}
                 onChange={(e) =>
-                  setPaymentFilters({
-                    ...paymentFilters,
+                  updatePaymentFilters({
                     date_from: e.target.value,
                     page: 1,
                   })
@@ -929,8 +939,7 @@ const ChargesPaymentsPage: React.FC = () => {
                 placeholder="To Date"
                 value={paymentFilters.date_to || ""}
                 onChange={(e) =>
-                  setPaymentFilters({
-                    ...paymentFilters,
+                  updatePaymentFilters({
                     date_to: e.target.value,
                     page: 1,
                   })
@@ -1060,8 +1069,7 @@ const ChargesPaymentsPage: React.FC = () => {
                     variant="outline"
                     disabled={paymentFilters.page === 1}
                     onClick={() =>
-                      setPaymentFilters({
-                        ...paymentFilters,
+                      updatePaymentFilters({
                         page: (paymentFilters.page || 1) - 1,
                       })
                     }
@@ -1074,8 +1082,7 @@ const ChargesPaymentsPage: React.FC = () => {
                       paymentFilters.page === paymentsPagination.totalPages
                     }
                     onClick={() =>
-                      setPaymentFilters({
-                        ...paymentFilters,
+                      updatePaymentFilters({
                         page: (paymentFilters.page || 1) + 1,
                       })
                     }
@@ -1116,8 +1123,7 @@ const ChargesPaymentsPage: React.FC = () => {
                         size="sm"
                         disabled={paymentFilters.page === 1}
                         onClick={() =>
-                          setPaymentFilters({
-                            ...paymentFilters,
+                          updatePaymentFilters({
                             page: (paymentFilters.page || 1) - 1,
                           })
                         }
@@ -1131,8 +1137,7 @@ const ChargesPaymentsPage: React.FC = () => {
                           paymentFilters.page === paymentsPagination.totalPages
                         }
                         onClick={() =>
-                          setPaymentFilters({
-                            ...paymentFilters,
+                          updatePaymentFilters({
                             page: (paymentFilters.page || 1) + 1,
                           })
                         }

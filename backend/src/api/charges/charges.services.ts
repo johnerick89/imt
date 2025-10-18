@@ -7,6 +7,7 @@ import type {
   ChargeListResponse,
   ChargeResponse,
   ChargeStats,
+  ChargeStatsFilters,
 } from "./charges.interfaces";
 import { AppError, NotFoundError } from "../../utils/AppError";
 
@@ -123,6 +124,7 @@ export class ChargeService {
   }
 
   async getCharges(filters: ChargeFilters): Promise<ChargeListResponse> {
+    console.log("filters", filters);
     const {
       page = 1,
       limit = 10,
@@ -135,6 +137,7 @@ export class ChargeService {
       origin_organisation_id,
       destination_organisation_id,
       created_by,
+      organisation_id,
     } = filters;
 
     const skip = (page - 1) * limit;
@@ -168,12 +171,19 @@ export class ChargeService {
       where.currency_id = currency_id;
     }
 
-    if (origin_organisation_id) {
-      where.origin_organisation_id = origin_organisation_id;
-    }
+    if (organisation_id) {
+      where.OR = [
+        { origin_organisation_id: organisation_id },
+        { destination_organisation_id: organisation_id },
+      ];
+    } else {
+      if (origin_organisation_id) {
+        where.origin_organisation_id = origin_organisation_id;
+      }
 
-    if (destination_organisation_id) {
-      where.destination_organisation_id = destination_organisation_id;
+      if (destination_organisation_id) {
+        where.destination_organisation_id = destination_organisation_id;
+      }
     }
 
     if (created_by) {
@@ -348,21 +358,31 @@ export class ChargeService {
     };
   }
 
-  async getChargeStats(): Promise<{
+  async getChargeStats(filters: ChargeStatsFilters): Promise<{
     success: boolean;
     message: string;
     data: ChargeStats;
   }> {
+    const { organisation_id } = filters;
+    const where: any = {};
+    if (organisation_id) {
+      where.OR = [
+        { origin_organisation_id: organisation_id },
+        { destination_organisation_id: organisation_id },
+      ];
+    }
     const [total, active, inactive, pending, blocked, tax, fee, commission] =
       await Promise.all([
-        prisma.charge.count(),
-        prisma.charge.count({ where: { status: "ACTIVE" } }),
-        prisma.charge.count({ where: { status: "INACTIVE" } }),
-        prisma.charge.count({ where: { status: "PENDING" } }),
-        prisma.charge.count({ where: { status: "BLOCKED" } }),
-        prisma.charge.count({ where: { type: "TAX" } }),
-        prisma.charge.count({ where: { type: "INTERNAL_FEE" } }),
-        prisma.charge.count({ where: { type: "COMMISSION" } }),
+        prisma.charge.count({
+          where,
+        }),
+        prisma.charge.count({ where: { ...where, status: "ACTIVE" } }),
+        prisma.charge.count({ where: { ...where, status: "INACTIVE" } }),
+        prisma.charge.count({ where: { ...where, status: "PENDING" } }),
+        prisma.charge.count({ where: { ...where, status: "BLOCKED" } }),
+        prisma.charge.count({ where: { ...where, type: "TAX" } }),
+        prisma.charge.count({ where: { ...where, type: "INTERNAL_FEE" } }),
+        prisma.charge.count({ where: { ...where, type: "COMMISSION" } }),
       ]);
 
     return {

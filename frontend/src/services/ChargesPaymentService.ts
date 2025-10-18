@@ -27,7 +27,6 @@ export class ChargesPaymentService {
    * Get pending transaction charges
    */
   async getPendingTransactionCharges(
-    organisationId: string,
     filters?: PendingTransactionChargesFilters
   ): Promise<PendingTransactionChargesResponse> {
     const params = new URLSearchParams();
@@ -41,7 +40,7 @@ export class ChargesPaymentService {
     }
 
     const response = await apiClient.get(
-      `/api/v1/chargespayments/organisations/${organisationId}/pending-charges?${params.toString()}`
+      `/api/v1/chargespayments/pending-charges?${params.toString()}`
     );
     return response.data;
   }
@@ -50,10 +49,20 @@ export class ChargesPaymentService {
    * Get pending charges stats
    */
   async getPendingChargesStats(
-    organisationId: string
+    filters?: PendingTransactionChargesFilters
   ): Promise<ChargesPaymentStatsResponse> {
+    const params = new URLSearchParams();
+
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+          params.append(key, value.toString());
+        }
+      });
+    }
+
     const response = await apiClient.get(
-      `/api/v1/chargespayments/organisations/${organisationId}/pending-charges-stats`
+      `/api/v1/chargespayments/pending-charges-stats?${params.toString()}`
     );
     return response.data;
   }
@@ -62,10 +71,20 @@ export class ChargesPaymentService {
    * Get charge payments stats
    */
   async getChargePaymentsStats(
-    organisationId: string
+    filters?: ChargesPaymentFilters
   ): Promise<ChargesPaymentStatsResponse> {
+    const params = new URLSearchParams();
+
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+          params.append(key, value.toString());
+        }
+      });
+    }
+
     const response = await apiClient.get(
-      `/api/v1/chargespayments/organisations/${organisationId}/charge-payments-stats`
+      `/api/v1/chargespayments/charge-payments-stats?${params.toString()}`
     );
     return response.data;
   }
@@ -74,11 +93,10 @@ export class ChargesPaymentService {
    * Create charges payment
    */
   async createChargesPayment(
-    organisationId: string,
     data: CreateChargesPaymentRequest
   ): Promise<ChargesPaymentResponse> {
     const response = await apiClient.post(
-      `/api/v1/chargespayments/organisations/${organisationId}/charges-payments`,
+      `/api/v1/chargespayments/charges-payments`,
       data
     );
     return response.data;
@@ -88,7 +106,6 @@ export class ChargesPaymentService {
    * Get charges payments
    */
   async getChargesPayments(
-    organisationId: string,
     filters?: ChargesPaymentFilters
   ): Promise<ChargesPaymentListResponse> {
     const params = new URLSearchParams();
@@ -102,7 +119,7 @@ export class ChargesPaymentService {
     }
 
     const response = await apiClient.get(
-      `/api/v1/chargespayments/organisations/${organisationId}/charges-payments?${params.toString()}`
+      `/api/v1/chargespayments/charges-payments?${params.toString()}`
     );
     return response.data;
   }

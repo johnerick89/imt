@@ -17,11 +17,6 @@ export class ChargesPaymentController {
   // Get pending transaction charges
   getPendingTransactionCharges = asyncHandler(
     async (req: CustomRequest, res: Response): Promise<void> => {
-      const { orgId } = req.params;
-      if (!orgId) {
-        throw new AppError("Organisation ID is required", 400);
-      }
-
       const validation = pendingTransactionChargesFiltersSchema.safeParse(
         req.query
       );
@@ -30,7 +25,6 @@ export class ChargesPaymentController {
       }
 
       const result = await chargesPaymentService.getPendingTransactionCharges(
-        orgId,
         validation.data
       );
 
@@ -41,12 +35,16 @@ export class ChargesPaymentController {
   // Get pending charges stats
   getPendingChargesStats = asyncHandler(
     async (req: CustomRequest, res: Response): Promise<void> => {
-      const { orgId } = req.params;
-      if (!orgId) {
-        throw new AppError("Organisation ID is required", 400);
+      const validation = pendingTransactionChargesFiltersSchema.safeParse(
+        req.query
+      );
+      if (!validation.success) {
+        throw new AppError("Validation error", 400);
       }
 
-      const result = await chargesPaymentService.getPendingChargesStats(orgId);
+      const result = await chargesPaymentService.getPendingChargesStats(
+        validation.data
+      );
       res.status(200).json(result);
     }
   );
@@ -54,12 +52,14 @@ export class ChargesPaymentController {
   // Get charge payments stats
   getChargePaymentsStats = asyncHandler(
     async (req: CustomRequest, res: Response): Promise<void> => {
-      const { orgId } = req.params;
-      if (!orgId) {
-        throw new AppError("Organisation ID is required", 400);
+      const validation = chargesPaymentFiltersSchema.safeParse(req.query);
+      if (!validation.success) {
+        throw new AppError("Validation error", 400);
       }
 
-      const result = await chargesPaymentService.getChargePaymentsStats(orgId);
+      const result = await chargesPaymentService.getChargePaymentsStats(
+        validation.data
+      );
       res.status(200).json(result);
     }
   );
@@ -67,11 +67,6 @@ export class ChargesPaymentController {
   // Create charges payment
   createChargesPayment = asyncHandler(
     async (req: CustomRequest, res: Response): Promise<void> => {
-      const { orgId } = req.params;
-      if (!orgId) {
-        throw new AppError("Organisation ID is required", 400);
-      }
-
       const validation = createChargesPaymentSchema.safeParse(req.body);
       if (!validation.success) {
         throw new AppError("Validation error", 400);
@@ -83,9 +78,8 @@ export class ChargesPaymentController {
       }
 
       const result = await chargesPaymentService.createChargesPayment(
-        orgId,
         validation.data,
-        userId!
+        userId
       );
 
       res.status(201).json(result);
@@ -95,18 +89,12 @@ export class ChargesPaymentController {
   // Get charges payments
   getChargesPayments = asyncHandler(
     async (req: CustomRequest, res: Response): Promise<void> => {
-      const { orgId } = req.params;
-      if (!orgId) {
-        throw new AppError("Organisation ID is required", 400);
-      }
-
       const validation = chargesPaymentFiltersSchema.safeParse(req.query);
       if (!validation.success) {
         throw new AppError("Validation error", 400);
       }
 
       const result = await chargesPaymentService.getChargesPayments(
-        orgId,
         validation.data
       );
 

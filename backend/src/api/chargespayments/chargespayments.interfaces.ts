@@ -124,6 +124,7 @@ export interface ChargesPaymentFilters {
   date_to?: string;
   amount_min?: number;
   amount_max?: number;
+  organisation_id?: string;
 }
 
 // Pending Transaction Charges Filters
@@ -138,6 +139,7 @@ export interface PendingTransactionChargesFilters {
   date_to?: string;
   amount_min?: number;
   amount_max?: number;
+  organisation_id?: string;
 }
 
 // Charges Payment List Response

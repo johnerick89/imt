@@ -116,8 +116,6 @@ export class TransactionService {
         },
       });
 
-      console.log("data.corridor_id", data.corridor_id, "corridor", corridor);
-
       if (!corridor) {
         throw new AppError("Invalid or inactive corridor", 400);
       }
@@ -190,16 +188,6 @@ export class TransactionService {
         throw new AppError("Main organisation not found", 400);
       }
 
-      console.log(
-        "data.destination_organisation_id",
-        data.destination_organisation_id,
-        "organisationId",
-        organisationId,
-        "data.origin_currency_id",
-        data.origin_currency_id,
-        "this.mainOrganisationId",
-        this.mainOrganisationId
-      );
       if (
         data.destination_organisation_id &&
         organisationId &&
@@ -266,6 +254,18 @@ export class TransactionService {
         const totalAvailableLimit =
           destinationLimit - destiantionBalance - destinationLockedBalance;
         const destinationAmount = data.origin_amount;
+        console.log(
+          "destinationLimit",
+          destinationLimit,
+          "destiantionBalance",
+          destiantionBalance,
+          "destinationLockedBalance",
+          destinationLockedBalance,
+          "totalAvailableLimit",
+          totalAvailableLimit,
+          "destinationAmount",
+          destinationAmount
+        );
         if (totalAvailableLimit < destinationAmount) {
           throw new AppError(
             "Insufficient destination organisation limit for this transaction. Destination organisation limit is " +
@@ -351,6 +351,7 @@ export class TransactionService {
               origin_percentage: charge.origin_percentage,
               destination_amount: charge.destination_amount,
               destination_percentage: charge.destination_percentage,
+              destination_organisation_id: data.destination_organisation_id,
             },
           })
         )
@@ -1832,8 +1833,8 @@ export class TransactionService {
         amount = charge.max_amount;
       }
 
-      const internalAmount = charge.origin_share_percentage
-        ? (amount * charge.origin_share_percentage) / 100
+      const internalAmount = charge.internal_share_percentage
+        ? (amount * charge.internal_share_percentage) / 100
         : null;
       const originChargeAmount = charge.origin_share_percentage
         ? (amount * charge.origin_share_percentage) / 100
@@ -1851,8 +1852,8 @@ export class TransactionService {
         description: `${charge.name}: ${charge.description}`,
         is_reversible: charge.is_reversible,
         internal_amount: internalAmount,
-        internal_percentage: charge.origin_share_percentage
-          ? charge.origin_share_percentage
+        internal_percentage: charge.internal_share_percentage
+          ? charge.internal_share_percentage
           : null,
         origin_amount: originChargeAmount,
         origin_percentage: charge.origin_share_percentage
@@ -1897,8 +1898,8 @@ export class TransactionService {
         amount = charge.max_amount;
       }
 
-      const internalAmount = charge.origin_share_percentage
-        ? (amount * charge.origin_share_percentage) / 100
+      const internalAmount = charge.internal_share_percentage
+        ? (amount * charge.internal_share_percentage) / 100
         : null;
       const originChargeAmount = charge.origin_share_percentage
         ? (amount * charge.origin_share_percentage) / 100
@@ -1916,8 +1917,8 @@ export class TransactionService {
         description: `${charge.name}: ${charge.description}`,
         is_reversible: charge.is_reversible,
         internal_amount: internalAmount,
-        internal_percentage: charge.origin_share_percentage
-          ? charge.origin_share_percentage
+        internal_percentage: charge.internal_share_percentage
+          ? charge.internal_share_percentage
           : null,
         origin_amount: originChargeAmount,
         origin_percentage: charge.origin_share_percentage
@@ -3014,6 +3015,7 @@ export class TransactionService {
           data: {
             status: "COMPLETED",
             remittance_status: "PAID",
+            updated_at: new Date(),
           },
         });
       }
@@ -3348,7 +3350,8 @@ export class TransactionService {
         }),
       ]);
 
-    if (originFloatPayableAccount && originOrgFloatBalance) {
+    const originOrgFloatAccount = originOrgFloatBalance?.gl_accounts[0];
+    if (originFloatPayableAccount && originOrgFloatAccount) {
       const glEntries = [
         {
           gl_account_id: originFloatPayableAccount.id,
@@ -3357,7 +3360,7 @@ export class TransactionService {
           description: `Float transit payable increased by ${transaction.origin_amount}`,
         },
         {
-          gl_account_id: originOrgFloatBalance.id,
+          gl_account_id: originOrgFloatAccount.id,
           amount: transaction.origin_amount,
           dr_cr: "CR" as const,
           description: `Origin organisation balance decreased by ${transaction.origin_amount}`,

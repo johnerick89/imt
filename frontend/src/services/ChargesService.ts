@@ -6,6 +6,7 @@ import type {
   CreateChargeRequest,
   UpdateChargeRequest,
   ChargeFilters,
+  ChargeStatsFilters,
 } from "../types/ChargesTypes";
 
 export class ChargesService {
@@ -29,7 +30,8 @@ export class ChargesService {
         filters.destination_organisation_id
       );
     if (filters.created_by) params.append("created_by", filters.created_by);
-
+    if (filters.organisation_id)
+      params.append("organisation_id", filters.organisation_id);
     const response = await apiClient.get(
       `/api/v1/charges?${params.toString()}`
     );
@@ -61,8 +63,15 @@ export class ChargesService {
     return response.data;
   }
 
-  async getChargeStats(): Promise<ChargeStatsResponse> {
-    const response = await apiClient.get("/api/v1/charges/stats");
+  async getChargeStats(
+    filters: ChargeStatsFilters
+  ): Promise<ChargeStatsResponse> {
+    const params = new URLSearchParams();
+    if (filters.organisation_id)
+      params.append("organisation_id", filters.organisation_id);
+    const response = await apiClient.get(
+      `/api/v1/charges/stats?${params.toString()}`
+    );
     return response.data;
   }
 

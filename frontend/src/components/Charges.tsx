@@ -16,6 +16,7 @@ import {
   useCurrencies,
   useStandardCharges,
   useCreateStandardCharge,
+  useOrganisation,
 } from "../hooks";
 import type {
   Charge,
@@ -28,6 +29,11 @@ import { usePermissions } from "../hooks/usePermissions";
 const Charges: React.FC = () => {
   const { user: currentUser } = useSession();
   const { canCreateCharges } = usePermissions();
+  const { data: currentOrganisationData } = useOrganisation(
+    currentUser?.organisation_id || ""
+  );
+  const currentOrganisation = currentOrganisationData?.data;
+  const isAgencyOrganisation = currentOrganisation?.type !== "CUSTOMER";
   // Filter state
   const [filters, setFilters] = useState<ChargeFilters>({
     page: 1,
@@ -36,7 +42,9 @@ const Charges: React.FC = () => {
     type: "" as ChargeType,
     status: undefined,
     currency_id: "",
-    origin_organisation_id: currentUser?.organisation_id || "",
+    organisation_id: isAgencyOrganisation
+      ? currentUser?.organisation_id || ""
+      : undefined,
   });
 
   // Standard charges filter state
@@ -60,7 +68,12 @@ const Charges: React.FC = () => {
   const { data: chargesData, isLoading } = useCharges(filters);
   const { data: standardChargesData, isLoading: isLoadingStandard } =
     useStandardCharges(standardFilters);
-  const { data: statsData } = useChargeStats();
+  const statsFilters = {
+    organisation_id: isAgencyOrganisation
+      ? currentUser?.organisation_id || ""
+      : undefined,
+  };
+  const { data: statsData } = useChargeStats(statsFilters);
   const { data: currenciesData } = useCurrencies({ limit: 1000 });
 
   // Mutations
@@ -301,6 +314,7 @@ const Charges: React.FC = () => {
             onEdit={openEditModal}
             onDelete={openDeleteModal}
             onToggleStatus={handleToggleStatus}
+            standard={true}
           />
 
           {/* Standard Charges Pagination */}
@@ -461,6 +475,7 @@ const Charges: React.FC = () => {
           onEdit={openEditModal}
           onDelete={openDeleteModal}
           onToggleStatus={handleToggleStatus}
+          standard={false}
         />
 
         {/* Pagination */}
