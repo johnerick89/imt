@@ -4,6 +4,7 @@ import {
   createChargeSchema,
   updateChargeSchema,
   chargeFiltersSchema,
+  chargeStatsFiltersSchema,
 } from "./charges.validation";
 import type CustomRequest from "../../types/CustomReq.type";
 import { AppError } from "../../utils/AppError";
@@ -68,7 +69,13 @@ export class ChargeController {
 
   getChargeStats = asyncHandler(
     async (req: CustomRequest, res: Response): Promise<void> => {
-      const result = await this.chargeService.getChargeStats();
+      const validatedFilters = chargeStatsFiltersSchema.safeParse(req.query);
+      if (!validatedFilters.success) {
+        throw new AppError("Validation error", 400);
+      }
+      const result = await this.chargeService.getChargeStats(
+        validatedFilters.data
+      );
       res.status(200).json(result);
     }
   );

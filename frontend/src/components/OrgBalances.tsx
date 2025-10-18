@@ -9,6 +9,7 @@ import {
   useCurrencies,
   useOrganisations,
   useBankAccounts,
+  useOrganisation,
 } from "../hooks";
 import {
   useOrgBalances,
@@ -31,13 +32,20 @@ import { usePermissions } from "../hooks/usePermissions";
 const OrgBalances: React.FC = () => {
   const { user } = useSession();
   const { canCreateOrgFloatBalances } = usePermissions();
+  const { data: currentOrganisationData } = useOrganisation(
+    user?.organisation_id || ""
+  );
+  const currentOrganisation = currentOrganisationData?.data;
+  const isAgencyOrganisation = currentOrganisation?.type !== "CUSTOMER";
 
   // Filter state
   const [filters, setFilters] = useState<OrgBalanceFilters>({
     page: 1,
     limit: 10,
     search: "",
-    base_org_id: user?.organisation_id || "",
+    ...(isAgencyOrganisation
+      ? { dest_org_id: user?.organisation_id || "" }
+      : {}),
   });
 
   // Modal states
@@ -233,20 +241,22 @@ const OrgBalances: React.FC = () => {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Destiantion Organisation
-            </label>
-            <SearchableSelect
-              value={filters.dest_org_id || ""}
-              onChange={(value) => handleFilterChange("dest_org_id", value)}
-              options={organisations?.map((org) => ({
-                value: org.id,
-                label: `${org.name} (${org.type})`,
-              }))}
-              placeholder="Filter by destination organisation"
-            />
-          </div>
+          {!isAgencyOrganisation && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Destiantion Organisation
+              </label>
+              <SearchableSelect
+                value={filters.dest_org_id || ""}
+                onChange={(value) => handleFilterChange("dest_org_id", value)}
+                options={organisations?.map((org) => ({
+                  value: org.id,
+                  label: `${org.name} (${org.type})`,
+                }))}
+                placeholder="Filter by destination organisation"
+              />
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

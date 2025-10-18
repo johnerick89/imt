@@ -127,6 +127,11 @@ export interface ChargeFilters {
   origin_organisation_id?: string;
   destination_organisation_id?: string;
   created_by?: string;
+  organisation_id?: string;
+}
+
+export interface ChargeStatsFilters {
+  organisation_id?: string;
 }
 
 export interface ChargeListResponse {

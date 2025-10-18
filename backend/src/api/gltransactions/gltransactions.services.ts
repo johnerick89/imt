@@ -350,6 +350,7 @@ export class GlTransactionService {
       });
 
       // Create GL Entries
+
       const glEntries = await Promise.all(
         data.gl_entries.map((entry) =>
           tx.glEntry.create({

@@ -840,6 +840,7 @@ export class BalanceOperationService {
 
   // Get Organisation Balances
   async getOrgBalances(filters: any): Promise<OrgBalanceListResponse> {
+    console.log("filters", filters);
     const {
       page = 1,
       limit = 10,

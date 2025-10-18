@@ -1,39 +1,37 @@
-import express from "express";
+import { Router } from "express";
 import { ChargesPaymentController } from "./chargespayments.controller";
 import { authMiddleware } from "../../middlewares/auth.middleware";
 
-const router = express.Router();
+const router = Router();
 const chargesPaymentController = new ChargesPaymentController();
-
-// Apply authentication middleware to all routes
-router.use(authMiddleware);
 
 // Pending transaction charges
 router.get(
-  "/organisations/:orgId/pending-charges",
+  "/pending-charges",
   chargesPaymentController.getPendingTransactionCharges.bind(
     chargesPaymentController
   )
 );
 
 router.get(
-  "/organisations/:orgId/pending-charges-stats",
+  "/pending-charges-stats",
   chargesPaymentController.getPendingChargesStats.bind(chargesPaymentController)
 );
 
 router.get(
-  "/organisations/:orgId/charge-payments-stats",
+  "/charge-payments-stats",
   chargesPaymentController.getChargePaymentsStats.bind(chargesPaymentController)
 );
 
 // Charges payments
 router.post(
-  "/organisations/:orgId/charges-payments",
+  "/charges-payments",
+  authMiddleware,
   chargesPaymentController.createChargesPayment.bind(chargesPaymentController)
 );
 
 router.get(
-  "/organisations/:orgId/charges-payments",
+  "/charges-payments",
   chargesPaymentController.getChargesPayments.bind(chargesPaymentController)
 );
 
@@ -44,11 +42,13 @@ router.get(
 
 router.post(
   "/charges-payments/:paymentId/approve",
+  authMiddleware,
   chargesPaymentController.approveChargesPayment.bind(chargesPaymentController)
 );
 
 router.post(
   "/charges-payments/:paymentId/reverse",
+  authMiddleware,
   chargesPaymentController.reverseChargesPayment.bind(chargesPaymentController)
 );
 

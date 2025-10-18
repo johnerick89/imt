@@ -1,3 +1,4 @@
+import { type ParsedError } from "./validation.utils";
 export class AppError extends Error {
   public readonly statusCode: number;
   public readonly isOperational: boolean;
@@ -64,5 +65,14 @@ export class InsufficientFundsError extends AppError {
 export class BusinessLogicError extends AppError {
   constructor(message: string, errorCode?: string) {
     super(message, 400, true, errorCode || "BUSINESS_LOGIC_ERROR");
+  }
+}
+
+export class ZodValidationError extends AppError {
+  constructor(errors: ParsedError[], errorCode?: string) {
+    const message = errors
+      .map((error) => `Field: ${error.field}, Message: ${error.message}`)
+      .join("\n");
+    super(message, 400, true, errorCode || "VALIDATION_ERROR");
   }
 }

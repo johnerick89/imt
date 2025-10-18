@@ -1,4 +1,4 @@
-import { ChargeType, ChargesPaymentStatus } from "@prisma/client";
+import { ChargeType, type Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.lib";
 import { GlTransactionService } from "../gltransactions/gltransactions.services";
 import type {
@@ -21,21 +21,34 @@ import {
   NotFoundError,
   ValidationError,
 } from "../../utils/AppError";
+type Tx = Omit<
+  Prisma.TransactionClient,
+  "$connect" | "$disconnect" | "$on" | "$transaction" | "$extends"
+>;
 
 export class ChargesPaymentService {
   private glTransactionService = new GlTransactionService();
   // Generate reference number for charges payment
   private async generateReferenceNumber(
     type: ChargeType,
-    organisationId: string
+    organisationId: string,
+    originOrgId: string,
+    tx: Tx
   ): Promise<string> {
+    const db = tx || prisma;
     const date = new Date();
     const dateStr = date.toISOString().split("T")[0].replace(/-/g, "");
-    const org = await prisma.organisation.findUnique({
+    const org = await db.organisation.findUnique({
       where: { id: organisationId },
       select: { name: true },
     });
     const orgCode = org?.name?.substring(0, 3).toUpperCase() || "ORG";
+    const originOrg = await db.organisation.findUnique({
+      where: { id: originOrgId },
+      select: { name: true },
+    });
+    const originOrgCode =
+      originOrg?.name?.substring(0, 3).toUpperCase() || "ORG";
 
     // Get count of payments for this type today
     const today = new Date();
@@ -43,10 +56,10 @@ export class ChargesPaymentService {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const count = await prisma.chargesPayment.count({
+    const count = await db.chargesPayment.count({
       where: {
         type,
-        organisation_id: organisationId,
+        organisation_id: originOrgId,
         created_at: {
           gte: today,
           lt: tomorrow,
@@ -55,14 +68,15 @@ export class ChargesPaymentService {
     });
 
     const sequence = (count + 1).toString().padStart(3, "0");
-    return `PAY-${dateStr}-${type.toUpperCase()}-${orgCode}-${sequence}`;
+    return `PAY-${dateStr}-${type.toUpperCase()}-${orgCode}-${originOrgCode}-${sequence}`;
   }
 
   // Get pending transaction charges
   async getPendingTransactionCharges(
-    organisationId: string,
     filters: PendingTransactionChargesFilters
   ): Promise<PendingTransactionChargesResponse> {
+    const { organisation_id, ...otherFilters } = filters;
+
     const {
       page = 1,
       limit = 10,
@@ -74,13 +88,35 @@ export class ChargesPaymentService {
       date_to,
       amount_min,
       amount_max,
-    } = filters;
+    } = otherFilters;
 
     const skip = (page - 1) * limit;
-    const where: any = {
-      organisation_id: organisationId,
-      status: "APPROVED" as const, // Only pending charges
+
+    const where: any = {};
+
+    where.status = "APPROVED";
+    where.transaction = {
+      ...where.transaction,
+      status: "COMPLETED",
+      remittance_status: "PAID",
     };
+
+    if (organisation_id) {
+      where.transaction = {
+        ...where.transaction,
+        OR: [
+          { destination_organisation_id: organisation_id },
+          { organisation_id: organisation_id },
+        ],
+      };
+    } else {
+      if (destination_org_id) {
+        where.transaction = {
+          ...where.transaction,
+          destination_organisation_id: destination_org_id,
+        };
+      }
+    }
 
     if (search) {
       where.OR = [
@@ -98,12 +134,7 @@ export class ChargesPaymentService {
     }
 
     if (type) where.type = type;
-    if (destination_org_id) {
-      where.transaction = {
-        ...where.transaction,
-        destination_organisation_id: destination_org_id,
-      };
-    }
+
     if (currency_id) {
       where.transaction = {
         ...where.transaction,
@@ -197,12 +228,28 @@ export class ChargesPaymentService {
 
   // Get pending charges stats
   async getPendingChargesStats(
-    organisationId: string
+    filters: PendingTransactionChargesFilters
   ): Promise<ChargesPaymentStatsResponse> {
-    const where = {
-      organisation_id: organisationId,
-      status: "APPROVED" as const,
+    const { organisation_id } = filters;
+
+    const where: any = {};
+
+    where.status = "APPROVED";
+    where.transaction = {
+      ...where.transaction,
+      status: "COMPLETED",
+      remittance_status: "PAID",
     };
+
+    if (organisation_id) {
+      where.transaction = {
+        ...where.transaction,
+        OR: [
+          { origin_organisation_id: organisation_id },
+          { destination_organisation_id: organisation_id },
+        ],
+      };
+    }
 
     const [totalCount, amountData, typeData] = await Promise.all([
       prisma.transactionCharge.count({ where }),
@@ -265,8 +312,18 @@ export class ChargesPaymentService {
 
   // Get charge payments stats
   async getChargePaymentsStats(
-    organisationId: string
+    filters: ChargesPaymentFilters
   ): Promise<ChargesPaymentStatsResponse> {
+    const { organisation_id } = filters;
+    const where: any = {};
+
+    if (organisation_id) {
+      where.OR = [
+        { organisation_id: organisation_id },
+        { destination_org_id: organisation_id },
+      ];
+    }
+
     const [
       pendingCount,
       pendingAmount,
@@ -277,13 +334,13 @@ export class ChargesPaymentService {
       // Pending payments
       prisma.chargesPayment.count({
         where: {
-          organisation_id: organisationId,
+          ...where,
           status: "PENDING" as const,
         },
       }),
       prisma.chargesPayment.aggregate({
         where: {
-          organisation_id: organisationId,
+          ...where,
           status: "PENDING" as const,
         },
         _sum: { internal_total_amount: true },
@@ -291,13 +348,13 @@ export class ChargesPaymentService {
       // Completed payments
       prisma.chargesPayment.count({
         where: {
-          organisation_id: organisationId,
+          ...where,
           status: "COMPLETED" as const,
         },
       }),
       prisma.chargesPayment.aggregate({
         where: {
-          organisation_id: organisationId,
+          ...where,
           status: "COMPLETED" as const,
         },
         _sum: { internal_total_amount: true },
@@ -306,7 +363,7 @@ export class ChargesPaymentService {
       prisma.chargesPayment.groupBy({
         by: ["type", "status"],
         where: {
-          organisation_id: organisationId,
+          ...where,
         },
         _count: { id: true },
         _sum: { internal_total_amount: true },
@@ -365,16 +422,23 @@ export class ChargesPaymentService {
 
   // Create charges payment
   async createChargesPayment(
-    organisationId: string,
     data: CreateChargesPaymentRequest,
     userId: string
   ): Promise<ChargesPaymentResponse> {
     return await prisma.$transaction(async (tx) => {
+      const customerOrgnisation = await tx.organisation.findFirst({
+        where: {
+          type: "CUSTOMER",
+        },
+      });
+
+      if (!customerOrgnisation) {
+        throw new AppError("Customer organisation not found", 404);
+      }
       // Validate transaction charges exist and are approved
       const transactionCharges = await tx.transactionCharge.findMany({
         where: {
           id: { in: data.transaction_charge_ids },
-          organisation_id: organisationId,
           status: "APPROVED" as const,
         },
         include: {
@@ -382,6 +446,7 @@ export class ChargesPaymentService {
             include: {
               origin_currency: true,
               destination_organisation: true,
+              origin_organisation: true,
             },
           },
           charge: true,
@@ -399,9 +464,10 @@ export class ChargesPaymentService {
       const groupedCharges = new Map<string, typeof transactionCharges>();
 
       transactionCharges.forEach((tc) => {
-        const key = `${tc.type}_${
-          tc.transaction.destination_organisation_id || "null"
-        }`;
+        const originOrgId = tc.transaction.origin_organisation_id || "null";
+        const destinationOrgId =
+          tc.transaction.destination_organisation_id || "null";
+        const key = `${tc.type}_${originOrgId}_${destinationOrgId}`;
         if (!groupedCharges.has(key)) {
           groupedCharges.set(key, []);
         }
@@ -412,9 +478,9 @@ export class ChargesPaymentService {
 
       // Create a payment for each group
       for (const [key, charges] of groupedCharges) {
-        const [chargeType, destOrgId] = key.split("_");
+        const [chargeType, originOrgId, destOrgId] = key.split("_");
         const destOrgIdValue = destOrgId === "null" ? null : destOrgId;
-
+        const originOrgIdValue = originOrgId === "null" ? null : originOrgId;
         // Get currency from first transaction in the group
         const currency = charges[0].transaction?.origin_currency;
         if (!currency) {
@@ -448,8 +514,12 @@ export class ChargesPaymentService {
         // Generate reference number
         const referenceNumber = await this.generateReferenceNumber(
           chargeType as ChargeType,
-          organisationId
+          customerOrgnisation.id,
+          originOrgIdValue ?? "",
+          tx
         );
+
+        console.log("referenceNumber", referenceNumber);
 
         // Create charges payment for this group
         const chargesPayment = await tx.chargesPayment.create({
@@ -466,7 +536,7 @@ export class ChargesPaymentService {
             status: "PENDING" as const,
             date_completed: new Date(), // Will be updated when approved
             notes: data.notes,
-            organisation_id: organisationId,
+            organisation_id: originOrgIdValue,
             created_by: userId,
           } as any,
         });
@@ -566,10 +636,10 @@ export class ChargesPaymentService {
 
   // Get charges payments
   async getChargesPayments(
-    organisationId: string,
     filters: ChargesPaymentFilters
   ): Promise<ChargesPaymentListResponse> {
     const {
+      organisation_id,
       page = 1,
       limit = 10,
       search,
@@ -584,10 +654,14 @@ export class ChargesPaymentService {
     } = filters;
 
     const skip = (page - 1) * limit;
-    const where: any = {
-      organisation_id: organisationId,
-    };
+    const where: any = {};
 
+    if (organisation_id) {
+      where.OR = [
+        { organisation_id: organisation_id },
+        { destination_org_id: organisation_id },
+      ];
+    }
     if (search) {
       where.OR = [
         { reference_number: { contains: search, mode: "insensitive" } },

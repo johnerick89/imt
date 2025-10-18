@@ -189,4 +189,9 @@ export const chargeFiltersSchema = z.object({
   origin_organisation_id: z.string().uuid().optional(),
   destination_organisation_id: z.string().uuid().optional(),
   created_by: z.string().uuid().optional(),
+  organisation_id: z.string().uuid().optional(),
+});
+
+export const chargeStatsFiltersSchema = z.object({
+  organisation_id: z.string().uuid().optional(),
 });

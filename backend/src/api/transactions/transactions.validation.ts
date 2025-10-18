@@ -18,7 +18,10 @@ export const transactionChargeCalculationSchema = z.object({
 // Create Outbound Transaction Schema
 export const createOutboundTransactionSchema = z.object({
   corridor_id: z.string().uuid("Invalid corridor ID"),
-  till_id: z.string().uuid("Invalid till ID"),
+  till_id: z.preprocess(
+    (val) => (val === "" ? undefined : val),
+    z.string().uuid("Invalid till ID").optional()
+  ),
   customer_id: z.string().uuid("Invalid customer ID"),
   origin_amount: z.number().positive("Origin amount must be positive"),
   origin_channel_id: z.string().uuid("Invalid origin channel ID"),
