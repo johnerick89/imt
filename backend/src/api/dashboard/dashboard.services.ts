@@ -412,7 +412,7 @@ export class DashboardService {
         referenceNumber: payment.reference_number,
         type: payment.type,
         externalTotalAmount: parseFloat(
-          payment.external_total_amount.toString()
+          payment.external_total_amount?.toString() || "0"
         ),
         dateCompleted: payment.date_completed?.toISOString() || "",
         currency: "USD", // Would need to get from related data

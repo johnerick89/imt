@@ -1,4 +1,13 @@
-import { ChargeType, ChargesPaymentStatus } from "@prisma/client";
+import {
+  ChargeType,
+  ChargesPaymentStatus,
+  CommissionSplit,
+  Organisation,
+  Transaction,
+  TransactionCharge,
+  Charge,
+  Currency,
+} from "@prisma/client";
 
 // Charges Payment Interface
 export interface IChargesPayment {
@@ -286,4 +295,27 @@ export interface ChargesPaymentStatsResponse {
   success: boolean;
   message: string;
   data: ChargesPaymentStats;
+}
+
+type iCommissionSplit = CommissionSplit & {
+  transaction_charges: TransactionCharge & {
+    charge: Charge;
+  };
+  organisation: Organisation;
+  transaction: Transaction;
+  currency: Currency;
+};
+
+export interface PendingCommissionSplitResponse {
+  success: boolean;
+  message: string;
+  data: {
+    commission_splits: iCommissionSplit[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  };
 }

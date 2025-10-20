@@ -9,6 +9,7 @@ import type {
   CreateChargesPaymentRequest,
   ApproveChargesPaymentRequest,
   ReverseChargesPaymentRequest,
+  PendingCommissionSplitResponse,
 } from "../types/ChargesPaymentTypes";
 
 export class ChargesPaymentService {
@@ -159,6 +160,77 @@ export class ChargesPaymentService {
   ): Promise<ChargesPaymentResponse> {
     const response = await apiClient.post(
       `/api/v1/chargespayments/charges-payments/${paymentId}/reverse`,
+      data
+    );
+    return response.data;
+  }
+
+  /**
+   * Get pending commissions (commission splits)
+   */
+  async getPendingCommissions(
+    filters?: PendingTransactionChargesFilters
+  ): Promise<PendingCommissionSplitResponse> {
+    const params = new URLSearchParams();
+
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+          params.append(key, value.toString());
+        }
+      });
+    }
+
+    const response = await apiClient.get(
+      `/api/v1/chargespayments/pending-commissions?${params.toString()}`
+    );
+    return response.data;
+  }
+
+  /**
+   * Get pending commissions stats
+   */
+  async getPendingCommissionStats(
+    filters?: PendingTransactionChargesFilters
+  ): Promise<ChargesPaymentStatsResponse> {
+    const params = new URLSearchParams();
+
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+          params.append(key, value.toString());
+        }
+      });
+    }
+
+    const response = await apiClient.get(
+      `/api/v1/chargespayments/pending-commissions-stats?${params.toString()}`
+    );
+    return response.data;
+  }
+
+  /**
+   * Process commissions (commission splits to a charges payment)
+   */
+  async processCommissions(
+    commissionSplitIds: string[]
+  ): Promise<ChargesPaymentResponse> {
+    const response = await apiClient.post(
+      `/api/v1/chargespayments/process-commissions`,
+      { commission_split_ids: commissionSplitIds }
+    );
+    return response.data;
+  }
+
+  /**
+   * Approve commission payment
+   */
+  async approveCommissionPayment(
+    paymentId: string,
+    data: ApproveChargesPaymentRequest
+  ): Promise<ChargesPaymentResponse> {
+    const response = await apiClient.post(
+      `/api/v1/chargespayments/commission-payments/${paymentId}/approve`,
       data
     );
     return response.data;

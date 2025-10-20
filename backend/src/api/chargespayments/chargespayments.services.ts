@@ -14,6 +14,7 @@ import type {
   ChargesPaymentItemsResponse,
   PendingTransactionChargesResponse,
   ChargesPaymentStatsResponse,
+  PendingCommissionSplitResponse,
 } from "./chargespayments.interfaces";
 import {
   AppError,
@@ -604,10 +605,10 @@ export class ChargesPaymentService {
         data: {
           ...result!,
           internal_total_amount: parseFloat(
-            result!.internal_total_amount.toString()
+            result!.internal_total_amount?.toString() || "0"
           ),
           external_total_amount: parseFloat(
-            result!.external_total_amount.toString()
+            result!.external_total_amount?.toString() || "0"
           ),
           date_completed: result!.date_completed?.toISOString() || null,
           created_at: result!.created_at.toISOString(),
@@ -615,10 +616,10 @@ export class ChargesPaymentService {
           payment_items: result!.payment_items.map((item) => ({
             ...item,
             internal_amount_settled: parseFloat(
-              item.internal_amount_settled.toString()
+              item.internal_amount_settled?.toString() || "0"
             ),
             external_amount_settled: parseFloat(
-              item.external_amount_settled.toString()
+              item.external_amount_settled?.toString() || "0"
             ),
             origin_amount_settled: parseFloat(
               item.origin_amount_settled?.toString() || "0"
@@ -626,7 +627,7 @@ export class ChargesPaymentService {
             destination_amount_settled: parseFloat(
               item.destination_amount_settled?.toString() || "0"
             ),
-            amount_settled: parseFloat(item.amount_settled.toString()),
+            amount_settled: parseFloat(item.amount_settled?.toString() || "0"),
             created_at: item.created_at.toISOString(),
           })),
         } as any,
@@ -706,6 +707,7 @@ export class ChargesPaymentService {
                   organisation: true,
                 },
               },
+              commission_split: true,
             },
           },
         },
@@ -722,16 +724,16 @@ export class ChargesPaymentService {
         charges_payments: chargesPayments.map((payment) => ({
           ...payment,
           internal_total_amount: parseFloat(
-            payment.internal_total_amount.toString()
+            payment.internal_total_amount?.toString() || "0"
           ),
           external_total_amount: parseFloat(
-            payment.external_total_amount.toString()
+            payment.external_total_amount?.toString() || "0"
           ),
           origin_total_amount: parseFloat(
-            payment.origin_total_amount.toString()
+            payment.origin_total_amount?.toString() || "0"
           ),
           destination_total_amount: parseFloat(
-            payment.destination_total_amount.toString()
+            payment.destination_total_amount?.toString() || "0"
           ),
           date_completed: payment.date_completed?.toISOString() || null,
           created_at: payment.created_at.toISOString(),
@@ -739,12 +741,12 @@ export class ChargesPaymentService {
           payment_items: payment.payment_items.map((item) => ({
             ...item,
             internal_amount_settled: parseFloat(
-              item.internal_amount_settled.toString()
+              item.internal_amount_settled?.toString() || "0"
             ),
             external_amount_settled: parseFloat(
-              item.external_amount_settled.toString()
+              item.external_amount_settled?.toString() || "0"
             ),
-            amount_settled: parseFloat(item.amount_settled.toString()),
+            amount_settled: parseFloat(item.amount_settled?.toString() || "0"),
             created_at: item.created_at.toISOString(),
           })),
         })) as unknown as IChargesPayment[],
@@ -802,16 +804,16 @@ export class ChargesPaymentService {
       data: {
         ...chargesPayment,
         internal_total_amount: parseFloat(
-          chargesPayment.internal_total_amount.toString()
+          chargesPayment.internal_total_amount?.toString() || "0"
         ),
         external_total_amount: parseFloat(
-          chargesPayment.external_total_amount.toString()
+          chargesPayment.external_total_amount?.toString() || "0"
         ),
         origin_total_amount: parseFloat(
-          chargesPayment.origin_total_amount.toString()
+          chargesPayment.origin_total_amount?.toString() || "0"
         ),
         destination_total_amount: parseFloat(
-          chargesPayment.destination_total_amount.toString()
+          chargesPayment.destination_total_amount?.toString() || "0"
         ),
         date_completed: chargesPayment.date_completed?.toISOString() || null,
         created_at: chargesPayment.created_at.toISOString(),
@@ -819,10 +821,10 @@ export class ChargesPaymentService {
         payment_items: chargesPayment.payment_items.map((item) => ({
           ...item,
           internal_amount_settled: parseFloat(
-            item.internal_amount_settled.toString()
+            item.internal_amount_settled?.toString() || "0"
           ),
           external_amount_settled: parseFloat(
-            item.external_amount_settled.toString()
+            item.external_amount_settled?.toString() || "0"
           ),
           created_at: item.created_at.toISOString(),
         })),
@@ -876,26 +878,28 @@ export class ChargesPaymentService {
       });
 
       // Update transaction charges status
-      await Promise.all(
-        chargesPayment.payment_items.map((item) =>
-          tx.transactionCharge.update({
-            where: { id: item.transaction_charges_id },
-            data: { status: "PAID" },
-          })
-        )
-      );
+      if (chargesPayment.payment_items.length > 0) {
+        await Promise.all(
+          chargesPayment.payment_items.map((item) =>
+            tx.transactionCharge.update({
+              where: { id: item?.transaction_charges_id || "" },
+              data: { status: "PAID" },
+            })
+          )
+        );
+      }
 
       // Prepare GL entries for all payment items
       const glEntries = [];
 
       for (const item of chargesPayment.payment_items) {
         const transactionCharge = item.transaction_charges;
-        const charge = transactionCharge.charge;
+        const charge = transactionCharge?.charge;
 
         // Get the REVENUE account for this charge
         const revenueAccount = await tx.glAccount.findFirst({
           where: {
-            charge_id: charge.id,
+            charge_id: charge?.id,
             organisation_id: chargesPayment.organisation_id,
             type: "REVENUE",
           },
@@ -903,7 +907,7 @@ export class ChargesPaymentService {
 
         if (!revenueAccount) {
           throw new AppError(
-            `Revenue account not found for charge ${charge.name}`,
+            `Revenue account not found for charge ${charge?.name}`,
             404
           );
         }
@@ -911,7 +915,7 @@ export class ChargesPaymentService {
         // Get the LIABILITY (PAYABLE) account for this charge
         const liabilityAccount = await tx.glAccount.findFirst({
           where: {
-            charge_id: charge.id,
+            charge_id: charge?.id,
             organisation_id: chargesPayment.organisation_id,
             type: "LIABILITY",
           },
@@ -919,7 +923,7 @@ export class ChargesPaymentService {
 
         if (!liabilityAccount) {
           throw new AppError(
-            `Liability account not found for charge ${charge.name}`,
+            `Liability account not found for charge ${charge?.name}`,
             404
           );
         }
@@ -928,15 +932,15 @@ export class ChargesPaymentService {
         glEntries.push(
           {
             gl_account_id: revenueAccount.id,
-            amount: parseFloat(item.external_amount_settled.toString()),
+            amount: parseFloat(item.external_amount_settled?.toString() || "0"),
             dr_cr: "CR" as const,
-            description: `Revenue from ${charge.name} - ${chargesPayment.reference_number}`,
+            description: `Revenue from ${charge?.name} - ${chargesPayment.reference_number}`,
           },
           {
             gl_account_id: liabilityAccount.id,
-            amount: parseFloat(item.external_amount_settled.toString()),
+            amount: parseFloat(item.external_amount_settled?.toString() || "0"),
             dr_cr: "DR" as const,
-            description: `Payment of ${charge.name} liability - ${chargesPayment.reference_number}`,
+            description: `Payment of ${charge?.name} liability - ${chargesPayment.reference_number}`,
           }
         );
       }
@@ -946,7 +950,9 @@ export class ChargesPaymentService {
         chargesPayment.organisation_id!,
         {
           transaction_type: "CHARGES_PAYMENT", // Using existing type temporarily
-          amount: parseFloat(chargesPayment.external_total_amount.toString()),
+          amount: parseFloat(
+            chargesPayment.external_total_amount?.toString() || "0"
+          ),
           currency_id: chargesPayment.currency_id || undefined,
           description: `Charges payment approved - ${chargesPayment.reference_number}`,
           gl_entries: glEntries,
@@ -982,16 +988,16 @@ export class ChargesPaymentService {
         data: {
           ...result!,
           internal_total_amount: parseFloat(
-            result!.internal_total_amount.toString()
+            result!.internal_total_amount?.toString() || "0"
           ),
           external_total_amount: parseFloat(
-            result!.external_total_amount.toString()
+            result!.external_total_amount?.toString() || "0"
           ),
           origin_total_amount: parseFloat(
-            result!.origin_total_amount.toString()
+            result!.origin_total_amount?.toString() || "0"
           ),
           destination_total_amount: parseFloat(
-            result!.destination_total_amount.toString()
+            result!.destination_total_amount?.toString() || "0"
           ),
           date_completed: result!.date_completed?.toISOString() || null,
           created_at: result!.created_at.toISOString(),
@@ -999,12 +1005,12 @@ export class ChargesPaymentService {
           payment_items: result!.payment_items.map((item) => ({
             ...item,
             internal_amount_settled: parseFloat(
-              item.internal_amount_settled.toString()
+              item.internal_amount_settled?.toString() || "0"
             ),
             external_amount_settled: parseFloat(
-              item.external_amount_settled.toString()
+              item.external_amount_settled?.toString() || "0"
             ),
-            amount_settled: parseFloat(item.amount_settled.toString()),
+            amount_settled: parseFloat(item.amount_settled?.toString() || "0"),
             created_at: item.created_at.toISOString(),
           })),
         } as any,
@@ -1046,7 +1052,7 @@ export class ChargesPaymentService {
       }
 
       // Update charges payment status
-      const updatedPayment = await tx.chargesPayment.update({
+      await tx.chargesPayment.update({
         where: { id: paymentId },
         data: {
           status: "FAILED",
@@ -1058,26 +1064,29 @@ export class ChargesPaymentService {
       });
 
       // Update transaction charges status back to pending
-      await Promise.all(
-        chargesPayment.payment_items.map((item) =>
-          tx.transactionCharge.update({
-            where: { id: item.transaction_charges_id },
-            data: { status: "PENDING" },
-          })
-        )
-      );
+      if (chargesPayment.payment_items.length > 0) {
+        await Promise.all(
+          chargesPayment.payment_items.map(
+            (item: { transaction_charges_id: any }) =>
+              tx.transactionCharge.update({
+                where: { id: item.transaction_charges_id || "" },
+                data: { status: "PENDING" },
+              })
+          )
+        );
+      }
 
       // Prepare GL entries for all payment items
       const glEntries = [];
 
       for (const item of chargesPayment.payment_items) {
         const transactionCharge = item.transaction_charges;
-        const charge = transactionCharge.charge;
+        const charge = transactionCharge?.charge;
 
         // Get the REVENUE account for this charge
         const revenueAccount = await tx.glAccount.findFirst({
           where: {
-            charge_id: charge.id,
+            charge_id: charge?.id,
             organisation_id: chargesPayment.organisation_id,
             type: "REVENUE",
           },
@@ -1085,7 +1094,7 @@ export class ChargesPaymentService {
 
         if (!revenueAccount) {
           throw new AppError(
-            `Revenue account not found for charge ${charge.name}`,
+            `Revenue account not found for charge ${charge?.name}`,
             404
           );
         }
@@ -1093,7 +1102,7 @@ export class ChargesPaymentService {
         // Get the LIABILITY (PAYABLE) account for this charge
         const liabilityAccount = await tx.glAccount.findFirst({
           where: {
-            charge_id: charge.id,
+            charge_id: charge?.id,
             organisation_id: chargesPayment.organisation_id,
             type: "LIABILITY",
           },
@@ -1101,7 +1110,7 @@ export class ChargesPaymentService {
 
         if (!liabilityAccount) {
           throw new AppError(
-            `Liability account not found for charge ${charge.name}`,
+            `Liability account not found for charge ${charge?.name}`,
             404
           );
         }
@@ -1110,15 +1119,15 @@ export class ChargesPaymentService {
         glEntries.push(
           {
             gl_account_id: revenueAccount.id,
-            amount: parseFloat(item.external_amount_settled.toString()),
+            amount: parseFloat(item.external_amount_settled?.toString() || "0"),
             dr_cr: "DR" as const,
-            description: `Reversal of Revenue from ${charge.name} - ${chargesPayment.reference_number}`,
+            description: `Reversal of Revenue from ${charge?.name} - ${chargesPayment.reference_number}`,
           },
           {
             gl_account_id: liabilityAccount.id,
-            amount: parseFloat(item.external_amount_settled.toString()),
+            amount: parseFloat(item.external_amount_settled?.toString() || "0"),
             dr_cr: "CR" as const,
-            description: `Reversal of Payment of ${charge.name} liability - ${chargesPayment.reference_number}`,
+            description: `Reversal of Payment of ${charge?.name} liability - ${chargesPayment.reference_number}`,
           }
         );
       }
@@ -1126,7 +1135,9 @@ export class ChargesPaymentService {
         chargesPayment.organisation_id!,
         {
           transaction_type: "CHARGES_PAYMENT_REVERSAL", // Using existing type temporarily
-          amount: parseFloat(chargesPayment.external_total_amount.toString()),
+          amount: parseFloat(
+            chargesPayment.external_total_amount?.toString() || "0"
+          ),
           currency_id: chargesPayment.currency_id || undefined,
           description: `Charges payment reversed - ${chargesPayment.reference_number}`,
           gl_entries: glEntries,
@@ -1162,16 +1173,16 @@ export class ChargesPaymentService {
         data: {
           ...result!,
           internal_total_amount: parseFloat(
-            result!.internal_total_amount.toString()
+            result!.internal_total_amount?.toString() || "0"
           ),
           external_total_amount: parseFloat(
-            result!.external_total_amount.toString()
+            result!.external_total_amount?.toString() || "0"
           ),
           origin_total_amount: parseFloat(
-            result!.origin_total_amount.toString()
+            result!.origin_total_amount?.toString() || "0"
           ),
           destination_total_amount: parseFloat(
-            result!.destination_total_amount.toString()
+            result!.destination_total_amount?.toString() || "0"
           ),
           date_completed: result!.date_completed?.toISOString() || null,
           created_at: result!.created_at.toISOString(),
@@ -1179,14 +1190,536 @@ export class ChargesPaymentService {
           payment_items: result!.payment_items.map((item) => ({
             ...item,
             internal_amount_settled: parseFloat(
-              item.internal_amount_settled.toString()
+              item.internal_amount_settled?.toString() || "0"
             ),
             external_amount_settled: parseFloat(
-              item.external_amount_settled.toString()
+              item.external_amount_settled?.toString() || "0"
             ),
-            amount_settled: parseFloat(item.amount_settled.toString()),
+            amount_settled: parseFloat(item.amount_settled?.toString() || "0"),
             created_at: item.created_at.toISOString(),
           })),
+        } as any,
+      };
+    });
+  }
+
+  async getPendingCommissions({
+    filters,
+  }: {
+    filters: PendingTransactionChargesFilters;
+  }): Promise<PendingCommissionSplitResponse> {
+    const {
+      organisation_id,
+      page = 1,
+      limit = 10,
+      search,
+      currency_id,
+      date_from,
+      date_to,
+      destination_org_id,
+    } = filters;
+
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+
+    where.status = "PENDING";
+    where.transaction = {
+      ...where.transaction,
+      status: "COMPLETED",
+      remittance_status: "PAID",
+    };
+
+    if (organisation_id) {
+      // Return commissions where the requesting organisation is a beneficiary of the split
+      where.organisation_id = organisation_id;
+    }
+
+    if (search) {
+      where.OR = [
+        {
+          transaction: {
+            transaction_no: { contains: search, mode: "insensitive" },
+          },
+        },
+        {
+          transaction_charge: {
+            charge: { name: { contains: search, mode: "insensitive" } },
+          },
+        },
+      ];
+    }
+
+    if (currency_id) {
+      where.currency_id = currency_id;
+    }
+
+    if (date_from || date_to) {
+      where.created_at = {};
+      if (date_from) where.created_at.gte = new Date(date_from);
+      if (date_to) where.created_at.lte = new Date(date_to);
+    }
+
+    const [commissionSplits, total] = await Promise.all([
+      prisma.commissionSplit.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { created_at: "desc" },
+        include: {
+          transaction: true,
+          organisation: true,
+          currency: true,
+          transaction_charge: {
+            include: {
+              charge: true,
+            },
+          },
+        },
+      }),
+      prisma.commissionSplit.count({ where }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      success: true,
+      message: "Pending commission splits retrieved successfully",
+      data: {
+        commission_splits: commissionSplits.map((split: any) => ({
+          ...split,
+          // Align relation property name with interface (transaction_charges)
+          transaction_charges: split.transaction_charge,
+          amount: parseFloat(split.amount.toString()),
+          created_at: split.created_at?.toISOString?.() || split.created_at,
+          updated_at: split.updated_at?.toISOString?.() || split.updated_at,
+        })),
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages,
+        },
+      },
+    };
+  }
+
+  // Get pending commissions stats
+  async getPendingCommissionStats(
+    filters: PendingTransactionChargesFilters
+  ): Promise<ChargesPaymentStatsResponse> {
+    const {
+      organisation_id,
+      currency_id,
+      date_from,
+      date_to,
+      destination_org_id,
+    } = filters;
+
+    const where: any = {};
+    where.status = "PENDING";
+    where.transaction = {
+      ...where.transaction,
+      status: "COMPLETED",
+      remittance_status: "PAID",
+    };
+
+    if (organisation_id) {
+      where.organisation_id = organisation_id;
+    }
+
+    if (destination_org_id) {
+      where.transaction = {
+        ...where.transaction,
+        destination_organisation_id: destination_org_id,
+      };
+    }
+
+    if (currency_id) {
+      // use transaction origin currency for consistency with pending charges
+      where.transaction = {
+        ...where.transaction,
+        origin_currency_id: currency_id,
+      };
+    }
+
+    if (date_from || date_to) {
+      where.created_at = {};
+      if (date_from) where.created_at.gte = new Date(date_from);
+      if (date_to) where.created_at.lte = new Date(date_to);
+    }
+
+    const [totalCount, amountAgg] = await Promise.all([
+      prisma.commissionSplit.count({ where }),
+      prisma.commissionSplit.aggregate({ where, _sum: { amount: true } }),
+    ]);
+
+    return {
+      success: true,
+      message: "Pending commissions stats retrieved successfully",
+      data: {
+        totalPendingCharges: totalCount,
+        totalPendingAmount: amountAgg._sum?.amount
+          ? parseFloat(amountAgg._sum.amount.toString())
+          : 0,
+        byType: [
+          {
+            type: "COMMISSION" as ChargeType,
+            count: totalCount,
+            amount: amountAgg._sum?.amount
+              ? parseFloat(amountAgg._sum.amount.toString())
+              : 0,
+          },
+        ],
+        byOrganisation: [],
+        byCurrency: [],
+      },
+    };
+  }
+
+  // Process commissions: create charges payments from commission splits
+  async processCommissions(
+    commissionSplitIds: string[],
+    userId: string
+  ): Promise<ChargesPaymentResponse> {
+    return await prisma.$transaction(async (tx) => {
+      if (!commissionSplitIds || commissionSplitIds.length === 0) {
+        throw new ValidationError("No commission splits provided");
+      }
+
+      // Fetch commission splits that are pending and requested
+      const commissionSplits = await tx.commissionSplit.findMany({
+        where: {
+          id: { in: commissionSplitIds },
+          status: "PENDING",
+        },
+        include: {
+          transaction_charge: {
+            include: {
+              charge: true,
+            },
+          },
+          organisation: true,
+          transaction: {
+            include: {
+              origin_currency: true,
+              destination_organisation: true,
+              origin_organisation: true,
+            },
+          },
+        },
+      });
+
+      if (commissionSplits.length === 0) {
+        throw new AppError("No pending commission splits to process", 400);
+      }
+
+      // Customer organisation is used for reference generation (consistent with charges payments)
+      const customerOrganisation = await tx.organisation.findFirst({
+        where: { type: "CUSTOMER" },
+      });
+      if (!customerOrganisation) {
+        throw new NotFoundError("Customer organisation not found");
+      }
+
+      // Group by type (COMMISSION), origin org and beneficiary org
+      const grouped = new Map<string, typeof commissionSplits>();
+      for (const split of commissionSplits) {
+        const organisationId = split.organisation_id;
+        const currencyId = split.currency_id;
+        const key = `COMMISSION_${organisationId}_${currencyId}`;
+        if (!grouped.has(key)) grouped.set(key, []);
+        grouped.get(key)!.push(split as any);
+      }
+
+      const createdPayments: any[] = [];
+
+      for (const [key, splits] of grouped) {
+        const [, organisationId, currencyId] = key.split("_");
+        const organisationIdVal =
+          organisationId === "null" ? null : organisationId;
+        const currencyIdVal = currencyId === "null" ? null : currencyId;
+
+        const totalAmount = splits.reduce(
+          (sum, s) => sum + parseFloat((s.amount || 0).toString()),
+          0
+        );
+
+        const referenceNumber = await this.generateReferenceNumber(
+          "COMMISSION",
+          customerOrganisation.id,
+          organisationIdVal ?? "",
+          tx
+        );
+
+        const chargesPayment = await tx.chargesPayment.create({
+          data: {
+            type: "COMMISSION",
+            amount: totalAmount,
+            reference_number: referenceNumber,
+            currency_id: currencyIdVal ?? "",
+            status: "PENDING",
+            date_completed: new Date(),
+            notes: undefined,
+            organisation_id: organisationIdVal ?? "",
+            created_by: userId,
+          } as any,
+        });
+
+        // Create payment items for each split
+        await Promise.all(
+          splits.map((s) =>
+            tx.chargesPaymentItem.create({
+              data: {
+                charges_payment_id: chargesPayment.id,
+                commission_split_id: s.id,
+                transaction_charges_id: s.transaction_charges_id,
+                amount_settled: s.amount,
+              },
+            })
+          )
+        );
+
+        // Mark the splits as PROCESSING to avoid double-processing
+        await tx.commissionSplit.updateMany({
+          where: { id: { in: splits.map((s) => s.id) } },
+          data: { status: "PROCESSING" },
+        });
+
+        createdPayments.push(chargesPayment);
+      }
+
+      // Return first created payment (for backward compatibility)
+      const firstPayment = createdPayments[0];
+      const result = await tx.chargesPayment.findUnique({
+        where: { id: firstPayment.id },
+        include: {
+          currency: true,
+          destination_org: true,
+          created_by_user: true,
+          organisation: true,
+          payment_items: true,
+        },
+      });
+
+      return {
+        success: true,
+        message: `Commission payment created successfully (${
+          createdPayments.length
+        } payment${createdPayments.length > 1 ? "s" : ""} created)`,
+        data: {
+          ...result!,
+          amount: parseFloat(result!.amount?.toString() || "0"),
+          date_completed: result!.date_completed?.toISOString() || null,
+          created_at: result!.created_at.toISOString(),
+          updated_at: result!.updated_at.toISOString(),
+        } as any,
+      };
+    });
+  }
+
+  // Approve commission payment
+  async approveCommissionPayment(
+    paymentId: string,
+    data: ApproveChargesPaymentRequest,
+    userId?: string
+  ): Promise<ChargesPaymentResponse> {
+    return await prisma.$transaction(async (tx) => {
+      const commissionPayment = await tx.chargesPayment.findUnique({
+        where: { id: paymentId },
+        include: {
+          payment_items: {
+            include: {
+              commission_split: {
+                include: {
+                  transaction_charge: {
+                    include: {
+                      charge: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!commissionPayment) {
+        throw new NotFoundError("Commission payment not found");
+      }
+
+      if (commissionPayment.status !== "PENDING") {
+        throw new AppError(
+          "Only pending commission payments can be approved",
+          400
+        );
+      }
+
+      // Update commission payment status
+      const updatedPayment = await tx.chargesPayment.update({
+        where: { id: paymentId },
+        data: {
+          status: "COMPLETED",
+          date_completed: new Date(),
+          notes: data.notes
+            ? `${commissionPayment.notes || ""}\nApproved: ${data.notes}`.trim()
+            : commissionPayment.notes,
+          updated_at: new Date(),
+          approved_by: userId ?? undefined,
+        },
+      });
+
+      // Process each commission split
+      for (const item of commissionPayment.payment_items) {
+        const commissionSplit = item.commission_split;
+        if (!commissionSplit) continue;
+
+        const transactionCharge = commissionSplit.transaction_charge;
+        if (!transactionCharge) continue;
+
+        // Update commission split status
+        await tx.commissionSplit.update({
+          where: { id: commissionSplit.id },
+          data: {
+            status: "SETTLED",
+            settled_by: userId ?? undefined,
+            settled_at: new Date(),
+            updated_at: new Date(),
+          },
+        });
+
+        // Update transaction charge based on commission split role
+        const updateData: any = {};
+        const settledAmount = parseFloat(item.amount_settled.toString());
+
+        switch (commissionSplit.role) {
+          case "INTERNAL":
+            updateData.internal_amount = settledAmount;
+            break;
+          case "ORIGIN":
+            updateData.origin_amount = settledAmount;
+            break;
+          case "DESTINATION":
+            updateData.destination_amount = settledAmount;
+            break;
+        }
+
+        // Check if all commission splits for this transaction charge are settled
+        const allSplits = await tx.commissionSplit.findMany({
+          where: { transaction_charges_id: transactionCharge.id },
+        });
+        const settledSplits = allSplits.filter((s) => s.status === "SETTLED");
+
+        if (settledSplits.length === allSplits.length) {
+          updateData.status = "PAID";
+        }
+
+        await tx.transactionCharge.update({
+          where: { id: transactionCharge.id },
+          data: updateData,
+        });
+      }
+
+      // Prepare GL entries for all payment items
+      //accounts posting to be implemented later
+      /*const glEntries = [];
+
+      for (const item of commissionPayment.payment_items) {
+        const commissionSplit = item.commission_split;
+        if (!commissionSplit) continue;
+
+        const transactionCharge = commissionSplit.transaction_charge;
+        if (!transactionCharge) continue;
+        const charge = transactionCharge?.charge;
+
+        // Get the REVENUE account for this charge
+        const revenueAccount = await tx.glAccount.findFirst({
+          where: {
+            charge_id: charge?.id,
+            organisation_id: updatedPayment.organisation_id,
+            type: "REVENUE",
+          },
+        });
+
+        if (!revenueAccount) {
+          throw new AppError(
+            `Revenue account not found for commission ${charge?.name}`,
+            404
+          );
+        }
+
+        // Get the LIABILITY (PAYABLE) account for this charge
+        const liabilityAccount = await tx.glAccount.findFirst({
+          where: {
+            charge_id: charge?.id,
+            organisation_id: commissionPayment.organisation_id,
+            type: "LIABILITY",
+          },
+        });
+
+        if (!liabilityAccount) {
+          throw new AppError(
+            `Liability account not found for charge ${charge?.name}`,
+            404
+          );
+        }
+
+        // Add GL entries for this payment item
+        glEntries.push(
+          {
+            gl_account_id: revenueAccount.id,
+            amount: parseFloat(item.external_amount_settled?.toString() || "0"),
+            dr_cr: "CR" as const,
+            description: `Revenue from ${charge?.name} - ${commissionPayment.reference_number}`,
+          },
+          {
+            gl_account_id: liabilityAccount.id,
+            amount: parseFloat(item.external_amount_settled?.toString() || "0"),
+            dr_cr: "DR" as const,
+            description: `Payment of ${charge?.name} liability - ${commissionPayment.reference_number}`,
+          }
+        );
+      }
+
+      // Create GL transaction using the service
+      await this.glTransactionService.createGlTransaction(
+        commissionPayment.organisation_id!,
+        {
+          transaction_type: "CHARGES_PAYMENT", // Using existing type temporarily
+          amount: parseFloat(commissionPayment?.amount?.toString() || "0"),
+          currency_id: commissionPayment.currency_id || undefined,
+          description: `Commission payment approved - ${commissionPayment.reference_number}`,
+          gl_entries: glEntries,
+        },
+        userId ?? commissionPayment.created_by ?? ""
+      );*/
+
+      // Get updated payment with relations
+      const result = await tx.chargesPayment.findUnique({
+        where: { id: paymentId },
+        include: {
+          currency: true,
+          destination_org: true,
+          created_by_user: true,
+          organisation: true,
+          payment_items: {
+            include: {
+              commission_split: true,
+              transaction_charges: true,
+            },
+          },
+        },
+      });
+
+      return {
+        success: true,
+        message: "Commission payment approved successfully",
+        data: {
+          ...result!,
+          amount: parseFloat(result!.amount?.toString() || "0"),
+          date_completed: result!.date_completed?.toISOString() || null,
+          created_at: result!.created_at.toISOString(),
+          updated_at: result!.updated_at.toISOString(),
         } as any,
       };
     });

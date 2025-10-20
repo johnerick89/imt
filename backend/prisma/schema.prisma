@@ -66,13 +66,15 @@ model User {
   org_balances                OrgBalance[]
   bank_accounts               BankAccount[]
   transaction_parties         TransactionParty[]
-  charges_payments            ChargesPayment[]
   vaults                      Vault[]
   transaction_audits_by_user  TransactionAudit[]   @relation("User")
   approved_transactions       Transaction[]        @relation("ApprovedByUser")
   assigned_transactions       Transaction[]        @relation("AssignedToUser")
   transaction_audits_new_user TransactionAudit[]   @relation("NewUser")
   validation_rules            ValidationRule[]
+  commission_splits           CommissionSplit[]
+  charges_payments_created    ChargesPayment[]     @relation("CreatedByUser")
+  charges_payments_approved   ChargesPayment[]     @relation("ApprovedByUser")
 
   @@index([email])
   @@index([id])
@@ -91,25 +93,25 @@ model User {
 }
 
 model Currency {
-  id                    String           @id @default(uuid()) @db.Uuid
+  id                    String            @id @default(uuid()) @db.Uuid
   currency_name         String
   currency_code         String
   currency_symbol       String
-  created_at            DateTime         @default(now())
-  created_by            String?          @db.Uuid
-  updated_at            DateTime         @updatedAt
+  created_at            DateTime          @default(now())
+  created_by            String?           @db.Uuid
+  updated_at            DateTime          @updatedAt
   symbol_native         String?
   decimal_digits        Int?
   rounding              Float?
   name_plural           String?
   organisations         Organisation[]
   charges               Charge[]
-  corridors             Corridor[]       @relation("BaseCurrency")
+  corridors             Corridor[]        @relation("BaseCurrency")
   customers             Customer[]
-  inbound_transactions  Transaction[]    @relation("OriginCurrency")
-  outbound_transactions Transaction[]    @relation("DestCurrency")
-  from_exchange_rates   ExchangeRate[]   @relation("FromCurrency")
-  to_exchange_rates     ExchangeRate[]   @relation("ToCurrency")
+  inbound_transactions  Transaction[]     @relation("OriginCurrency")
+  outbound_transactions Transaction[]     @relation("DestCurrency")
+  from_exchange_rates   ExchangeRate[]    @relation("FromCurrency")
+  to_exchange_rates     ExchangeRate[]    @relation("ToCurrency")
   tills                 Till[]
   vaults                Vault[]
   gl_accounts           GlAccount[]
@@ -118,8 +120,9 @@ model Currency {
   balance_histories     BalanceHistory[]
   bank_accounts         BankAccount[]
   charges_payments      ChargesPayment[]
-  origin_corridors      Corridor[]       @relation("OriginCurrency")
-  destination_corridors Corridor[]       @relation("DestinationCurrency")
+  origin_corridors      Corridor[]        @relation("OriginCurrency")
+  destination_corridors Corridor[]        @relation("DestinationCurrency")
+  commission_splits     CommissionSplit[]
 
   @@index([currency_name])
   @@index([currency_code])
@@ -234,6 +237,7 @@ model Organisation {
   corridors                           Corridor[]          @relation("Organisation")
   agency_float_accounts               GlAccount[]         @relation("FloatOrganisation")
   balance_histories                   BalanceHistory[]
+  commission_splits                   CommissionSplit[]
 
   @@index([id])
   @@index([description])
@@ -994,6 +998,7 @@ model Transaction {
   assigned_to_user             User?               @relation("AssignedToUser", fields: [assigned_to], references: [id])
   outbound_transaction_id      String?             @db.Uuid
   outbound_transaction_no      String?             @db.VarChar(128)
+  commission_splits            CommissionSplit[]
 
   @@index([corridor_id])
   @@index([till_id])
@@ -1061,11 +1066,61 @@ model TransactionCharge {
   destination_organisation_id String?                 @db.Uuid
   destination_organisation    Organisation?           @relation("DestinationOrganisation", fields: [destination_organisation_id], references: [id])
   charges_payment_items       ChargesPaymentItem[]
+  commission_splits           CommissionSplit[]
+  total_amount_settled        Decimal?                @db.Decimal(22, 9)
+  origin_amount_settled       Decimal?                @db.Decimal(22, 9)
+  destination_amount_settled  Decimal?                @db.Decimal(22, 9)
+  internal_amount_settled     Decimal?                @db.Decimal(22, 9)
 
   @@index([transaction_id])
   @@index([type])
   @@index([charge_id])
   @@map("transaction_charges")
+}
+
+enum CommissionRole {
+  ORIGIN
+  DESTINATION
+  INTERNAL
+  INTERMEDIARY
+}
+
+enum CommissionSplitStatus {
+  PENDING
+  APPROVED
+  SETTLED
+  REJECTED
+  FAILED
+  CANCELLED
+  PROCESSING
+}
+
+model CommissionSplit {
+  id                     String                @id @default(uuid()) @db.Uuid
+  transaction_charges_id String                @db.Uuid
+  transaction_charge     TransactionCharge     @relation(fields: [transaction_charges_id], references: [id], onDelete: Cascade)
+  organisation_id        String                @db.Uuid
+  organisation           Organisation          @relation(fields: [organisation_id], references: [id], onDelete: Cascade)
+  transaction_id         String                @db.Uuid
+  transaction            Transaction           @relation(fields: [transaction_id], references: [id], onDelete: Cascade)
+  amount                 Decimal               @db.Decimal(22, 9) // Agency's share of this charge (e.g., $1.50 for A)
+  role                   CommissionRole? // Optional: Enum like ORIGIN, DESTINATION, PLATFORM, INTERMEDIARY for reporting
+  notes                  String? // E.g., "A's initiator fee"
+  created_at             DateTime              @default(now())
+  updated_at             DateTime              @updatedAt
+  status                 CommissionSplitStatus @default(PENDING)
+  settled_at             DateTime?             @db.Timestamp(0)
+  settled_by             String?               @db.Uuid
+  settled_by_user        User?                 @relation(fields: [settled_by], references: [id])
+  charges_payment_items  ChargesPaymentItem[]
+  currency_id            String?               @db.Uuid
+  currency               Currency?             @relation(fields: [currency_id], references: [id])
+
+  // Ensure splits sum to total charge (enforce via trigger or app logic)
+  @@unique([transaction_charges_id, organisation_id]) // One split per org per charge
+  @@index([organisation_id])
+  @@index([transaction_charges_id])
+  @@map("commission_splits")
 }
 
 model Vault {
@@ -1383,8 +1438,8 @@ model ChargesPayment {
   id                       String               @id @default(uuid()) @db.Uuid
   type                     ChargeType // Matches charge_type from charges table
   amount                   Decimal              @db.Decimal(22, 9) // Aggregated amount
-  internal_total_amount    Decimal              @db.Decimal(22, 9) // Aggregated internal share (e.g., your org's $3)
-  external_total_amount    Decimal              @db.Decimal(22, 9) // Aggregated external share (e.g., partner's $2)
+  internal_total_amount    Decimal?             @db.Decimal(22, 9) // Aggregated internal share (e.g., your org's $3)
+  external_total_amount    Decimal?             @db.Decimal(22, 9) // Aggregated external share (e.g., partner's $2)
   reference_number         String               @unique // e.g., "PAY-2025-09-01-COMMISSION-ORGX"
   date_completed           DateTime             @db.Timestamp(0) // When the batch was marked paid
   currency_id              String               @db.Uuid
@@ -1396,12 +1451,14 @@ model ChargesPayment {
   created_at               DateTime             @default(now())
   updated_at               DateTime             @updatedAt
   created_by               String?              @db.Uuid
-  created_by_user          User?                @relation(fields: [created_by], references: [id])
+  created_by_user          User?                @relation("CreatedByUser", fields: [created_by], references: [id])
   organisation_id          String               @db.Uuid // Your org (multi-tenant)
   organisation             Organisation         @relation("Organisation", fields: [organisation_id], references: [id], onDelete: Cascade)
   payment_items            ChargesPaymentItem[] // Junction to settled transaction_charges
-  origin_total_amount      Decimal              @db.Decimal(22, 9) // Aggregated origin amount
-  destination_total_amount Decimal              @db.Decimal(22, 9) // Aggregated destination amount
+  origin_total_amount      Decimal?             @db.Decimal(22, 9) // Aggregated origin amount
+  destination_total_amount Decimal?             @db.Decimal(22, 9) // Aggregated destination amount
+  approved_by              String?              @db.Uuid
+  approved_by_user         User?                @relation("ApprovedByUser", fields: [approved_by], references: [id])
 
   @@index([type])
   @@index([currency_id])
@@ -1413,17 +1470,19 @@ model ChargesPayment {
 }
 
 model ChargesPaymentItem {
-  id                         String            @id @default(uuid()) @db.Uuid
-  charges_payment_id         String            @db.Uuid
-  charges_payment            ChargesPayment    @relation(fields: [charges_payment_id], references: [id], onDelete: Cascade)
-  transaction_charges_id     String            @db.Uuid
-  transaction_charges        TransactionCharge @relation(fields: [transaction_charges_id], references: [id], onDelete: Cascade)
-  internal_amount_settled    Decimal           @default(0) @db.Decimal(22, 9) // Portion of internal_amount marked paid in this batch
-  external_amount_settled    Decimal           @default(0) @db.Decimal(22, 9) // Portion of external_amount marked paid
-  origin_amount_settled      Decimal?          @default(0) @db.Decimal(22, 9) // Portion of origin_amount marked paid
-  destination_amount_settled Decimal?          @default(0) @db.Decimal(22, 9) // Portion of destination_amount marked paid
-  created_at                 DateTime          @default(now())
-  amount_settled             Decimal           @default(0) @db.Decimal(22, 9) // Portion of amount marked paid in this batch
+  id                         String             @id @default(uuid()) @db.Uuid
+  charges_payment_id         String             @db.Uuid
+  charges_payment            ChargesPayment     @relation(fields: [charges_payment_id], references: [id], onDelete: Cascade)
+  transaction_charges_id     String?            @db.Uuid
+  transaction_charges        TransactionCharge? @relation(fields: [transaction_charges_id], references: [id], onDelete: Cascade)
+  commission_split_id        String?            @db.Uuid
+  commission_split           CommissionSplit?   @relation(fields: [commission_split_id], references: [id], onDelete: Cascade)
+  internal_amount_settled    Decimal?           @default(0) @db.Decimal(22, 9) // Portion of internal_amount marked paid in this batch
+  external_amount_settled    Decimal?           @default(0) @db.Decimal(22, 9) // Portion of external_amount marked paid
+  origin_amount_settled      Decimal?           @default(0) @db.Decimal(22, 9) // Portion of origin_amount marked paid
+  destination_amount_settled Decimal?           @default(0) @db.Decimal(22, 9) // Portion of destination_amount marked paid
+  created_at                 DateTime           @default(now())
+  amount_settled             Decimal            @default(0) @db.Decimal(22, 9) // Portion of amount marked paid in this batch
 
   @@unique([charges_payment_id, transaction_charges_id]) // One item per transaction_charge per payment
   @@index([charges_payment_id])
