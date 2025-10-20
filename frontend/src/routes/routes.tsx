@@ -31,6 +31,7 @@ import GlAccountsPage from "../pages/GlAccountsPage";
 import GlTransactionsPage from "../pages/GlTransactionsPage";
 import ChargesPaymentsPage from "../pages/ChargesPaymentsPage";
 import ChargesPaymentDetailsPage from "../pages/ChargesPaymentDetailsPage";
+import CommissionsPage from "../pages/CommissionsPage";
 import TransactionsPage from "../pages/TransactionsPage";
 import ConnectionsPage from "../pages/ConnectionsPage";
 import FinancialSettingsPage from "../pages/FinancialSettingsPage";
@@ -100,6 +101,9 @@ const AppRoutes: React.FC = () => {
           path="charges-payments/:paymentId"
           element={<ChargesPaymentDetailsPage />}
         />
+
+        {/* Commissions */}
+        <Route path="commissions" element={<CommissionsPage />} />
 
         {/* Customers */}
         <Route path="customers" element={<CustomersPage />} />

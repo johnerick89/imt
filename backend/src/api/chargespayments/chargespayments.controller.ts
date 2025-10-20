@@ -64,6 +64,64 @@ export class ChargesPaymentController {
     }
   );
 
+  // Get pending commissions (commission splits awaiting settlement)
+  getPendingCommissions = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
+      const validation = pendingTransactionChargesFiltersSchema.safeParse(
+        req.query
+      );
+      if (!validation.success) {
+        throw new AppError("Validation error", 400);
+      }
+
+      const result = await chargesPaymentService.getPendingCommissions({
+        filters: validation.data,
+      });
+      res.status(200).json(result);
+    }
+  );
+
+  // Get pending commission stats
+  getPendingCommissionStats = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
+      const validation = pendingTransactionChargesFiltersSchema.safeParse(
+        req.query
+      );
+      if (!validation.success) {
+        throw new AppError("Validation error", 400);
+      }
+
+      const result = await chargesPaymentService.getPendingCommissionStats(
+        validation.data
+      );
+      res.status(200).json(result);
+    }
+  );
+
+  // Process commissions
+  processCommissions = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
+      const { commission_split_ids } = req.body as {
+        commission_split_ids: string[];
+      };
+      if (!commission_split_ids || !Array.isArray(commission_split_ids)) {
+        throw new AppError(
+          "commission_split_ids must be a non-empty array",
+          400
+        );
+      }
+      const userId = req.user?.id;
+      if (!userId) {
+        throw new AppError("User not authenticated", 401);
+      }
+      const result = await chargesPaymentService.processCommissions(
+        commission_split_ids,
+        userId
+      );
+      res.status(201).json(result);
+    }
+  );
+
   // Create charges payment
   createChargesPayment = asyncHandler(
     async (req: CustomRequest, res: Response): Promise<void> => {
@@ -156,6 +214,35 @@ export class ChargesPaymentController {
       }
 
       const result = await chargesPaymentService.reverseChargesPayment(
+        paymentId,
+        validation.data,
+        userId
+      );
+
+      res.status(200).json(result);
+    }
+  );
+
+  // Approve commission payment
+  approveCommissionPayment = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
+      const { paymentId } = req.params;
+      if (!paymentId) {
+        throw new AppError("Payment ID is required", 400);
+      }
+
+      const validation = approveChargesPaymentSchema.safeParse(req.body);
+      if (!validation.success) {
+        throw new AppError("Validation error", 400);
+      }
+
+      const userId = req.user?.id;
+
+      if (!userId) {
+        throw new AppError("User not authenticated", 401);
+      }
+
+      const result = await chargesPaymentService.approveCommissionPayment(
         paymentId,
         validation.data,
         userId

@@ -211,3 +211,102 @@ export const useReverseChargesPayment = () => {
     },
   });
 };
+
+// Hook to get pending commissions (commission splits)
+export const usePendingCommissions = (
+  filters?: PendingTransactionChargesFilters
+) => {
+  return useQuery({
+    queryKey: ["pendingCommissions", filters],
+    queryFn: () => chargesPaymentService.getPendingCommissions(filters),
+    enabled: !!filters?.organisation_id,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+// Hook to get pending commission stats
+export const usePendingCommissionStats = (
+  filters?: PendingTransactionChargesFilters
+) => {
+  return useQuery({
+    queryKey: ["pendingCommissionStats", filters],
+    queryFn: () => chargesPaymentService.getPendingCommissionStats(filters),
+    enabled: !!filters?.organisation_id,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const useProcessCommissions = () => {
+  const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
+  return useMutation({
+    mutationFn: (commissionSplitIds: string[]) =>
+      chargesPaymentService.processCommissions(commissionSplitIds),
+    onSuccess: (response) => {
+      showSuccess(
+        "Commission Processed Successfully",
+        response.message || "The commission has been processed successfully."
+      );
+      // Invalidate and refetch lists and stats
+      queryClient.invalidateQueries({ queryKey: ["pendingCommissions"] });
+      queryClient.invalidateQueries({ queryKey: ["pendingCommissionStats"] });
+      queryClient.invalidateQueries({ queryKey: ["chargesPayments"] });
+      queryClient.invalidateQueries({ queryKey: ["chargePaymentsStats"] });
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to process commission";
+      showError("Process Commission Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
+    },
+  });
+};
+
+// Hook to approve commission payment
+export const useApproveCommissionPayment = () => {
+  const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
+  return useMutation({
+    mutationFn: ({
+      paymentId,
+      data,
+    }: {
+      paymentId: string;
+      data: ApproveChargesPaymentRequest;
+    }) => chargesPaymentService.approveCommissionPayment(paymentId, data),
+    onSuccess: (response, variables) => {
+      showSuccess(
+        "Commission Payment Approved Successfully",
+        response.message ||
+          "The commission payment has been approved successfully."
+      );
+      // Invalidate and refetch commission payments
+      queryClient.invalidateQueries({ queryKey: ["chargesPayments"] });
+      queryClient.invalidateQueries({ queryKey: ["chargePaymentsStats"] });
+      queryClient.invalidateQueries({ queryKey: ["pendingCommissions"] });
+      queryClient.invalidateQueries({ queryKey: ["pendingCommissionStats"] });
+
+      // Update the specific payment in cache
+      queryClient.setQueryData(
+        ["chargesPayment", variables.paymentId],
+        response.data
+      );
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to approve commission payment";
+      showError("Commission Payment Approval Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
+    },
+  });
+};

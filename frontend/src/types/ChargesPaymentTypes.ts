@@ -20,6 +20,24 @@ export const ChargesPaymentStatus = {
 export type ChargesPaymentStatus =
   (typeof ChargesPaymentStatus)[keyof typeof ChargesPaymentStatus];
 
+export const CommissionRole = {
+  ORIGIN: "ORIGIN",
+  DESTINATION: "DESTINATION",
+  INTERNAL: "INTERNAL",
+  INTERMEDIARY: "INTERMEDIARY",
+} as const;
+export type CommissionRole =
+  (typeof CommissionRole)[keyof typeof CommissionRole];
+
+export const CommissionSplitStatus = {
+  PENDING: "PENDING",
+  APPROVED: "APPROVED",
+  SETTLED: "SETTLED",
+  REJECTED: "REJECTED",
+  FAILED: "FAILED",
+  CANCELLED: "CANCELLED",
+};
+
 // Charges Payment Interface
 export interface ChargesPayment {
   id: string;
@@ -36,6 +54,13 @@ export interface ChargesPayment {
   updated_at: string;
   created_by: string | null;
   organisation_id: string;
+  commission_splits?: CommissionSplit[];
+  total_amount_settled?: number;
+  origin_amount_settled?: number;
+  destination_amount_settled?: number;
+  internal_amount_settled?: number;
+  amount_settled?: number;
+  amount?: number;
   // Relations
   currency?: Currency;
   destination_org?: Organisation;
@@ -46,11 +71,51 @@ export interface ChargesPayment {
   destination_total_amount: number;
 }
 
+export type CommissionSplitStatus =
+  (typeof CommissionRole)[keyof typeof CommissionRole];
+export interface CommissionSplit {
+  id: string;
+  transaction_charges_id: string;
+  organisation_id: string;
+  transaction_id: string;
+  amount: number;
+  role?: CommissionRole;
+  notes?: string | null;
+  created_at: Date;
+  updated_at: Date;
+  status: CommissionSplitStatus;
+  settled_at?: Date | null;
+  settled_by?: string | null;
+  currency_id?: string | null;
+
+  transaction_charge?: TransactionCharge | null;
+  organisation?: Organisation | null;
+  transaction?: Transaction | null;
+  settled_by_user?: User | null;
+  charges_payment_items: ChargesPaymentItem[];
+  currency?: Currency | null;
+}
+
+export interface PendingCommissionSplitResponse {
+  success: boolean;
+  message: string;
+  data: {
+    commission_splits: CommissionSplit[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  };
+}
+
 // Charges Payment Item Interface
 export interface ChargesPaymentItem {
   id: string;
   charges_payment_id: string;
-  transaction_charges_id: string;
+  transaction_charges_id?: string;
+  commission_split_id?: string;
   internal_amount_settled: number;
   external_amount_settled: number;
   amount_settled: number;
@@ -61,6 +126,7 @@ export interface ChargesPaymentItem {
   charges_payment?: ChargesPayment;
   transaction_charges?: TransactionCharge;
   transaction?: Transaction;
+  commission_split?: CommissionSplit;
   // Relations
   transaction_charge?: TransactionCharge;
   organisation?: Organisation;

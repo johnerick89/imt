@@ -240,6 +240,8 @@ export class TransactionService {
             400
           );
         }
+        //destination organisation balance validation suspended for now
+        /*
         const destinationLockedBalance = parseFloat(
           destinationOrgBalance.locked_balance?.toString() || "0"
         );
@@ -254,18 +256,7 @@ export class TransactionService {
         const totalAvailableLimit =
           destinationLimit - destiantionBalance - destinationLockedBalance;
         const destinationAmount = data.origin_amount;
-        console.log(
-          "destinationLimit",
-          destinationLimit,
-          "destiantionBalance",
-          destiantionBalance,
-          "destinationLockedBalance",
-          destinationLockedBalance,
-          "totalAvailableLimit",
-          totalAvailableLimit,
-          "destinationAmount",
-          destinationAmount
-        );
+
         if (totalAvailableLimit < destinationAmount) {
           throw new AppError(
             "Insufficient destination organisation limit for this transaction. Destination organisation limit is " +
@@ -273,6 +264,7 @@ export class TransactionService {
             400
           );
         }
+        */
       } else {
         throw new AppError(
           "Origin organisation or destination organisation or origin currency not found",
@@ -329,8 +321,8 @@ export class TransactionService {
 
       // 11. Create transaction charges
       const transactionCharges = await Promise.all(
-        chargeCalculation.charges.map((charge) =>
-          tx.transactionCharge.create({
+        chargeCalculation.charges.map(async (charge) => {
+          const transactionCharge = await tx.transactionCharge.create({
             data: {
               transaction_id: transaction.id,
               charge_id: charge.charge_id,
@@ -353,8 +345,54 @@ export class TransactionService {
               destination_percentage: charge.destination_percentage,
               destination_organisation_id: data.destination_organisation_id,
             },
-          })
-        )
+          });
+
+          if (
+            charge.type === "COMMISSION" &&
+            this.mainOrganisationId &&
+            organisationId &&
+            data.destination_organisation_id
+          ) {
+            // Insert CommissionSplit records for internal, origin, and destination agencies
+            await Promise.all([
+              tx.commissionSplit.create({
+                data: {
+                  transaction_charges_id: transactionCharge.id,
+                  organisation_id: this.mainOrganisationId,
+                  transaction_id: transaction.id,
+                  amount: new Decimal(charge.internal_amount || 0),
+                  role: "INTERNAL",
+                  notes: "Internal commission",
+                  currency_id: data.origin_currency_id,
+                },
+              }),
+              tx.commissionSplit.create({
+                data: {
+                  transaction_charges_id: transactionCharge.id,
+                  organisation_id: organisationId,
+                  transaction_id: transaction.id,
+                  amount: new Decimal(charge.origin_amount || 0),
+                  role: "ORIGIN",
+                  notes: "Origin commission",
+                  currency_id: data.origin_currency_id,
+                },
+              }),
+              tx.commissionSplit.create({
+                data: {
+                  transaction_charges_id: transactionCharge.id,
+                  organisation_id: data.destination_organisation_id,
+                  transaction_id: transaction.id,
+                  amount: new Decimal(charge.destination_amount || 0),
+                  role: "DESTINATION",
+                  notes: "Destination commission",
+                  currency_id: data.origin_currency_id,
+                },
+              }),
+            ]);
+          }
+
+          return transactionCharge;
+        })
       );
 
       // 11.1. Create transaction audit
@@ -650,6 +688,8 @@ export class TransactionService {
             400
           );
         }
+        /*
+        //destination organisation balance validation suspended for now
         const destinationLockedBalance = new Decimal(
           destinationOrgBalance.locked_balance || 0
         );
@@ -670,6 +710,7 @@ export class TransactionService {
             400
           );
         }
+        */
       } else {
         throw new AppError(
           "Origin organisation or destination organisation or origin currency not found",
@@ -2768,6 +2809,8 @@ export class TransactionService {
             400
           );
         }
+        /*
+        //destination organisation balance validation suspended for now
         const destinationLockedBalance = new Decimal(
           destinationOrgBalance.locked_balance || 0
         );
@@ -2788,6 +2831,7 @@ export class TransactionService {
             400
           );
         }
+        */
       } else {
         throw new AppError(
           "Origin organisation or destination organisation or origin currency not found",

@@ -18,6 +18,19 @@ router.get(
   chargesPaymentController.getPendingChargesStats.bind(chargesPaymentController)
 );
 
+// Pending commissions (commission splits)
+router.get(
+  "/pending-commissions",
+  chargesPaymentController.getPendingCommissions.bind(chargesPaymentController)
+);
+
+router.get(
+  "/pending-commissions-stats",
+  chargesPaymentController.getPendingCommissionStats.bind(
+    chargesPaymentController
+  )
+);
+
 router.get(
   "/charge-payments-stats",
   chargesPaymentController.getChargePaymentsStats.bind(chargesPaymentController)
@@ -50,6 +63,22 @@ router.post(
   "/charges-payments/:paymentId/reverse",
   authMiddleware,
   chargesPaymentController.reverseChargesPayment.bind(chargesPaymentController)
+);
+
+// Process commissions
+router.post(
+  "/process-commissions",
+  authMiddleware,
+  chargesPaymentController.processCommissions.bind(chargesPaymentController)
+);
+
+// Approve commission payment
+router.post(
+  "/commission-payments/:paymentId/approve",
+  authMiddleware,
+  chargesPaymentController.approveCommissionPayment.bind(
+    chargesPaymentController
+  )
 );
 
 export default router;
