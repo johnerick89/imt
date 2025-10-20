@@ -1117,7 +1117,7 @@ model CommissionSplit {
   currency               Currency?             @relation(fields: [currency_id], references: [id])
 
   // Ensure splits sum to total charge (enforce via trigger or app logic)
-  @@unique([transaction_charges_id, organisation_id]) // One split per org per charge
+  @@unique([transaction_charges_id, organisation_id, role]) // One split per org per charge per role
   @@index([organisation_id])
   @@index([transaction_charges_id])
   @@map("commission_splits")
@@ -1484,7 +1484,7 @@ model ChargesPaymentItem {
   created_at                 DateTime           @default(now())
   amount_settled             Decimal            @default(0) @db.Decimal(22, 9) // Portion of amount marked paid in this batch
 
-  @@unique([charges_payment_id, transaction_charges_id]) // One item per transaction_charge per payment
+  @@unique([charges_payment_id, transaction_charges_id, commission_split_id]) // One item per transaction_charge per payment
   @@index([charges_payment_id])
   @@index([transaction_charges_id])
   @@map("charges_payment_items")

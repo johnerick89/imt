@@ -33,8 +33,11 @@ export const orgFloatBalanceSchema = z.object({
     .optional(),
   bank_account_id: z
     .string()
-    .uuid("Bank account ID must be a valid UUID")
-    .optional(),
+    .optional()
+    .transform((val) => (val === "" ? undefined : val))
+    .refine((val) => !val || z.string().uuid().safeParse(val).success, {
+      message: "Bank account ID must be a valid UUID",
+    }),
   limit: z.coerce.number().optional(),
 });
 

@@ -1432,6 +1432,8 @@ export class ChargesPaymentService {
         grouped.get(key)!.push(split as any);
       }
 
+      console.log("grouped", grouped);
+
       const createdPayments: any[] = [];
 
       for (const [key, splits] of grouped) {
