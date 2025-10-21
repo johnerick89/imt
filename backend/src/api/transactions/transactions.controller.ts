@@ -63,7 +63,8 @@ export class TransactionController {
 
       const validation = cancelTransactionSchema.safeParse(req.body);
       if (!validation.success) {
-        throw new AppError("Validation error", 400);
+        console.log("validation error", parseZodError(validation.error));
+        throw new ZodValidationError(parseZodError(validation.error));
       }
 
       const userId = req.user?.id;
@@ -91,7 +92,8 @@ export class TransactionController {
 
       const validation = approveTransactionSchema.safeParse(req.body);
       if (!validation.success) {
-        throw new AppError("Validation error", 400);
+        console.log("validation error", parseZodError(validation.error));
+        throw new ZodValidationError(parseZodError(validation.error));
       }
 
       const userId = req.user?.id;
@@ -119,7 +121,8 @@ export class TransactionController {
 
       const validation = markAsReadySchema.safeParse(req.body);
       if (!validation.success) {
-        throw new AppError("Validation error", 400);
+        console.log("validation error", parseZodError(validation.error));
+        throw new ZodValidationError(parseZodError(validation.error));
       }
 
       const userId = req.user?.id;
@@ -147,7 +150,9 @@ export class TransactionController {
 
       const validation = updateTransactionSchema.safeParse(req.body);
       if (!validation.success) {
-        throw new AppError("Validation error", 400);
+        console.log("req.body", req.body);
+        console.log("validation error", parseZodError(validation.error));
+        throw new ZodValidationError(parseZodError(validation.error));
       }
 
       const userId = req.user?.id;
@@ -175,7 +180,8 @@ export class TransactionController {
 
       const validation = reverseTransactionSchema.safeParse(req.body);
       if (!validation.success) {
-        throw new AppError("Validation error", 400);
+        console.log("validation error", parseZodError(validation.error));
+        throw new ZodValidationError(parseZodError(validation.error));
       }
 
       const userId = req.user?.id;
@@ -203,7 +209,8 @@ export class TransactionController {
 
       const validation = transactionFiltersSchema.safeParse(req.query);
       if (!validation.success) {
-        throw new AppError("Validation error", 400);
+        console.log("validation error", parseZodError(validation.error));
+        throw new ZodValidationError(parseZodError(validation.error));
       }
 
       const result = await transactionService.getTransactions(
@@ -250,7 +257,8 @@ export class TransactionController {
 
       const validation = transactionFiltersSchema.safeParse(req.query);
       if (!validation.success) {
-        throw new AppError("Validation error", 400);
+        console.log("validation error", parseZodError(validation.error));
+        throw new ZodValidationError(parseZodError(validation.error));
       }
 
       const result = await transactionService.getInboundTransactions(
@@ -288,7 +296,8 @@ export class TransactionController {
 
       const validation = approveTransactionSchema.safeParse(req.body);
       if (!validation.success) {
-        throw new AppError("Validation error", 400);
+        console.log("validation error", parseZodError(validation.error));
+        throw new ZodValidationError(parseZodError(validation.error));
       }
 
       const userId = req.user?.id;
@@ -317,7 +326,8 @@ export class TransactionController {
 
       const validation = reverseTransactionSchema.safeParse(req.body);
       if (!validation.success) {
-        throw new AppError("Validation error", 400);
+        console.log("validation error", parseZodError(validation.error));
+        throw new ZodValidationError(parseZodError(validation.error));
       }
 
       const userId = req.user?.id;
@@ -361,7 +371,8 @@ export class TransactionController {
       const validation =
         updateInboundTransactionReceiverDetailsSchema.safeParse(req.body);
       if (!validation.success) {
-        throw new AppError("Validation error", 400);
+        console.log("validation error", parseZodError(validation.error));
+        throw new ZodValidationError(parseZodError(validation.error));
       }
 
       const result =

@@ -6,7 +6,7 @@ import { Input } from "../components/ui/Input";
 import { SearchableSelect } from "../components/ui/SearchableSelect";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { useSession } from "../hooks";
-import { useOrganisations } from "../hooks/useOrganisations";
+import { useOrganisation, useOrganisations } from "../hooks/useOrganisations";
 import { useCurrencies } from "../hooks/useCurrencies";
 import { formatToCurrency } from "../utils/textUtils";
 import type {
@@ -34,6 +34,11 @@ const CommissionsPage: React.FC = () => {
   const { orgId } = useParams<{ orgId: string }>();
   const { user } = useSession();
   const financialOrganisationId = orgId || user?.organisation_id || "";
+  const { data: userOrganisationData } = useOrganisation(
+    financialOrganisationId
+  );
+  const userOrganisation = userOrganisationData?.data;
+  const userOrganisationType = userOrganisation?.type;
 
   const [activeTab, setActiveTab] = useState<"pending" | "payments">("pending");
   const [selectedCommissionPayment, setSelectedCommissionPayment] =
@@ -50,13 +55,18 @@ const CommissionsPage: React.FC = () => {
     useState<PendingTransactionChargesFilters>({
       page: 1,
       limit: 10,
-      organisation_id: financialOrganisationId,
+      ...(userOrganisationType !== "CUSTOMER" && {
+        organisation_id: financialOrganisationId,
+      }),
+      type: "COMMISSION" as ChargeType,
     });
 
   const [paymentFilters, setPaymentFilters] = useState<ChargesPaymentFilters>({
     page: 1,
     limit: 10,
-    organisation_id: financialOrganisationId,
+    ...(userOrganisationType !== "CUSTOMER" && {
+      organisation_id: financialOrganisationId,
+    }),
     type: "COMMISSION" as ChargeType,
   });
 
@@ -292,7 +302,7 @@ const CommissionsPage: React.FC = () => {
           )}
           {/* Filters */}
           <div className="bg-white p-4 rounded-lg shadow mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               <Input
                 placeholder="Search transactions or charges..."
                 value={pendingFilters.search || ""}
@@ -300,17 +310,19 @@ const CommissionsPage: React.FC = () => {
                   updatePendingFilters({ search: e.target.value, page: 1 })
                 }
               />
-              <SearchableSelect
-                placeholder="Select destination org"
-                value={pendingFilters.destination_org_id || ""}
-                onChange={(value) =>
-                  updatePendingFilters({ destination_org_id: value, page: 1 })
-                }
-                options={organisations.map((org) => ({
-                  value: org.id,
-                  label: org.name,
-                }))}
-              />
+              {userOrganisationType === "CUSTOMER" && (
+                <SearchableSelect
+                  placeholder="Select Agency"
+                  value={pendingFilters.organisation_id || ""}
+                  onChange={(value) =>
+                    updatePendingFilters({ organisation_id: value, page: 1 })
+                  }
+                  options={organisations.map((org) => ({
+                    value: org.id,
+                    label: org.name,
+                  }))}
+                />
+              )}
               <SearchableSelect
                 placeholder="Select currency"
                 value={pendingFilters.currency_id || ""}
@@ -322,8 +334,7 @@ const CommissionsPage: React.FC = () => {
                   label: c.currency_code,
                 }))}
               />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+
               <Input
                 type="date"
                 placeholder="From Date"

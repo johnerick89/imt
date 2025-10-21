@@ -131,46 +131,46 @@ export const createInboundTransactionSchema = z.object({
 // Update Transaction Schema
 export const updateTransactionSchema = z.object({
   corridor_id: z.string().uuid("Invalid corridor ID").optional(),
-  till_id: z.string().uuid("Invalid till ID").optional(),
+  till_id: z.preprocess(
+    (val) => (val === "" ? undefined : val),
+    z.string().uuid("Invalid till ID").optional()
+  ),
   customer_id: z.string().uuid("Invalid customer ID").optional(),
-  origin_amount: z
-    .string()
-    .transform((val) => parseFloat(val))
-    .pipe(z.number().positive("Origin amount must be positive"))
-    .optional(),
+  origin_amount: z.preprocess(
+    (val) => (val === "" || val == null ? undefined : val),
+    z.coerce.number().positive("Origin amount must be positive").optional()
+  ),
   origin_channel_id: z.string().uuid("Invalid origin channel ID").optional(),
   origin_currency_id: z.string().uuid("Invalid origin currency ID").optional(),
   beneficiary_id: z.string().uuid("Invalid beneficiary ID").optional(),
-  dest_amount: z
-    .string()
-    .transform((val) => parseFloat(val))
-    .pipe(z.number().positive("Destination amount must be positive"))
-    .optional(),
+  dest_amount: z.preprocess(
+    (val) => (val === "" || val == null ? undefined : val),
+    z.coerce.number().positive("Destination amount must be positive").optional()
+  ),
   dest_channel_id: z.string().uuid("Invalid destination channel ID").optional(),
   dest_currency_id: z
     .string()
     .uuid("Invalid destination currency ID")
     .optional(),
-  rate: z
-    .string()
-    .transform((val) => parseFloat(val))
-    .pipe(z.number().positive("Rate must be positive"))
-    .optional(),
-  internal_exchange_rate: z
-    .string()
-    .transform((val) => parseFloat(val))
-    .pipe(z.number().positive("Internal exchange rate must be positive"))
-    .optional(),
-  inflation: z
-    .string()
-    .transform((val) => parseFloat(val))
-    .pipe(z.number().min(0, "Inflation cannot be negative"))
-    .optional(),
-  markup: z
-    .string()
-    .transform((val) => parseFloat(val))
-    .pipe(z.number().min(0, "Markup cannot be negative"))
-    .optional(),
+  rate: z.preprocess(
+    (val) => (val === "" || val == null ? undefined : val),
+    z.coerce.number().positive("Rate must be positive").optional()
+  ),
+  internal_exchange_rate: z.preprocess(
+    (val) => (val === "" || val == null ? undefined : val),
+    z.coerce
+      .number()
+      .positive("Internal exchange rate must be positive")
+      .optional()
+  ),
+  inflation: z.preprocess(
+    (val) => (val === "" || val == null ? undefined : val),
+    z.coerce.number().min(0, "Inflation cannot be negative").optional()
+  ),
+  markup: z.preprocess(
+    (val) => (val === "" || val == null ? undefined : val),
+    z.coerce.number().min(0, "Markup cannot be negative").optional()
+  ),
   purpose: z
     .string()
     .max(256, "Purpose must be less than 256 characters")
@@ -196,6 +196,7 @@ export const updateTransactionSchema = z.object({
     .string()
     .uuid("Invalid destination organisation ID")
     .optional(),
+  transaction_charges: z.array(transactionChargeCalculationSchema).optional(),
 });
 
 // Transaction Filters Schema

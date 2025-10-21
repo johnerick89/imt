@@ -167,6 +167,7 @@ export interface UpdateTransactionRequest {
   exchange_rate_id?: string;
   external_exchange_rate_id?: string;
   destination_organisation_id?: string;
+  transaction_charges?: ITransactionChargeInItem[];
 }
 
 // Transaction Filters
