@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useParams } from "react-router-dom";
+import { FaPlus } from "react-icons/fa";
 import { useSession } from "../hooks/useSession";
 import {
   useTransactions,
@@ -263,8 +264,12 @@ const OutboundTransactions: React.FC = () => {
             </p>
           </div>
           {canCreateTransactions() && (
-            <Button onClick={() => setIsCreateModalOpen(true)}>
-              Create {outboundLabel} Transaction
+            <Button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="min-w-24 gap-2 min-h-18"
+            >
+              <FaPlus className="w-4 h-4" />
+              New Transaction
             </Button>
           )}
         </div>
