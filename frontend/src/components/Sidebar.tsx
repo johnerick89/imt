@@ -12,9 +12,14 @@ import { hasPermission } from "../utils/acl";
 interface SidebarProps {
   isCollapsed?: boolean;
   onToggle?: () => void;
+  isMobile?: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggle }) => {
+const Sidebar: React.FC<SidebarProps> = ({
+  isCollapsed = false,
+  onToggle,
+  isMobile = false,
+}) => {
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const location = useLocation();
   const { user } = useSession();
@@ -56,8 +61,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggle }) => {
 
   const handleLinkClick = () => {
     // Close sidebar on mobile when a link is clicked and sidebar is currently expanded
-    // This function should only be called when sidebar is not collapsed
-    if (window.innerWidth < 768 && onToggle) {
+    if (isMobile && onToggle) {
       onToggle();
     }
   };
@@ -136,7 +140,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggle }) => {
   return (
     <div
       className={`bg-gray-800 text-white min-h-screen flex flex-col transition-all duration-300 ${
-        isCollapsed ? "w-16" : "w-64"
+        isMobile
+          ? isCollapsed
+            ? "w-0 overflow-hidden"
+            : "w-64"
+          : isCollapsed
+          ? "w-16"
+          : "w-64"
       }`}
     >
       {/* Header */}
@@ -153,7 +163,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggle }) => {
       </div> */}
       <div className="p-4 border-b border-gray-700">
         <div className="flex items-center justify-center">
-          {isCollapsed ? (
+          {isMobile && isCollapsed ? (
+            // Hide logo completely on mobile when collapsed
+            <div className="w-8 h-8"></div>
+          ) : isCollapsed ? (
             <img
               src={siteConfig?.logo || "/logo-green.svg"}
               alt={siteConfig?.display_name || "Money Flow"}
@@ -171,23 +184,25 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggle }) => {
 
       {/* Navigation Menu */}
       <nav className="flex-1 overflow-y-auto py-4">
-        {filteredNavigationSections.map((section: NavigationSection) => (
-          <div key={section.id} className="mb-6">
-            {/* Section Header */}
-            {!isCollapsed && (
-              <div className="px-4 mb-2">
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                  {section.label}
-                </h3>
-              </div>
-            )}
+        {!isMobile || !isCollapsed
+          ? filteredNavigationSections.map((section: NavigationSection) => (
+              <div key={section.id} className="mb-6">
+                {/* Section Header */}
+                {!isCollapsed && (
+                  <div className="px-4 mb-2">
+                    <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                      {section.label}
+                    </h3>
+                  </div>
+                )}
 
-            {/* Section Items */}
-            <ul className="space-y-1">
-              {section.items.map(renderNavigationItem)}
-            </ul>
-          </div>
-        ))}
+                {/* Section Items */}
+                <ul className="space-y-1">
+                  {section.items.map(renderNavigationItem)}
+                </ul>
+              </div>
+            ))
+          : null}
       </nav>
     </div>
   );

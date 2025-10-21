@@ -108,7 +108,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     () => customersData?.data?.customers || [],
     [customersData]
   );
-  console.log("customers", customers);
+
   const organisations = useMemo(
     () => organisationsData?.data?.organisations || [],
     [organisationsData]
@@ -131,13 +131,6 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     (userTill: UserTill) => userTill.status === "OPEN"
   );
 
-  console.log(
-    "currentUserTill",
-    currentUserTill,
-    "userTillsData",
-    userTillsData
-  );
-
   const { data: validationRules } = useValidationRules();
   const customerValidationRulesData =
     validationRules?.data.validationRules.find(
@@ -147,7 +140,6 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     validationRules?.data.validationRules.find(
       (rule) => rule.entity === "beneficiary"
     ) || null;
-  console.log("beneficiaryValidationRulesData", beneficiaryValidationRulesData);
 
   const commonStrings = siteCommonStrings;
   const outboundLabel = commonStrings?.outbound;
@@ -254,7 +246,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     customer_id: watchedCustomerId,
   });
   const beneficiaries = beneficiariesData?.data?.beneficiaries || [];
-  console.log("beneficiaries", beneficiaries);
+
   // Watch for currency changes to calculate amounts
   const watchedOriginAmount = watch("origin_amount");
   const watchedRate = watch("rate");
@@ -277,8 +269,6 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     origin_organisation_id: organisationId,
     destination_organisation_id: watchedOrganisationId,
   });
-
-  console.log("chargesData", chargesData);
 
   const charges = useMemo(
     () => chargesData?.data?.charges || [],
@@ -357,6 +347,111 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       }
     }
   }, [channels, setValue]);
+
+  // Populate form with transaction data when in edit mode
+  useEffect(() => {
+    if (mode === "edit" && transaction && isOpen) {
+      console.log("Populating form with transaction:", transaction);
+
+      // Reset form first
+      reset();
+
+      // Populate basic fields
+
+      if (transaction.destination_organisation_id) {
+        setValue(
+          "destination_organisation_id",
+          transaction.destination_organisation_id
+        );
+      }
+      if (transaction.corridor_id)
+        setValue("corridor_id", transaction.corridor_id);
+      if (transaction.till_id) setValue("till_id", transaction.till_id);
+      if (transaction.customer_id)
+        setValue("customer_id", transaction.customer_id);
+      if (transaction.beneficiary_id)
+        setValue("beneficiary_id", transaction.beneficiary_id);
+      if (transaction.origin_amount)
+        setValue("origin_amount", transaction.origin_amount.toString());
+      if (transaction.dest_amount)
+        setValue("dest_amount", transaction.dest_amount.toString());
+      if (transaction.amount_payable)
+        setValue("amount_payable", transaction.amount_payable.toString());
+      if (transaction.origin_currency_id)
+        setValue("origin_currency_id", transaction.origin_currency_id);
+      if (transaction.dest_currency_id)
+        setValue("dest_currency_id", transaction.dest_currency_id);
+      if (transaction.origin_channel_id)
+        setValue("origin_channel_id", transaction.origin_channel_id);
+      if (transaction.dest_channel_id)
+        setValue("dest_channel_id", transaction.dest_channel_id);
+      if (transaction.remarks) setValue("remarks", transaction.remarks);
+      if (transaction.till_id) setValue("till_id", transaction.till_id);
+      if (transaction.exchange_rate_id)
+        setValue("exchange_rate_id", transaction.exchange_rate_id);
+      if (transaction.external_exchange_rate_id)
+        setValue(
+          "external_exchange_rate_id",
+          transaction.external_exchange_rate_id
+        );
+      if (transaction.destination_organisation_id)
+        setValue(
+          "destination_organisation_id",
+          transaction.destination_organisation_id
+        );
+      if (transaction.origin_amount)
+        setValue("origin_amount", transaction.origin_amount.toString());
+      if (transaction.dest_amount)
+        setValue("dest_amount", transaction.dest_amount.toString());
+      if (transaction.amount_payable)
+        setValue("amount_payable", transaction.amount_payable.toString());
+      if (transaction.rate) setValue("rate", transaction.rate.toString());
+
+      if (transaction.purpose) setValue("purpose", transaction.purpose);
+      if (transaction.funds_source)
+        setValue("funds_source", transaction.funds_source);
+      if (transaction.relationship)
+        setValue("relationship", transaction.relationship);
+      if (transaction.inflation)
+        setValue("inflation", transaction.inflation.toString());
+      if (transaction.markup) setValue("markup", transaction.markup.toString());
+      if (transaction.internal_exchange_rate)
+        setValue(
+          "internal_exchange_rate",
+          transaction.internal_exchange_rate.toString()
+        );
+
+      // Populate transaction charges if they exist
+      if (
+        transaction.transaction_charges &&
+        transaction.transaction_charges.length > 0
+      ) {
+        const chargesData = transaction.transaction_charges.map((charge) => ({
+          charge_id: charge.charge_id,
+          type: charge.type,
+          original_rate: charge.rate || 0,
+          negotiated_rate: charge.rate || 0,
+        }));
+        setValue("transaction_charges", chargesData);
+
+        // Map to the expected format for setChargesWithRates
+        const chargesWithRatesData = transaction.transaction_charges.map(
+          (charge) => ({
+            charge_id: charge.charge_id,
+            name: charge.charge?.name || "Unknown Charge",
+            type: charge.type,
+            original_rate: charge.rate || 0,
+            negotiated_rate: charge.rate || 0,
+            amount: charge.amount,
+            application_method: charge.charge?.application_method || "FIXED",
+            min_amount: charge.charge?.min_amount,
+            max_amount: charge.charge?.max_amount,
+          })
+        );
+        setChargesWithRates(chargesWithRatesData);
+      }
+    }
+  }, [mode, transaction, isOpen, setValue, reset]);
 
   // Calculate charges and amounts using negotiated rates
   const calculateChargesAndAmounts = () => {
@@ -531,6 +626,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         destination_country_id: data.destination_country_id || undefined,
         transaction_charges: data.transaction_charges || undefined,
       };
+      console.log("submitData", submitData);
       onSubmit(submitData);
     } else {
       const submitData: CreateOutboundTransactionRequest = {
@@ -562,6 +658,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         destination_country_id: data.destination_country_id || undefined,
         transaction_charges: data.transaction_charges || undefined,
       };
+
       onSubmit(submitData);
     }
   };

@@ -11,8 +11,9 @@ import {
 } from "./users.validation";
 import { IUserResponse, IUsersListResponse } from "./users.interfaces";
 import type CustomRequest from "../../types/CustomReq.type";
-import { AppError } from "../../utils/AppError";
+import { AppError, ZodValidationError } from "../../utils/AppError";
 import { asyncHandler } from "../../middlewares/error.middleware";
+import { parseZodError } from "../../utils/validation.utils";
 
 const usersService = new UsersService();
 
@@ -21,10 +22,8 @@ export class UsersController {
     async (req: CustomRequest, res: Response): Promise<void> => {
       const validationResult = createUserSchema.safeParse(req.body);
       if (!validationResult.success) {
-        throw new AppError(
-          validationResult.error.issues[0]?.message || "Invalid input",
-          400
-        );
+        console.log("validation error", parseZodError(validationResult.error));
+        throw new ZodValidationError(parseZodError(validationResult.error));
       }
 
       const result = await usersService.createUser(validationResult.data);
@@ -52,10 +51,8 @@ export class UsersController {
 
       const validationResult = userFiltersSchema.safeParse(filters);
       if (!validationResult.success) {
-        throw new AppError(
-          validationResult.error.issues[0]?.message || "Invalid input",
-          400
-        );
+        console.log("validation error", parseZodError(validationResult.error));
+        throw new ZodValidationError(parseZodError(validationResult.error));
       }
 
       const result = await usersService.getUsers(validationResult.data);
@@ -96,10 +93,8 @@ export class UsersController {
 
       const validationResult = updateUserSchema.safeParse(req.body);
       if (!validationResult.success) {
-        throw new AppError(
-          validationResult.error.issues[0]?.message || "Invalid input",
-          400
-        );
+        console.log("validation error", parseZodError(validationResult.error));
+        throw new ZodValidationError(parseZodError(validationResult.error));
       }
 
       const result = await usersService.updateUser(id, validationResult.data);
@@ -122,10 +117,8 @@ export class UsersController {
 
       const validationResult = toggleUserStatusSchema.safeParse(req.body);
       if (!validationResult.success) {
-        throw new AppError(
-          validationResult.error.issues[0]?.message || "Invalid input",
-          400
-        );
+        console.log("validation error", parseZodError(validationResult.error));
+        throw new ZodValidationError(parseZodError(validationResult.error));
       }
 
       const result = await usersService.toggleUserStatus(
@@ -166,10 +159,8 @@ export class UsersController {
     async (req: CustomRequest, res: Response): Promise<void> => {
       const validationResult = userStatsFiltersSchema.safeParse(req.query);
       if (!validationResult.success) {
-        throw new AppError(
-          validationResult.error.issues[0]?.message || "Invalid input",
-          400
-        );
+        console.log("validation error", parseZodError(validationResult.error));
+        throw new ZodValidationError(parseZodError(validationResult.error));
       }
       const result = await usersService.getUserStats(validationResult.data);
 
@@ -191,10 +182,8 @@ export class UsersController {
 
       const validationResult = updatePasswordSchema.safeParse(req.body);
       if (!validationResult.success) {
-        throw new AppError(
-          validationResult.error.issues[0]?.message || "Invalid input",
-          400
-        );
+        console.log("validation error", parseZodError(validationResult.error));
+        throw new ZodValidationError(parseZodError(validationResult.error));
       }
 
       const result = await usersService.updatePassword(
@@ -222,10 +211,8 @@ export class UsersController {
 
       const validationResult = resetPasswordSchema.safeParse(req.body);
       if (!validationResult.success) {
-        throw new AppError(
-          validationResult.error.issues[0]?.message || "Invalid input",
-          400
-        );
+        console.log("validation error", parseZodError(validationResult.error));
+        throw new ZodValidationError(parseZodError(validationResult.error));
       }
 
       const result = await usersService.resetPassword(

@@ -1308,13 +1308,8 @@ export class ChargesPaymentService {
   async getPendingCommissionStats(
     filters: PendingTransactionChargesFilters
   ): Promise<ChargesPaymentStatsResponse> {
-    const {
-      organisation_id,
-      currency_id,
-      date_from,
-      date_to,
-      destination_org_id,
-    } = filters;
+    const { organisation_id, currency_id, date_from, date_to } = filters;
+    console.log("filters", filters);
 
     const where: any = {};
     where.status = "PENDING";
@@ -1328,13 +1323,6 @@ export class ChargesPaymentService {
       where.organisation_id = organisation_id;
     }
 
-    if (destination_org_id) {
-      where.transaction = {
-        ...where.transaction,
-        destination_organisation_id: destination_org_id,
-      };
-    }
-
     if (currency_id) {
       // use transaction origin currency for consistency with pending charges
       where.transaction = {
@@ -1345,14 +1333,25 @@ export class ChargesPaymentService {
 
     if (date_from || date_to) {
       where.created_at = {};
-      if (date_from) where.created_at.gte = new Date(date_from);
-      if (date_to) where.created_at.lte = new Date(date_to);
+      if (date_from) {
+        where.created_at.gte = new Date(date_from);
+      }
+      if (date_to) {
+        const endDate = new Date(date_to);
+        endDate.setDate(endDate.getDate() + 1);
+        where.created_at.lte = endDate;
+      }
     }
+
+    console.log("where", where);
 
     const [totalCount, amountAgg] = await Promise.all([
       prisma.commissionSplit.count({ where }),
       prisma.commissionSplit.aggregate({ where, _sum: { amount: true } }),
     ]);
+
+    console.log("totalCount", totalCount);
+    console.log("amountAgg", amountAgg);
 
     return {
       success: true,

@@ -1065,9 +1065,20 @@ export class TransactionService {
     ipAddress: string
   ): Promise<TransactionResponse> {
     return await prisma.$transaction(async (tx) => {
-      // Get transaction
+      // Get transaction with relations
+      console.log("data", data);
       const transaction = await tx.transaction.findUnique({
         where: { id: transactionId },
+        include: {
+          origin_organisation: true,
+          destination_organisation: true,
+          transaction_charges: {
+            include: {
+              charge: true,
+              organisation: true,
+            },
+          },
+        },
       });
 
       if (!transaction) {
@@ -1075,21 +1086,216 @@ export class TransactionService {
       }
 
       // Check if transaction can be updated
-      if (transaction.status !== "PENDING") {
+      if (
+        transaction.status !== "PENDING" &&
+        transaction.status !== "PENDING_APPROVAL"
+      ) {
         throw new AppError(
-          "Transaction can only be updated when in PENDING status",
+          "Transaction can only be updated when in PENDING or PENDING_APPROVAL status",
           400
         );
       }
 
-      // Update transaction
+      // Get main organisation
+      const mainOrganisation = await prisma.organisation.findFirst({
+        where: {
+          type: "CUSTOMER",
+        },
+      });
+      if (mainOrganisation) {
+        this.mainOrganisationId = mainOrganisation.id;
+      } else {
+        throw new AppError("Main organisation not found", 400);
+      }
+
+      // Calculate new charges if transaction charges are provided
+      let chargeCalculation = null;
+      let totalAllCharges = transaction.total_all_charges || 0;
+      let totalCommissions = transaction.commissions || 0;
+      let totalTaxes = transaction.total_taxes || 0;
+      let amountPayable = transaction.amount_payable || 0;
+
+      if (data.transaction_charges && data.transaction_charges.length > 0) {
+        chargeCalculation = await this.calculateTransactionCharges({
+          originAmount: data.origin_amount || Number(transaction.origin_amount),
+          originCurrencyId:
+            data.origin_currency_id || transaction.origin_currency_id || "",
+          originOrganisationId: transaction.origin_organisation_id || "",
+          destinationOrganisationId:
+            data.destination_organisation_id ||
+            transaction.destination_organisation_id ||
+            undefined,
+          transactionCharges: data.transaction_charges,
+        });
+
+        totalAllCharges = Number(chargeCalculation.totalCharges);
+        totalCommissions = Number(chargeCalculation.totalCommissions);
+        totalTaxes = Number(chargeCalculation.totalTaxes);
+        amountPayable =
+          Number(data.origin_amount || transaction.origin_amount) +
+          totalAllCharges;
+      }
+
+      // Validate organisation balance if amount changed
+      if (
+        data.origin_amount &&
+        Number(data.origin_amount) !== Number(transaction.origin_amount)
+      ) {
+        if (
+          data.destination_organisation_id &&
+          transaction.origin_organisation_id &&
+          data.origin_currency_id &&
+          this.mainOrganisationId
+        ) {
+          const originOrgBalance = await tx.orgBalance.findUnique({
+            where: {
+              base_org_id_dest_org_id_currency_id: {
+                base_org_id: this.mainOrganisationId,
+                dest_org_id: transaction.origin_organisation_id,
+                currency_id: data.origin_currency_id,
+              },
+            },
+          });
+
+          if (!originOrgBalance) {
+            throw new AppError("Origin agency must deposit float first", 400);
+          }
+
+          const balance = parseFloat(
+            originOrgBalance?.balance?.toString() || "0"
+          );
+          const lockedBalance = parseFloat(
+            originOrgBalance?.locked_balance?.toString() || "0"
+          );
+          const totalAvailableBalance = balance - lockedBalance;
+
+          if (totalAvailableBalance < Number(amountPayable)) {
+            throw new AppError(
+              "Insufficient organisation balance for this transaction",
+              400
+            );
+          }
+        }
+      }
+
+      // Update transaction (exclude transaction_charges from data as it's not a direct field)
+      const { transaction_charges, ...updateData } = data;
       const updatedTransaction = await tx.transaction.update({
         where: { id: transactionId },
         data: {
-          ...data,
+          ...updateData,
+          total_all_charges: new Decimal(totalAllCharges),
+          commissions: new Decimal(totalCommissions),
+          total_taxes: new Decimal(totalTaxes),
+          amount_payable: new Decimal(amountPayable),
           updated_at: new Date(),
         },
       });
+
+      // Update transaction charges if provided
+      if (chargeCalculation && chargeCalculation.charges.length > 0) {
+        // Delete existing transaction charges
+        await tx.transactionCharge.deleteMany({
+          where: { transaction_id: transactionId },
+        });
+
+        // Delete existing commission splits
+        await tx.commissionSplit.deleteMany({
+          where: { transaction_id: transactionId },
+        });
+
+        // Create new transaction charges
+        const transactionCharges = await Promise.all(
+          chargeCalculation.charges.map(async (charge) => {
+            const transactionCharge = await tx.transactionCharge.create({
+              data: {
+                transaction_id: transactionId,
+                charge_id: charge.charge_id,
+                type: charge.type,
+                amount: charge.amount,
+                rate: charge.negotiated_rate,
+                is_reversible: charge.is_reversible,
+                description: charge.description,
+                organisation_id: transaction.origin_organisation_id || "",
+                status: "PENDING",
+                original_rate: charge.rate,
+                negotiated_rate: charge.negotiated_rate,
+                internal_amount: charge.internal_amount,
+                internal_percentage: charge.internal_percentage,
+                external_amount: charge.external_amount,
+                external_percentage: charge.external_percentage,
+                origin_amount: charge.origin_amount,
+                origin_percentage: charge.origin_percentage,
+                destination_amount: charge.destination_amount,
+                destination_percentage: charge.destination_percentage,
+                destination_organisation_id:
+                  data.destination_organisation_id ||
+                  transaction.destination_organisation_id ||
+                  undefined,
+              },
+            });
+
+            // Create commission splits for commission charges
+            if (
+              charge.type === "COMMISSION" &&
+              this.mainOrganisationId &&
+              transaction.origin_organisation_id &&
+              (data.destination_organisation_id ||
+                transaction.destination_organisation_id)
+            ) {
+              const destinationOrgId =
+                data.destination_organisation_id ||
+                transaction.destination_organisation_id;
+              if (!destinationOrgId) {
+                throw new AppError(
+                  "Destination organisation is required for commission charges",
+                  400
+                );
+              }
+              await Promise.all([
+                tx.commissionSplit.create({
+                  data: {
+                    transaction_charges_id: transactionCharge.id,
+                    organisation_id: this.mainOrganisationId,
+                    transaction_id: transactionId,
+                    amount: new Decimal(charge.internal_amount || 0),
+                    role: "INTERNAL",
+                    notes: "Internal commission",
+                    currency_id:
+                      data.origin_currency_id || transaction.origin_currency_id,
+                  },
+                }),
+                tx.commissionSplit.create({
+                  data: {
+                    transaction_charges_id: transactionCharge.id,
+                    organisation_id: transaction.origin_organisation_id,
+                    transaction_id: transactionId,
+                    amount: new Decimal(charge.origin_amount || 0),
+                    role: "ORIGIN",
+                    notes: "Origin commission",
+                    currency_id:
+                      data.origin_currency_id || transaction.origin_currency_id,
+                  },
+                }),
+                tx.commissionSplit.create({
+                  data: {
+                    transaction_charges_id: transactionCharge.id,
+                    organisation_id: destinationOrgId,
+                    transaction_id: transactionId,
+                    amount: new Decimal(charge.destination_amount || 0),
+                    role: "DESTINATION",
+                    notes: "Destination commission",
+                    currency_id:
+                      data.origin_currency_id || transaction.origin_currency_id,
+                  },
+                }),
+              ]);
+            }
+
+            return transactionCharge;
+          })
+        );
+      }
 
       // Create transaction audit
       await tx.transactionAudit.create({
@@ -1101,9 +1307,10 @@ export class TransactionService {
             updated_fields: Object.keys(data),
             old_values: { ...transaction },
             new_values: { ...data },
+            charges_updated: chargeCalculation ? true : false,
           } as unknown as any,
           ip_address: ipAddress,
-          notes: "Transaction updated",
+          notes: "Transaction updated with charges recalculation",
         },
       });
 

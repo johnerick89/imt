@@ -54,10 +54,10 @@ export const updateUserSchema = z.object({
 export const userFiltersSchema = z.object({
   search: z.string().optional(),
   role: z.string().optional(),
-  role_id: z
-    .string() // Accept string input (including '')
-    .transform((val) => (val === "" ? undefined : val)) // Convert empty to undefined
-    .pipe(z.string().uuid("Invalid role ID").optional()),
+  role_id: z.preprocess(
+    (val) => (val === "" || val == null ? undefined : val),
+    z.string().uuid("Invalid role ID").optional()
+  ),
   status: z.nativeEnum(UserStatus).optional(),
   organisation_id: z.string().uuid().optional(),
   page: z.number().min(1, "Page must be at least 1").optional(),
