@@ -599,6 +599,7 @@ const OrganisationProfilePage: React.FC<OrganisationProfilePageProps> = ({
               data={orgBalances}
               loading={orgBalancesLoading}
               onPrefund={() => setShowPrefundModal(true)}
+              mainFloat={false}
             />
           </div>
         );
