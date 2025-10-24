@@ -87,8 +87,11 @@ const AgencyFloatModal: React.FC<AgencyFloatModalProps> = ({
   }, [selectedAgency, setValue]);
 
   const handleFormSubmit = (data: AgencyFloatRequest | ReduceFloatRequest) => {
-    data.dest_org_id = selectedOrganisationId || "";
-    console.log("data", data);
+    console.log("data...0", data);
+    if (!data.dest_org_id) {
+      data.dest_org_id = selectedOrganisationId || "";
+    }
+    console.log("data...1", data);
     onSubmit(data);
     reset();
   };
