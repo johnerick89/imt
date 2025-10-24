@@ -16,12 +16,14 @@ import type {
   ChargesPaymentStatsResponse,
   PendingCommissionSplitResponse,
 } from "./chargespayments.interfaces";
+import { CreateGlEntryRequest } from "../gltransactions/gltransactions.interfaces";
 import {
   AppError,
   InsufficientFundsError,
   NotFoundError,
   ValidationError,
 } from "../../utils/AppError";
+import { Decimal } from "@prisma/client/runtime/library";
 type Tx = Omit<
   Prisma.TransactionClient,
   "$connect" | "$disconnect" | "$on" | "$transaction" | "$extends"
@@ -1556,8 +1558,17 @@ export class ChargesPaymentService {
         );
       }
 
+      const customerOrganisation = await tx.organisation.findFirst({
+        where: {
+          type: "CUSTOMER",
+        },
+      });
+      if (!customerOrganisation) {
+        throw new NotFoundError("Customer organisation not found");
+      }
+
       // Update commission payment status
-      const updatedPayment = await tx.chargesPayment.update({
+      await tx.chargesPayment.update({
         where: { id: paymentId },
         data: {
           status: "COMPLETED",
@@ -1570,7 +1581,12 @@ export class ChargesPaymentService {
         },
       });
 
-      // Process each commission split
+      // Process each commission split and topup balances
+      const glEntries: CreateGlEntryRequest[] = [];
+      const balanceUpdates: {
+        [key: string]: { amount: number; currency_id: string };
+      } = {};
+
       for (const item of commissionPayment.payment_items) {
         const commissionSplit = item.commission_split;
         if (!commissionSplit) continue;
@@ -1619,81 +1635,111 @@ export class ChargesPaymentService {
           where: { id: transactionCharge.id },
           data: updateData,
         });
+
+        // Topup balance for the organization involved in the commission
+        if (commissionSplit.organisation_id && settledAmount > 0) {
+          const orgId = commissionSplit.organisation_id;
+          const currencyId = commissionPayment.currency_id;
+
+          // Find or create org balance for the organization
+          let orgBalance = await tx.orgBalance.findFirst({
+            where: {
+              base_org_id: customerOrganisation.id,
+              dest_org_id: orgId,
+              currency_id: currencyId,
+            },
+          });
+
+          if (!orgBalance) {
+            orgBalance = await tx.orgBalance.create({
+              data: {
+                base_org_id: customerOrganisation.id,
+                dest_org_id: orgId,
+                currency_id: currencyId,
+                balance: 0,
+                locked_balance: 0,
+              },
+            });
+          }
+
+          // Update the organization's balance
+          const currentBalance = new Decimal(
+            orgBalance.balance?.toString() || 0
+          );
+          const newBalance = currentBalance.plus(new Decimal(settledAmount));
+
+          await tx.orgBalance.update({
+            where: { id: orgBalance.id },
+            data: {
+              balance: newBalance,
+              updated_at: new Date(),
+            },
+          });
+
+          // Create balance history
+          await tx.balanceHistory.create({
+            data: {
+              action_type: "TOPUP",
+              entity_type: "AGENCY_FLOAT",
+              entity_id: orgBalance.id,
+              currency_id: currencyId,
+              old_balance: currentBalance,
+              new_balance: newBalance,
+              change_amount: settledAmount,
+              description: `Commission payment approved - ${commissionPayment.reference_number}`,
+              created_by: userId ?? commissionPayment.created_by ?? "",
+              org_balance_id: orgBalance.id,
+              float_org_id: orgId,
+              organisation_id: customerOrganisation.id,
+            },
+          });
+
+          // Accumulate balance updates for GL posting
+          const balanceKey = `${orgId}_${currencyId}`;
+          if (!balanceUpdates[balanceKey]) {
+            balanceUpdates[balanceKey] = { amount: 0, currency_id: currencyId };
+          }
+          balanceUpdates[balanceKey].amount += settledAmount;
+        }
       }
 
-      // Prepare GL entries for all payment items
-      //accounts posting to be implemented later
-      /*const glEntries = [];
+      // Create GL entries for balance topups
+      for (const [key, update] of Object.entries(balanceUpdates)) {
+        const [orgId, currencyId] = key.split("_");
 
-      for (const item of commissionPayment.payment_items) {
-        const commissionSplit = item.commission_split;
-        if (!commissionSplit) continue;
-
-        const transactionCharge = commissionSplit.transaction_charge;
-        if (!transactionCharge) continue;
-        const charge = transactionCharge?.charge;
-
-        // Get the REVENUE account for this charge
-        const revenueAccount = await tx.glAccount.findFirst({
-          where: {
-            charge_id: charge?.id,
-            organisation_id: updatedPayment.organisation_id,
-            type: "REVENUE",
-          },
-        });
-
-        if (!revenueAccount) {
-          throw new AppError(
-            `Revenue account not found for commission ${charge?.name}`,
-            404
+        // Get the organization's GL account
+        const orgGlAccountId =
+          await this.glTransactionService.getGlAccountForEntity(
+            "AGENCY_FLOAT",
+            orgId,
+            commissionPayment.organisation_id!,
+            tx
           );
+
+        if (orgGlAccountId) {
+          glEntries.push({
+            gl_account_id: orgGlAccountId,
+            amount: update.amount,
+            dr_cr: "DR",
+            description: `Commission payment to ${orgId} - ${commissionPayment.reference_number}`,
+          });
         }
+      }
 
-        // Get the LIABILITY (PAYABLE) account for this charge
-        const liabilityAccount = await tx.glAccount.findFirst({
-          where: {
-            charge_id: charge?.id,
-            organisation_id: commissionPayment.organisation_id,
-            type: "LIABILITY",
-          },
-        });
-
-        if (!liabilityAccount) {
-          throw new AppError(
-            `Liability account not found for charge ${charge?.name}`,
-            404
-          );
-        }
-
-        // Add GL entries for this payment item
-        glEntries.push(
+      // Create GL transaction for commission payment
+      if (glEntries.length > 0) {
+        await this.glTransactionService.createGlTransaction(
+          commissionPayment.organisation_id!,
           {
-            gl_account_id: revenueAccount.id,
-            amount: parseFloat(item.external_amount_settled?.toString() || "0"),
-            dr_cr: "CR" as const,
-            description: `Revenue from ${charge?.name} - ${commissionPayment.reference_number}`,
+            transaction_type: "CHARGES_PAYMENT",
+            amount: parseFloat(commissionPayment?.amount?.toString() || "0"),
+            currency_id: commissionPayment.currency_id || undefined,
+            description: `Commission payment approved - ${commissionPayment.reference_number}`,
+            gl_entries: glEntries,
           },
-          {
-            gl_account_id: liabilityAccount.id,
-            amount: parseFloat(item.external_amount_settled?.toString() || "0"),
-            dr_cr: "DR" as const,
-            description: `Payment of ${charge?.name} liability - ${commissionPayment.reference_number}`,
-          }
+          userId ?? commissionPayment.created_by ?? ""
         );
       }
-
-      // Create GL transaction using the service
-      await this.glTransactionService.createGlTransaction(
-        commissionPayment.organisation_id!,
-        {
-          transaction_type: "CHARGES_PAYMENT", // Using existing type temporarily
-          amount: parseFloat(commissionPayment?.amount?.toString() || "0"),
-          currency_id: commissionPayment.currency_id || undefined,
-          description: `Commission payment approved - ${commissionPayment.reference_number}`,
-          gl_entries: glEntries,
-        },
-        userId ?? commissionPayment.created_by ?? ""
-      );*/
 
       // Get updated payment with relations
       const result = await tx.chargesPayment.findUnique({

@@ -11,30 +11,18 @@ router.use(authMiddleware);
 // Get all validation rules
 router.get(
   "/",
-  aclMiddleware({
-    errorMessage: "You do not have permission to view validation rules",
-    resource: "admin.validationRules.view",
-  }),
   validationRuleController.getValidationRules.bind(validationRuleController)
 );
 
 // Get validation rule by ID
 router.get(
   "/:id",
-  aclMiddleware({
-    errorMessage: "You do not have permission to view validation rules",
-    resource: "admin.validationRules.view",
-  }),
   validationRuleController.getValidationRuleById.bind(validationRuleController)
 );
 
 // Get validation rule by entity
 router.get(
   "/entity/:entity",
-  aclMiddleware({
-    errorMessage: "You do not have permission to view validation rules",
-    resource: "admin.validationRules.view",
-  }),
   validationRuleController.getValidationRuleByEntity.bind(
     validationRuleController
   )
@@ -53,10 +41,6 @@ router.put(
 // Get validation rule stats
 router.get(
   "/stats/overview",
-  aclMiddleware({
-    errorMessage: "You do not have permission to view validation rules",
-    resource: "admin.validationRules.view",
-  }),
   validationRuleController.getValidationRuleStats.bind(validationRuleController)
 );
 

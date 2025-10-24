@@ -83,8 +83,10 @@ export const usePermissions = () => {
     canEditTransactions: () => hasPermission(user, "admin.transactions.edit"),
     canDeleteTransactions: () =>
       hasPermission(user, "admin.transactions.delete"),
-    canApproveTransactions: () =>
-      hasPermission(user, "admin.transactions.approve"),
+    canApproveOutboundTransactions: () =>
+      hasPermission(user, "admin.transactions.approveOutbound"),
+    canApproveInboundTransactions: () =>
+      hasPermission(user, "admin.transactions.approveInbound"),
     canCancelTransactions: () =>
       hasPermission(user, "admin.transactions.cancel"),
     canReverseTransactions: () =>

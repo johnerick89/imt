@@ -43,7 +43,7 @@ export const TransactionDetailsModal: React.FC<
     useState(false);
   console.log("transaction", transaction);
   const {
-    canApproveTransactions,
+    canApproveOutboundTransactions,
     canReverseTransactions,
     canCancelTransactions,
     canEditTransactions,
@@ -76,7 +76,7 @@ export const TransactionDetailsModal: React.FC<
     isOutbound &&
     transaction.status === "READY" &&
     transaction.remittance_status === "READY" &&
-    canApproveTransactions();
+    canApproveOutboundTransactions();
   const canUpdate =
     isOutbound &&
     ["PENDING", "PENDING_APPROVAL"].includes(transaction.status) &&

@@ -236,8 +236,9 @@ model Organisation {
   counter_party_organisation          GlAccount[]         @relation("CounterPartyOrganisation")
   corridors                           Corridor[]          @relation("Organisation")
   agency_float_accounts               GlAccount[]         @relation("FloatOrganisation")
-  balance_histories                   BalanceHistory[]
   commission_splits                   CommissionSplit[]
+  balance_history_float_org           BalanceHistory[]    @relation("FloatOrgBalanceHistory")
+  balance_history_organisation        BalanceHistory[]    @relation("OrganisationBalanceHistory")
 
   @@index([id])
   @@index([description])
@@ -508,6 +509,7 @@ model Charge {
   gl_accounts                  GlAccount[]
   transaction_charges          TransactionCharge[]
   payment_authority            String?
+  standard_charge_id           String?             @db.Uuid
 
   @@index([name])
   @@index([currency_id])
@@ -1115,6 +1117,7 @@ model CommissionSplit {
   charges_payment_items  ChargesPaymentItem[]
   currency_id            String?               @db.Uuid
   currency               Currency?             @relation(fields: [currency_id], references: [id])
+  balance_histories      BalanceHistory[]
 
   // Ensure splits sum to total charge (enforce via trigger or app logic)
   @@unique([transaction_charges_id, organisation_id, role]) // One split per org per charge per role
@@ -1212,6 +1215,7 @@ enum GLTransactionType {
   INBOUND_TRANSACTION_REVERSAL
   ORG_BALANCE_TOPUP
   AGENCY_FLOAT_TOPUP
+  AGENCY_FLOAT_REDUCE
   CHARGES_PAYMENT
   CHARGES_PAYMENT_REVERSAL
 }
@@ -1329,34 +1333,38 @@ enum BalanceHistoryAction {
 }
 
 model BalanceHistory {
-  id              String                @id @default(uuid()) @db.Uuid
-  action_type     BalanceHistoryAction? // Optional, for FLOAT-specific actions
-  entity_type     BalanceHistoryType
-  entity_id       String                @db.Uuid
-  currency_id     String                @db.Uuid
-  currency        Currency              @relation(fields: [currency_id], references: [id])
-  old_balance     Decimal?              @db.Decimal(22, 9)
-  new_balance     Decimal               @db.Decimal(22, 9)
-  change_amount   Decimal               @db.Decimal(22, 9)
-  transaction_id  String?               @db.Uuid
-  transaction     Transaction?          @relation(fields: [transaction_id], references: [id])
-  created_at      DateTime              @default(now())
-  created_by      String?               @db.Uuid
-  created_by_user User?                 @relation(fields: [created_by], references: [id])
-  gl_entry_id     String?               @db.Uuid
-  gl_entry        GlEntry?              @relation(fields: [gl_entry_id], references: [id])
-  org_balance     OrgBalance?           @relation(fields: [org_balance_id], references: [id])
-  org_balance_id  String?               @db.Uuid
-  till            Till?                 @relation(fields: [till_id], references: [id])
-  till_id         String?               @db.Uuid
-  vault           Vault?                @relation(fields: [vault_id], references: [id])
-  vault_id        String?               @db.Uuid
-  bank_account    BankAccount?          @relation(fields: [bank_account_id], references: [id])
-  bank_account_id String?               @db.Uuid
-  float_org       Organisation?         @relation(fields: [float_org_id], references: [id])
-  float_org_id    String?               @db.Uuid
-  gl_transactions GLTransaction[]
-  description     String?               @db.VarChar(256)
+  id                  String                @id @default(uuid()) @db.Uuid
+  action_type         BalanceHistoryAction? // Optional, for FLOAT-specific actions
+  entity_type         BalanceHistoryType
+  entity_id           String                @db.Uuid
+  currency_id         String                @db.Uuid
+  currency            Currency              @relation(fields: [currency_id], references: [id])
+  old_balance         Decimal?              @db.Decimal(22, 9)
+  new_balance         Decimal               @db.Decimal(22, 9)
+  change_amount       Decimal               @db.Decimal(22, 9)
+  transaction_id      String?               @db.Uuid
+  transaction         Transaction?          @relation(fields: [transaction_id], references: [id])
+  created_at          DateTime              @default(now())
+  created_by          String?               @db.Uuid
+  created_by_user     User?                 @relation(fields: [created_by], references: [id])
+  gl_entry_id         String?               @db.Uuid
+  gl_entry            GlEntry?              @relation(fields: [gl_entry_id], references: [id])
+  org_balance         OrgBalance?           @relation(fields: [org_balance_id], references: [id])
+  org_balance_id      String?               @db.Uuid
+  till                Till?                 @relation(fields: [till_id], references: [id])
+  till_id             String?               @db.Uuid
+  vault               Vault?                @relation(fields: [vault_id], references: [id])
+  vault_id            String?               @db.Uuid
+  bank_account        BankAccount?          @relation(fields: [bank_account_id], references: [id])
+  bank_account_id     String?               @db.Uuid
+  float_org           Organisation?         @relation("FloatOrgBalanceHistory", fields: [float_org_id], references: [id])
+  float_org_id        String?               @db.Uuid
+  gl_transactions     GLTransaction[]
+  description         String?               @db.VarChar(256)
+  organisation_id     String?               @db.Uuid
+  organisation        Organisation?         @relation("OrganisationBalanceHistory", fields: [organisation_id], references: [id])
+  commission_split_id String?               @db.Uuid
+  commission_split    CommissionSplit?      @relation(fields: [commission_split_id], references: [id])
 
   @@index([entity_type, entity_id])
   @@index([currency_id])

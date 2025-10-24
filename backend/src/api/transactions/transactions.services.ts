@@ -216,13 +216,13 @@ export class TransactionService {
         ]);
 
         if (!originOrgBalance) {
+          console.error("Origin agency must deposit float first");
           throw new AppError("Origin agency must deposit float first", 400);
         }
 
         if (!destinationOrgBalance) {
-          throw new AppError(
-            "Destination agency must deposit float first",
-            400
+          console.warn(
+            "Destination agency does not have a float balance, skipping balance validation"
           );
         }
 
@@ -662,13 +662,13 @@ export class TransactionService {
         ]);
 
         if (!originOrgBalance) {
+          console.error("Origin agency must deposit float first");
           throw new AppError("Origin agency must deposit float first", 400);
         }
 
         if (!destinationOrgBalance) {
-          throw new AppError(
-            "Destination agency must deposit float first",
-            400
+          console.warn(
+            "Destination agency does not have a float balance, skipping balance validation"
           );
         }
         originBalance = originOrgBalance;
@@ -688,29 +688,6 @@ export class TransactionService {
             400
           );
         }
-        /*
-        //destination organisation balance validation suspended for now
-        const destinationLockedBalance = new Decimal(
-          destinationOrgBalance.locked_balance || 0
-        );
-        const destiantionBalance = new Decimal(
-          destinationOrgBalance.balance || new Decimal(0)
-        );
-
-        const destinationLimit = new Decimal(destinationOrgBalance.limit || 0);
-
-        const totalAvailableLimit = destinationLimit
-          .sub(destiantionBalance)
-          .sub(destinationLockedBalance);
-        const destinationAmount = new Decimal(transaction.origin_amount || 0);
-        if (totalAvailableLimit.lt(destinationAmount)) {
-          throw new AppError(
-            "Insufficient destination organisation limit for this transaction. Destination organisation limit is " +
-              destinationOrgBalance.limit?.toString() || "0",
-            400
-          );
-        }
-        */
       } else {
         throw new AppError(
           "Origin organisation or destination organisation or origin currency not found",
@@ -780,6 +757,7 @@ export class TransactionService {
             change_amount: -transactionAmount,
             description: `Outbound transaction approved: ${updatedTransaction.id}`,
             created_by: userId,
+            organisation_id: orgBalance.base_org_id,
           },
         });
       }
@@ -831,6 +809,7 @@ export class TransactionService {
               change_amount: transactionAmount,
               description: `Outbound transaction approved: ${transaction.id}`,
               created_by: userId,
+              organisation_id: till.organisation_id,
             },
           });
         }
@@ -1495,6 +1474,7 @@ export class TransactionService {
             change_amount: transactionAmount,
             description: `Outbound transaction reversed: ${updatedTransaction.id}`,
             created_by: userId,
+            organisation_id: orgBalance.base_org_id,
           },
         });
       }
@@ -1542,6 +1522,7 @@ export class TransactionService {
               change_amount: transactionAmount,
               description: `Outbound transaction reversed: ${transaction.id} - ${data.reason}`,
               created_by: userId,
+              organisation_id: till.organisation_id,
             },
           });
         }
@@ -1790,6 +1771,177 @@ export class TransactionService {
     };
   }
 
+  // Get Customer Outbound Transactions (all outbound transactions for customer organizations)
+  async getCustomerOutboundTransactions(
+    filters: TransactionFilters
+  ): Promise<TransactionListResponse> {
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      status,
+      remittance_status,
+      request_status,
+      corridor_id,
+      till_id,
+      customer_id,
+      origin_currency_id,
+      dest_currency_id,
+      origin_organisation_id,
+      destination_organisation_id,
+      created_by,
+      date_from,
+      date_to,
+      amount_min,
+      amount_max,
+      direction,
+    } = filters;
+    console.log("filters....2", JSON.stringify(filters, null, 2));
+
+    const skip = (page - 1) * limit;
+    const where: any = {
+      direction: direction,
+    };
+
+    if (search) {
+      where.OR = [
+        { transaction_no: { contains: search, mode: "insensitive" } },
+        {
+          customer: { first_name: { contains: search, mode: "insensitive" } },
+        },
+        {
+          customer: { last_name: { contains: search, mode: "insensitive" } },
+        },
+        { beneficiary: { name: { contains: search, mode: "insensitive" } } },
+      ];
+    }
+
+    if (status) where.status = status;
+    if (remittance_status) where.remittance_status = remittance_status;
+    if (request_status) where.request_status = request_status;
+    if (corridor_id) where.corridor_id = corridor_id;
+    if (till_id) where.till_id = till_id;
+    if (customer_id) where.customer_id = customer_id;
+    if (origin_currency_id) where.origin_currency_id = origin_currency_id;
+    if (dest_currency_id) where.dest_currency_id = dest_currency_id;
+    if (origin_organisation_id)
+      where.origin_organisation_id = origin_organisation_id;
+    if (destination_organisation_id)
+      where.destination_organisation_id = destination_organisation_id;
+    if (created_by) where.created_by = created_by;
+
+    if (date_from || date_to) {
+      where.created_at = {};
+      if (date_from) where.created_at.gte = new Date(date_from);
+      if (date_to) where.created_at.lte = new Date(date_to);
+    }
+
+    if (amount_min || amount_max) {
+      where.origin_amount = {};
+      if (amount_min) where.origin_amount.gte = amount_min;
+      if (amount_max) where.origin_amount.lte = amount_max;
+    }
+
+    console.log("where....3", JSON.stringify(where, null, 2));
+
+    const [transactions, total] = await Promise.all([
+      prisma.transaction.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { created_at: "desc" },
+        include: {
+          corridor: {
+            include: {
+              origin_country: true,
+              destination_country: true,
+              base_currency: true,
+            },
+          },
+          till: {
+            include: {
+              organisation: true,
+            },
+          },
+          customer: true,
+          origin_channel: true,
+          origin_currency: true,
+          beneficiary: true,
+          dest_channel: true,
+          dest_currency: true,
+          exchange_rate: true,
+          external_exchange_rate: true,
+          created_by_user: true,
+          origin_organisation: true,
+          destination_organisation: true,
+          transaction_charges: {
+            include: {
+              charge: true,
+              organisation: true,
+            },
+          },
+          transaction_audits: {
+            include: {
+              user: true,
+              new_user: true,
+            },
+          },
+        },
+      }),
+      prisma.transaction.count({ where }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      success: true,
+      message: "Customer outbound transactions retrieved successfully",
+      data: {
+        transactions: transactions.map((transaction) => ({
+          ...transaction,
+          origin_amount: parseFloat(transaction.origin_amount.toString()),
+          dest_amount: parseFloat(transaction.dest_amount.toString()),
+          rate: parseFloat(transaction.rate.toString()),
+          internal_exchange_rate: transaction.internal_exchange_rate
+            ? parseFloat(transaction.internal_exchange_rate.toString())
+            : null,
+          inflation: transaction.inflation
+            ? parseFloat(transaction.inflation.toString())
+            : null,
+          markup: transaction.markup
+            ? parseFloat(transaction.markup.toString())
+            : null,
+          amount_payable: transaction.amount_payable
+            ? parseFloat(transaction.amount_payable.toString())
+            : null,
+          amount_receivable: transaction.amount_receivable
+            ? parseFloat(transaction.amount_receivable.toString())
+            : null,
+          created_at: transaction.created_at?.toISOString() || null,
+          updated_at: transaction.updated_at?.toISOString() || null,
+          deleted_at: transaction.deleted_at?.toISOString() || null,
+          received_at: transaction.received_at?.toISOString() || null,
+          remitted_at: transaction.remitted_at?.toISOString() || null,
+          transaction_charges: transaction.transaction_charges.map(
+            (charge) => ({
+              ...charge,
+              amount: parseFloat(charge.amount.toString()),
+              rate: charge.rate ? parseFloat(charge.rate.toString()) : null,
+              created_at: charge.created_at.toISOString(),
+              updated_at: charge.updated_at.toISOString(),
+            })
+          ),
+        })) as unknown as ITransaction[],
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages,
+        },
+      },
+    };
+  }
+
   // Get Transaction by ID
   async getTransactionById(
     transactionId: string
@@ -1882,119 +2034,134 @@ export class TransactionService {
   async getTransactionStats(
     organisationId: string
   ): Promise<TransactionStatsResponse> {
-    const where = {
-      origin_organisation_id: organisationId,
-      direction: "OUTBOUND" as Direction,
-    };
+    return await prisma.$transaction(async (tx) => {
+      const organisation = await tx.organisation.findUnique({
+        where: { id: organisationId },
+        select: { type: true },
+      });
 
-    const [
-      totalCount,
-      amountData,
-      statusData,
-      directionData,
-      currencyData,
-      orgData,
-    ] = await Promise.all([
-      prisma.transaction.count({ where }),
-      prisma.transaction.aggregate({
-        where,
-        _sum: {
-          origin_amount: true,
+      if (!organisation) {
+        throw new AppError("Organisation not found", 400);
+      }
+
+      const where = {
+        ...(organisation.type !== "CUSTOMER"
+          ? { origin_organisation_id: organisationId }
+          : {}),
+        direction: "OUTBOUND" as Direction,
+      };
+
+      console.log("where....4", JSON.stringify(where, null, 2));
+
+      const [
+        totalCount,
+        amountData,
+        statusData,
+        directionData,
+        currencyData,
+        orgData,
+      ] = await Promise.all([
+        tx.transaction.count({ where }),
+        tx.transaction.aggregate({
+          where,
+          _sum: {
+            origin_amount: true,
+          },
+        }),
+        tx.transaction.groupBy({
+          by: ["status"],
+          where,
+          _count: { id: true },
+          _sum: { origin_amount: true },
+        }),
+        tx.transaction.groupBy({
+          by: ["direction"],
+          where,
+          _count: { id: true },
+          _sum: { origin_amount: true },
+        }),
+        tx.transaction.groupBy({
+          by: ["origin_currency_id"],
+          where,
+          _count: { id: true },
+          _sum: { origin_amount: true },
+        }),
+        tx.transaction.groupBy({
+          by: ["origin_organisation_id"],
+          where,
+          _count: { id: true },
+          _sum: { origin_amount: true },
+        }),
+      ]);
+
+      const currencyStats = await Promise.all(
+        currencyData.map(async (item) => {
+          const currency = await tx.currency.findUnique({
+            where: { id: item.origin_currency_id },
+            select: { currency_code: true },
+          });
+
+          return {
+            currency_id: item.origin_currency_id,
+            currency_code: currency?.currency_code || "Unknown",
+            count: item._count?.id || 0,
+            amount: item._sum?.origin_amount
+              ? parseFloat(item._sum.origin_amount.toString())
+              : 0,
+          };
+        })
+      );
+
+      const orgStats = await Promise.all(
+        orgData.map(async (item) => {
+          const org = await tx.organisation.findUnique({
+            where: { id: item.origin_organisation_id! },
+            select: { name: true },
+          });
+
+          return {
+            organisation_id: item.origin_organisation_id || "",
+            organisation_name: org?.name || "Unknown",
+            count: item._count?.id || 0,
+            amount: item._sum?.origin_amount
+              ? parseFloat(item._sum.origin_amount.toString())
+              : 0,
+          };
+        })
+      );
+
+      return {
+        success: true,
+        message: "Transaction stats retrieved successfully",
+        data: {
+          totalTransactions: totalCount,
+          totalAmount: amountData._sum?.origin_amount
+            ? parseFloat(amountData._sum.origin_amount.toString())
+            : 0,
+          byStatus: statusData.map((item) => ({
+            status: item.status,
+            count: item._count?.id || 0,
+            amount: item._sum?.origin_amount
+              ? parseFloat(item._sum.origin_amount.toString())
+              : 0,
+          })),
+          byDirection: directionData.map((item) => ({
+            direction: item.direction,
+            count: item._count?.id || 0,
+            amount: item._sum?.origin_amount
+              ? parseFloat(item._sum.origin_amount.toString())
+              : 0,
+          })),
+          byCurrency: currencyStats,
+          byOrganisation: orgStats as unknown as {
+            organisation_id: string;
+            organisation_name: string;
+            count: number;
+            amount: number;
+          }[],
         },
-      }),
-      prisma.transaction.groupBy({
-        by: ["status"],
-        where,
-        _count: { id: true },
-        _sum: { origin_amount: true },
-      }),
-      prisma.transaction.groupBy({
-        by: ["direction"],
-        where,
-        _count: { id: true },
-        _sum: { origin_amount: true },
-      }),
-      prisma.transaction.groupBy({
-        by: ["origin_currency_id"],
-        where,
-        _count: { id: true },
-        _sum: { origin_amount: true },
-      }),
-      prisma.transaction.groupBy({
-        by: ["origin_organisation_id"],
-        where,
-        _count: { id: true },
-        _sum: { origin_amount: true },
-      }),
-    ]);
-
-    const currencyStats = await Promise.all(
-      currencyData.map(async (item) => {
-        const currency = await prisma.currency.findUnique({
-          where: { id: item.origin_currency_id },
-          select: { currency_code: true },
-        });
-
-        return {
-          currency_id: item.origin_currency_id,
-          currency_code: currency?.currency_code || "Unknown",
-          count: item._count?.id || 0,
-          amount: item._sum?.origin_amount
-            ? parseFloat(item._sum.origin_amount.toString())
-            : 0,
-        };
-      })
-    );
-
-    const orgStats = await Promise.all(
-      orgData.map(async (item) => {
-        const org = await prisma.organisation.findUnique({
-          where: { id: item.origin_organisation_id! },
-          select: { name: true },
-        });
-
-        return {
-          organisation_id: item.origin_organisation_id || "",
-          organisation_name: org?.name || "Unknown",
-          count: item._count?.id || 0,
-          amount: item._sum?.origin_amount
-            ? parseFloat(item._sum.origin_amount.toString())
-            : 0,
-        };
-      })
-    );
-
-    return {
-      success: true,
-      message: "Transaction stats retrieved successfully",
-      data: {
-        totalTransactions: totalCount,
-        totalAmount: amountData._sum?.origin_amount
-          ? parseFloat(amountData._sum.origin_amount.toString())
-          : 0,
-        byStatus: statusData.map((item) => ({
-          status: item.status,
-          count: item._count?.id || 0,
-          amount: item._sum?.origin_amount
-            ? parseFloat(item._sum.origin_amount.toString())
-            : 0,
-        })),
-        byDirection: directionData.map((item) => ({
-          direction: item.direction,
-          count: item._count?.id || 0,
-          amount: item._sum?.origin_amount
-            ? parseFloat(item._sum.origin_amount.toString())
-            : 0,
-        })),
-        byCurrency: currencyStats,
-        byOrganisation: orgStats as unknown as {
-          organisation_id: string;
-          organisation_name: string;
-          count: number;
-          amount: number;
-        }[],
-      },
-    };
+      };
+    });
   }
 
   // Helper Methods
@@ -2962,6 +3129,8 @@ export class TransactionService {
         throw new AppError("Main organisation not found", 400);
       }
 
+      let realDestinationOrgBalance: OrgBalance | null = null;
+
       if (
         transaction.destination_organisation_id &&
         transaction.origin_organisation_id &&
@@ -2989,18 +3158,33 @@ export class TransactionService {
           }),
         ]);
 
+        realDestinationOrgBalance = destinationOrgBalance;
+
         if (!originOrgBalance) {
+          console.error("Origin agency must deposit float first");
           throw new AppError("Origin agency must deposit float first", 400);
         }
 
-        if (!destinationOrgBalance) {
-          throw new AppError(
-            "Destination agency must deposit float first",
-            400
+        if (!realDestinationOrgBalance) {
+          console.warn(
+            "Destination agency does not have a float balance, creating a new one"
           );
+          realDestinationOrgBalance = await tx.orgBalance.create({
+            data: {
+              base_org_id: this.mainOrganisationId,
+              dest_org_id: transaction.destination_organisation_id,
+              currency_id: transaction.origin_currency_id,
+              balance: new Decimal(0),
+              locked_balance: new Decimal(0),
+              limit: new Decimal(0),
+              created_at: new Date(),
+              updated_at: new Date(),
+              created_by: userId,
+            },
+          });
         }
         originBalance = originOrgBalance;
-        destinationBalance = destinationOrgBalance;
+        destinationBalance = realDestinationOrgBalance;
 
         const balance = new Decimal(originOrgBalance?.balance);
         const lockedBalance = new Decimal(
@@ -3016,29 +3200,6 @@ export class TransactionService {
             400
           );
         }
-        /*
-        //destination organisation balance validation suspended for now
-        const destinationLockedBalance = new Decimal(
-          destinationOrgBalance.locked_balance || 0
-        );
-        const destiantionBalance = new Decimal(
-          destinationOrgBalance.balance || new Decimal(0)
-        );
-
-        const destinationLimit = new Decimal(destinationOrgBalance.limit || 0);
-
-        const totalAvailableLimit = destinationLimit
-          .sub(destiantionBalance)
-          .sub(destinationLockedBalance);
-        const destinationAmount = new Decimal(transaction.origin_amount || 0);
-        if (totalAvailableLimit.lt(destinationAmount)) {
-          throw new AppError(
-            "Insufficient destination organisation limit for this transaction. Destination organisation limit is " +
-              destinationOrgBalance.limit?.toString() || "0",
-            400
-          );
-        }
-        */
       } else {
         throw new AppError(
           "Origin organisation or destination organisation or origin currency not found",
@@ -3149,23 +3310,22 @@ export class TransactionService {
             old_balance: balance,
             new_balance: newBalance,
             change_amount: -transactionAmount,
-            description: `Outbound transaction approved: ${updatedTransaction.id}`,
+            description: `Inbound transaction approved: ${updatedTransaction.id}`,
             created_by: userId,
+            organisation_id: orgBalance.base_org_id,
+            org_balance_id: orgBalance.id,
+            float_org_id: orgBalance.base_org_id,
           },
         });
       }
       if (destinationBalance) {
         const orgBalance = destinationBalance;
         const balance = new Decimal(orgBalance?.balance);
-        const totalCharges = new Decimal(
-          updatedTransaction.total_all_charges || 0
-        );
-        const totalTaxes = new Decimal(updatedTransaction.total_taxes || 0);
+
         const transactionAmount = new Decimal(
-          updatedTransaction.origin_amount || 0
-        )
-          .add(totalCharges)
-          .sub(totalTaxes);
+          updatedTransaction.dest_amount || 0
+        );
+
         const newBalance = balance.add(transactionAmount);
 
         await tx.orgBalance.update({
@@ -3185,8 +3345,11 @@ export class TransactionService {
             old_balance: balance,
             new_balance: newBalance,
             change_amount: transactionAmount,
-            description: `Outbound transaction approved: ${updatedTransaction.id}`,
+            description: `Inbound transaction approved: ${updatedTransaction.id}`,
             created_by: userId,
+            organisation_id: orgBalance.base_org_id,
+            org_balance_id: orgBalance.id,
+            float_org_id: orgBalance.base_org_id,
           },
         });
       }
@@ -3233,6 +3396,8 @@ export class TransactionService {
             change_amount: transactionAmount,
             description: `Inbound transaction approved: ${transaction.id}`,
             created_by: userId,
+            organisation_id: till.organisation_id,
+            till_id: till.id,
           },
         });
       }
@@ -3415,6 +3580,8 @@ export class TransactionService {
               change_amount: -transactionAmount,
               description: `Inbound transaction reversed: ${transaction.id} - ${data.reason}`,
               created_by: userId,
+              organisation_id: till.organisation_id,
+              till_id: transaction.till_id,
             },
           });
         }

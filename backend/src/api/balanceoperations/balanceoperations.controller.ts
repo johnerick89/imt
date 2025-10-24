@@ -46,6 +46,31 @@ export class BalanceOperationController {
     }
   );
 
+  reduceOrganisationFloat = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
+      const validation = orgFloatBalanceSchema.safeParse(req.body);
+
+      if (!validation.success) {
+        console.log("body", req.body);
+        console.log("validation error", validation.error);
+        throw new AppError("Validation error", 400);
+      }
+
+      const userId = req.user?.id;
+      const baseOrgId = req.user?.organisation_id;
+      if (!userId) {
+        throw new AppError("User not authenticated", 401);
+      }
+
+      const result = await balanceOperationService.reduceOrganisationFloat(
+        validation.data,
+        userId,
+        baseOrgId || ""
+      );
+      res.json(result);
+    }
+  );
+
   // Till Balance Operations
   topupTill = asyncHandler(
     async (req: CustomRequest, res: Response): Promise<void> => {

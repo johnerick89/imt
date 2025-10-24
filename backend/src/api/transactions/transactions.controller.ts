@@ -388,4 +388,40 @@ export class TransactionController {
       });
     }
   );
+
+  getOutboundTransactions = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
+      const { orgId } = req.params;
+      if (!orgId) {
+        throw new AppError("Organisation ID is required", 400);
+      }
+
+      const validation = transactionFiltersSchema.safeParse(req.query);
+      if (!validation.success) {
+        console.log("validation error", parseZodError(validation.error));
+        throw new ZodValidationError(parseZodError(validation.error));
+      }
+
+      const result = await transactionService.getTransactions(
+        orgId,
+        validation.data
+      );
+      res.json(result);
+    }
+  );
+
+  getCustomerOutboundTransactions = asyncHandler(
+    async (req: CustomRequest, res: Response): Promise<void> => {
+      const validation = transactionFiltersSchema.safeParse(req.query);
+      if (!validation.success) {
+        console.log("validation error", parseZodError(validation.error));
+        throw new ZodValidationError(parseZodError(validation.error));
+      }
+
+      const result = await transactionService.getCustomerOutboundTransactions(
+        validation.data
+      );
+      res.json(result);
+    }
+  );
 }

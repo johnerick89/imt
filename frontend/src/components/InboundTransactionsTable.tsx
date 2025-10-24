@@ -9,6 +9,7 @@ import { ReceiptService } from "../services/ReceiptService";
 import { UpdateReceiverDetailsForm } from "./UpdateReceiverDetailsForm";
 import { FiEye, FiCheckCircle, FiDownload, FiEdit3 } from "react-icons/fi";
 import type { Transaction } from "../types/TransactionsTypes";
+import { usePermissions } from "../hooks/usePermissions";
 
 interface InboundTransactionsTableProps {
   transactions: Transaction[];
@@ -36,6 +37,9 @@ export const InboundTransactionsTable: React.FC<
   const getCounterPartyEmail = (metadata: Record<string, unknown>) => {
     return metadata.email as string;
   };
+
+  const { canApproveInboundTransactions, canEditTransactions } =
+    usePermissions();
 
   const columns: ColumnDef<Transaction>[] = [
     {
@@ -91,6 +95,20 @@ export const InboundTransactionsTable: React.FC<
       header: "Origin Organisation",
       cell: ({ row }) => {
         const org = row.original.origin_organisation;
+        return (
+          <div>
+            <div className="font-medium text-gray-900">
+              {org?.name || "N/A"}
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "destination_organisation",
+      header: "Destination Organisation",
+      cell: ({ row }) => {
+        const org = row.original.destination_organisation;
         return (
           <div>
             <div className="font-medium text-gray-900">
@@ -204,9 +222,12 @@ export const InboundTransactionsTable: React.FC<
       header: "Actions",
       cell: ({ row }) => {
         const transaction = row.original;
-        const canApprove = transaction.status === "PENDING_APPROVAL";
+        const canApproveInbound =
+          transaction.status === "PENDING_APPROVAL" &&
+          canApproveInboundTransactions();
 
-        const canEdit = transaction.status === "PENDING_APPROVAL";
+        const canEdit =
+          transaction.status === "PENDING_APPROVAL" && canEditTransactions();
 
         return (
           <div className="flex items-center space-x-1">
@@ -245,7 +266,7 @@ export const InboundTransactionsTable: React.FC<
                 </Button>
               </Tooltip>
             )}
-            {canApprove && (
+            {canApproveInbound && (
               <Tooltip content="Approve transaction">
                 <Button
                   variant="default"

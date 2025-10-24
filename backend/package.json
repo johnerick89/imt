@@ -13,7 +13,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "seed": "ts-node src/seed/index.ts --",
     "migrate-prod": "npx prisma migrate deploy",
-    "seed-prod": "node dist/seed/index.js --"
+    "seed-prod": "node dist/seed/index.js --",
+    "delete-test-data": "ts-node src/seed/deleteTestData.ts",
+    "delete-test-data-prod": "node dist/seed/deleteTestData.js"
   },
   "dependencies": {
     "@prisma/client": "^6.14.0",

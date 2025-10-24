@@ -67,6 +67,7 @@ export async function seedUsers() {
 }
 
 export async function seedOrganisations() {
+  await seedCurrencies();
   const createdOrganisations = await Promise.all(
     organisations.map(async (organisation) => {
       let createdOrganisation = await prisma.organisation.findFirst({
@@ -86,7 +87,32 @@ export async function seedOrganisations() {
       const country = await prisma.country.findFirst({
         where: { code: organisation.country_code },
       });
-      const { country_code, ...organisationData } = organisation;
+      const { country_code, base_currency, ...organisationData } = organisation;
+      const currencyName = base_currency.toUpperCase() || "USD";
+      let currency = await prisma.currency.findFirst({
+        where: { currency_code: currencyName },
+      });
+      if (!currency) {
+        currency = await prisma.currency.findFirst({
+          where: { currency_code: "USD" },
+        });
+
+        if (!currency) {
+          currency = await prisma.currency.create({
+            data: {
+              currency_code: currencyName,
+              currency_name: currencyName,
+              currency_symbol: currencyName,
+              symbol_native: currencyName,
+              decimal_digits: 2,
+              rounding: 0,
+              name_plural: currencyName,
+              created_at: new Date(),
+            },
+          });
+          console.log("currency created: ", currency.id);
+        }
+      }
       createdOrganisation = await prisma.organisation.create({
         data: {
           ...organisationData,
@@ -115,6 +141,7 @@ export async function seedOrganisations() {
       return createdOrganisation;
     })
   );
+  await seedMainOrganisationFloat();
   console.log("Organisations created:", createdOrganisations.length);
 }
 
@@ -410,6 +437,46 @@ export async function seedValidationRules() {
   );
   console.log("validation rules created: ", createdValidationRules.length);
 }
+
+export async function seedMainOrganisationFloat() {
+  const mainOrganisation = await prisma.organisation.findFirst({
+    where: {
+      type: "CUSTOMER",
+    },
+  });
+  if (!mainOrganisation) {
+    return;
+  }
+
+  const usdCurrency = await prisma.currency.findFirst({
+    where: { currency_code: "USD" },
+  });
+
+  const currencyId = mainOrganisation.base_currency_id || usdCurrency?.id;
+  if (!currencyId) {
+    return;
+  }
+
+  let mainOrganisationFloat = await prisma.orgBalance.findFirst({
+    where: {
+      base_org_id: mainOrganisation.id,
+      dest_org_id: mainOrganisation.id,
+    },
+  });
+  if (mainOrganisationFloat) {
+    mainOrganisationFloat;
+  }
+  mainOrganisationFloat = await prisma.orgBalance.create({
+    data: {
+      base_org_id: mainOrganisation.id,
+      dest_org_id: mainOrganisation.id,
+      currency_id: currencyId,
+      balance: 0,
+      created_at: new Date(),
+    },
+  });
+  console.log("main organisation float created: ", mainOrganisationFloat.id);
+}
 interface SeedResponse {
   success: boolean;
   message: string;
@@ -430,6 +497,7 @@ const seedFunctions: { [key: string]: () => Promise<void> } = {
   industries: seedIndustries,
   parameters: seedParameters,
   validationRules: seedValidationRules,
+  mainFloat: seedMainOrganisationFloat,
 };
 
 export async function seedDatabase(
@@ -501,6 +569,7 @@ async function main() {
     industries: seedIndustries,
     parameters: seedParameters,
     validationRules: seedValidationRules,
+    mainFloat: seedMainOrganisationFloat,
   };
 
   if (args.length === 0) {

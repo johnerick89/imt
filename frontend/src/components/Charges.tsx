@@ -63,7 +63,7 @@ const Charges: React.FC = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedCharge, setSelectedCharge] = useState<Charge | null>(null);
-
+  const [isEditingStandard, setIsEditingStandard] = useState<boolean>(false);
   // Data fetching
   const { data: chargesData, isLoading } = useCharges(filters);
   const { data: standardChargesData, isLoading: isLoadingStandard } =
@@ -206,9 +206,10 @@ const Charges: React.FC = () => {
   };
 
   const openCreateModal = () => setShowCreateModal(true);
-  const openEditModal = (charge: Charge) => {
+  const openEditModal = (charge: Charge, standard: boolean) => {
     setSelectedCharge(charge);
     setShowEditModal(true);
+    setIsEditingStandard(standard);
   };
   const openDeleteModal = (charge: Charge) => {
     setSelectedCharge(charge);
@@ -311,7 +312,7 @@ const Charges: React.FC = () => {
           <ChargesTable
             data={standardCharges}
             isLoading={isLoadingStandard}
-            onEdit={openEditModal}
+            onEdit={(charge: Charge) => openEditModal(charge, true)}
             onDelete={openDeleteModal}
             onToggleStatus={handleToggleStatus}
             standard={true}
@@ -367,7 +368,7 @@ const Charges: React.FC = () => {
         </div>
       </div>
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-6 hidden">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Charges</h1>
           <p className="text-gray-600">Manage transaction charges and fees</p>
@@ -385,7 +386,7 @@ const Charges: React.FC = () => {
 
       {/* Stats */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6 hidden">
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="text-2xl font-bold text-gray-900">
               {stats.totalCharges}
@@ -414,7 +415,7 @@ const Charges: React.FC = () => {
       )}
 
       {/* Filters */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
+      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6 hidden">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -468,11 +469,11 @@ const Charges: React.FC = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 hidden">
         <ChargesTable
           data={charges}
           isLoading={isLoading}
-          onEdit={openEditModal}
+          onEdit={(charge) => openEditModal(charge, false)}
           onDelete={openDeleteModal}
           onToggleStatus={handleToggleStatus}
           standard={false}
@@ -539,6 +540,7 @@ const Charges: React.FC = () => {
             initialData={selectedCharge}
             onSubmit={handleEditCharge}
             isLoading={isAnyMutationLoading}
+            isStandard={isEditingStandard}
           />
         )}
       </Modal>

@@ -2,18 +2,20 @@ import { FiEdit, FiTrash2, FiCheckCircle, FiXCircle } from "react-icons/fi";
 import type { Charge } from "../types/ChargesTypes";
 import { usePermissions } from "../hooks/usePermissions";
 interface ChargeActionCellProps {
-  onEdit: (charge: Charge) => void;
+  onEdit: (charge: Charge, standard: boolean) => void;
   onToggleStatus: (charge: Charge) => void;
   onDelete: (charge: Charge) => void;
+  standard: boolean;
 }
 
 export default function ChargeActionCell({
   onEdit,
   onToggleStatus,
   onDelete,
+  standard = false,
 }: ChargeActionCellProps) {
   const { canEditCharges, canDeleteCharges } = usePermissions();
-  const deletingChargesAllowed = false;
+  const deletingChargesAllowed = true;
   const canReallyDelete = canDeleteCharges() && deletingChargesAllowed;
   console.log("canReallyDelete", canReallyDelete);
   return {
@@ -21,13 +23,14 @@ export default function ChargeActionCell({
     header: "Actions",
     cell: ({ row }: { row: { original: Charge } }) => {
       const charge = row.original;
+      console.log("charge", charge);
       const isActive = charge.status === "ACTIVE";
 
       return (
         <div className="flex items-center space-x-2">
           {canEditCharges() && (
             <button
-              onClick={() => onEdit(charge)}
+              onClick={() => onEdit(charge, standard)}
               className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
               title="Edit charge"
             >

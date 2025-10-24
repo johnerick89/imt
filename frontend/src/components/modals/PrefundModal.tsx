@@ -30,6 +30,7 @@ const PrefundModal: React.FC<PrefundModalProps> = ({
   defaultCurrencyId,
   balanceExists = false,
 }) => {
+  console.log("defaultCurrencyId", defaultCurrencyId);
   const {
     control,
     handleSubmit,
@@ -117,15 +118,13 @@ const PrefundModal: React.FC<PrefundModalProps> = ({
         </FormItem>
 
         <FormItem
-          label="Source Bank Account"
-          required
+          label="Bank Account"
           invalid={!!errors.source_id}
           errorMessage={errors.source_id?.message}
         >
           <Controller
             name="source_id"
             control={control}
-            rules={{ required: "Source bank account is required" }}
             render={({ field }) => (
               <SearchableSelect
                 {...field}
@@ -133,7 +132,7 @@ const PrefundModal: React.FC<PrefundModalProps> = ({
                   value: account.id,
                   label: `${account.name} - ${account.bank_name} (${account.currency.currency_code})`,
                 }))}
-                placeholder="Select source bank account"
+                placeholder="Select bank account"
                 disabled={isLoading}
                 invalid={!!errors.source_id}
               />

@@ -327,3 +327,35 @@ export const useUpdateFloatLimit = () => {
     },
   });
 };
+
+// Reduce Organisation Float Hook
+export const useReduceOrganisationFloat = () => {
+  const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
+
+  return useMutation({
+    mutationFn: (data: AgencyFloatRequest) =>
+      BalanceOperationsService.reduceOrganisationFloat(data),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ["orgBalances"] });
+      queryClient.invalidateQueries({ queryKey: ["orgBalanceStats"] });
+      queryClient.invalidateQueries({ queryKey: ["bankAccounts"] });
+      showSuccess(
+        "Agency Float Reduced Successfully",
+        response.message || "The agency float has been reduced successfully."
+      );
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to reduce agency float";
+      showError("Reduce Float Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
+    },
+  });
+};

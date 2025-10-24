@@ -22,11 +22,21 @@ class ReportsService {
       limit = 100,
     } = filters;
 
+    const userOrganisation = await prisma.organisation.findUnique({
+      where: {
+        id: user_organisation_id,
+      },
+    });
+
+    let isCustomerOrganisation = userOrganisation?.type === "CUSTOMER";
+
     const where: any = {
-      origin_organisation_id: user_organisation_id,
+      ...(!isCustomerOrganisation && {
+        origin_organisation_id: user_organisation_id,
+      }),
       direction: "OUTBOUND",
       status: {
-        in: ["APPROVED", "COMPLETED"],
+        in: ["READY", "APPROVED", "COMPLETED"],
       },
     };
 
@@ -54,6 +64,9 @@ class ReportsService {
             base_currency: true,
             destination_country: true,
             organisation: true,
+            origin_country: true,
+            origin_organisation: true,
+            destination_organisation: true,
           },
         },
         transaction_charges: {
@@ -66,6 +79,8 @@ class ReportsService {
       skip: (page - 1) * limit,
       take: limit,
     });
+
+    console.log("transactions", transactions);
 
     const total = await prisma.transaction.count({ where });
 
@@ -103,8 +118,18 @@ class ReportsService {
       limit = 100,
     } = filters;
 
+    const userOrganisation = await prisma.organisation.findUnique({
+      where: {
+        id: user_organisation_id,
+      },
+    });
+
+    let isCustomerOrganisation = userOrganisation?.type === "CUSTOMER";
+
     const where: any = {
-      destination_organisation_id: user_organisation_id,
+      ...(!isCustomerOrganisation && {
+        destination_organisation_id: user_organisation_id,
+      }),
       direction: "INBOUND",
     };
 
@@ -128,7 +153,12 @@ class ReportsService {
         dest_currency: true,
         corridor: {
           include: {
+            base_currency: true,
+            destination_country: true,
+            organisation: true,
             origin_country: true,
+            origin_organisation: true,
+            destination_organisation: true,
           },
         },
         transaction_charges: {
@@ -172,24 +202,27 @@ class ReportsService {
     const {
       date_from,
       date_to,
-      charge_type,
       organisation_id,
-      corridor_id,
       currency_id,
       page = 1,
       limit = 100,
     } = filters;
 
+    const userOrganisation = await prisma.organisation.findUnique({
+      where: {
+        id: user_organisation_id,
+      },
+    });
+
+    let isCustomerOrganisation = userOrganisation?.type === "CUSTOMER";
+
     const where: any = {
+      ...(!isCustomerOrganisation && {
+        organisation_id: user_organisation_id,
+      }),
       transaction: {
         status: {
-          in: ["APPROVED", "COMPLETED"],
-        },
-        origin_organisation_id: user_organisation_id,
-      },
-      charge: {
-        type: {
-          in: ["COMMISSION", "INTERNAL_FEE"],
+          in: ["READY", "APPROVED", "COMPLETED"],
         },
       },
     };
@@ -200,39 +233,33 @@ class ReportsService {
       if (date_to) where.created_at.lte = date_to;
     }
 
-    if (charge_type) where.charge_type = charge_type;
     if (organisation_id)
       where.transaction.destination_organisation_id = organisation_id;
-    if (corridor_id) where.transaction.corridor_id = corridor_id;
     if (currency_id) where.currency_id = currency_id;
 
-    const charges = await prisma.transactionCharge.findMany({
+    const agencyCommissions = await prisma.commissionSplit.findMany({
       where,
       include: {
-        charge: true,
-        transaction: {
+        organisation: true,
+        transaction: true,
+        currency: true,
+        transaction_charge: {
           include: {
-            corridor: {
-              include: {
-                organisation: true,
-              },
-            },
-            origin_currency: true,
+            charge: true,
           },
         },
-        destination_organisation: true,
       },
       orderBy: { created_at: "desc" },
       skip: (page - 1) * limit,
       take: limit,
     });
 
-    const total = await prisma.transactionCharge.count({ where });
+    const total = await prisma.commissionSplit.count({ where });
 
     return {
       success: true,
       data: {
-        charges,
+        agencyCommissions,
         pagination: {
           page: Number(page),
           limit: Number(limit),

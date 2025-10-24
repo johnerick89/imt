@@ -457,9 +457,15 @@ export default function ChargeForm({
                   destinationShare !== undefined &&
                   internalShare !== undefined
                 ) {
-                  const total = originShare + destinationShare + internalShare;
+                  const total =
+                    Number(originShare) +
+                    Number(destinationShare) +
+                    Number(internalShare);
                   if (total !== 100) {
-                    return "Origin, destination and internal percentages must sum to 100";
+                    return (
+                      "Origin, destination and internal percentages must sum to 100. Current total: " +
+                      total
+                    );
                   }
                 }
                 return true;
@@ -497,9 +503,15 @@ export default function ChargeForm({
                   destinationShare !== undefined &&
                   internalShare !== undefined
                 ) {
-                  const total = originShare + destinationShare + internalShare;
+                  const total =
+                    Number(originShare) +
+                    Number(destinationShare) +
+                    Number(internalShare);
                   if (total !== 100) {
-                    return "Origin, destination and internal percentages must sum to 100";
+                    return (
+                      "Origin, destination and internal percentages must sum to 100. Current total: " +
+                      total
+                    );
                   }
                 }
                 return true;
@@ -537,9 +549,15 @@ export default function ChargeForm({
                   destinationShare !== undefined &&
                   internalShare !== undefined
                 ) {
-                  const total = originShare + destinationShare + internalShare;
+                  const total =
+                    Number(originShare) +
+                    Number(destinationShare) +
+                    Number(internalShare);
                   if (total !== 100) {
-                    return "Origin, destination and internal percentages must sum to 100";
+                    return (
+                      "Origin, destination and internal percentages must sum to 100. Current total: " +
+                      total
+                    );
                   }
                 }
                 return true;

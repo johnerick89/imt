@@ -5,7 +5,12 @@ import { CSVLink } from "react-csv";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { SearchableSelect } from "../components/ui/SearchableSelect";
-import { useSession, useCurrencies, useOrganisations } from "../hooks";
+import {
+  useSession,
+  useCurrencies,
+  useOrganisations,
+  useOrganisation,
+} from "../hooks";
 // Removed unused export hooks since we're implementing direct export
 import { ReportType, REPORT_METADATA } from "../types/ReportsTypes";
 import { formatToCurrency } from "../utils/textUtils";
@@ -19,6 +24,10 @@ const ReportsPage: React.FC = () => {
   const [selectedReport, setSelectedReport] = useState<ReportType>(
     ReportType.OUTBOUND_TRANSACTIONS
   );
+  const { data: organisationData } = useOrganisation(
+    userOrganisationid as string
+  );
+  const userOrganisation = organisationData?.data;
   const [showData, setShowData] = useState(false);
   const [previewFilters, setPreviewFilters] = useState<Record<string, unknown>>(
     {}
@@ -119,6 +128,8 @@ const ReportsPage: React.FC = () => {
       let data;
       switch (selectedReport) {
         case ReportType.OUTBOUND_TRANSACTIONS:
+          console.log("userOrganisation", userOrganisation);
+          console.log("filters", filters);
           data = await ReportsService.getOutboundTransactionsReport(filters);
           console.log("getOutboundTransactionsReport data", data);
           break;
@@ -196,6 +207,10 @@ const ReportsPage: React.FC = () => {
         return reportData?.data.transactions;
       case ReportType.INBOUND_TRANSACTIONS:
         return reportData?.data.transactions;
+      case ReportType.COMMISSIONS:
+        return reportData?.data.agencyCommissions;
+      case ReportType.TAXES:
+        return reportData?.data.taxes;
       default:
         return [];
     }
@@ -221,6 +236,22 @@ const ReportsPage: React.FC = () => {
       return row;
     });
 
+    // Add totals row for specific report types
+    if (
+      selectedReport === ReportType.OUTBOUND_TRANSACTIONS ||
+      selectedReport === ReportType.INBOUND_TRANSACTIONS ||
+      selectedReport === ReportType.COMMISSIONS
+    ) {
+      const totalsRow: Record<string, string> = {};
+      const totalsCells = renderTotalsRowCells(data);
+
+      headers.forEach((header, index) => {
+        totalsRow[header] = totalsCells[index] || "";
+      });
+
+      csvData.push(totalsRow);
+    }
+
     return csvData;
   };
 
@@ -242,13 +273,32 @@ const ReportsPage: React.FC = () => {
         throw new Error("No data available for PDF export");
       }
 
+      // Add totals data for specific report types
+      let exportData = data;
+      if (
+        selectedReport === ReportType.OUTBOUND_TRANSACTIONS ||
+        selectedReport === ReportType.INBOUND_TRANSACTIONS ||
+        selectedReport === ReportType.COMMISSIONS
+      ) {
+        const totalsCells = renderTotalsRowCells(data);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const totalsRow: any = {};
+        const headers = getTableHeaders();
+
+        headers.forEach((header, index) => {
+          totalsRow[header] = totalsCells[index] || "";
+        });
+
+        exportData = [...data, totalsRow];
+      }
+
       const filename = `${currentReportMetadata.name.replace(/\s+/g, "_")}_${
         new Date().toISOString().split("T")[0]
       }.pdf`;
 
       await ReportsPDFService.downloadReportPDF(
         selectedReport,
-        data,
+        exportData,
         previewFilters,
         currentReportMetadata,
         filename
@@ -332,6 +382,7 @@ const ReportsPage: React.FC = () => {
                     ))}
                   </tr>
                 ))}
+                {renderTotalsRow(items)}
               </tbody>
             </table>
           </div>
@@ -458,6 +509,8 @@ const ReportsPage: React.FC = () => {
           "Status",
           "Sender",
           "Receiver",
+          "Origin Org",
+          "Origin Country",
           "Destination Org",
           "Destination Country",
           "Date",
@@ -474,17 +527,17 @@ const ReportsPage: React.FC = () => {
           "Receiver",
           "Origin Org",
           "Origin Country",
+          "Destination Org",
+          "Destination Country",
           "Date",
         ];
       case ReportType.COMMISSIONS:
         return [
-          "Name",
+          "Charge Name",
           "Charge Type",
-          "Transaction",
-          "External Organisation",
-          "Amount",
-          "Internal Amount",
-          "External Amount",
+          "Transaction No",
+          "Agency/Partner",
+          "Commission Amount",
           "Currency",
           "Date",
         ];
@@ -569,6 +622,7 @@ const ReportsPage: React.FC = () => {
   const getTableRowCells = (item: any) => {
     switch (selectedReport) {
       case ReportType.OUTBOUND_TRANSACTIONS:
+        console.log("item", item);
         return [
           item.transaction_no,
           formatToCurrency(item.origin_amount),
@@ -578,9 +632,11 @@ const ReportsPage: React.FC = () => {
           `${item.status} - ${item.remittance_status}`,
           `${item.customer?.full_name}`,
           `${item.beneficiary?.name}`,
-          item.corridor?.organisation?.name,
+          item.corridor?.origin_organisation?.name,
+          item.corridor?.origin_country?.name,
+          item.corridor?.destination_organisation?.name,
           item.corridor?.destination_country?.name,
-          new Date(item.created_at).toLocaleDateString(),
+          new Date(item.created_at || "").toLocaleDateString(),
         ];
       case ReportType.INBOUND_TRANSACTIONS:
         return [
@@ -592,20 +648,21 @@ const ReportsPage: React.FC = () => {
           `${item.status} - ${item.remittance_status}`,
           `${item.sender_trasaction_party?.name}`,
           `${item.receiver_trasaction_party?.name}`,
-          item.origin_organisation?.name,
+          item.corridor?.origin_organisation?.name,
           item.corridor?.origin_country?.name,
-          new Date(item.created_at).toLocaleDateString(),
+          item.corridor?.destination_organisation?.name,
+          item.corridor?.destination_country?.name,
+          new Date(item.created_at || "").toLocaleDateString(),
         ];
       case ReportType.COMMISSIONS:
         return [
-          item.charge.name,
-          item.type,
-          item.transaction?.transaction_no,
-          item.transaction?.corridor?.organisation?.name,
-          formatToCurrency(item.amount),
-          formatToCurrency(item.internal_amount),
-          formatToCurrency(item.external_amount),
-          item.transaction?.origin_currency?.currency_code,
+          item.transaction_charge?.charge?.name || "N/A",
+          item.transaction_charge?.charge?.type || "N/A",
+          item.transaction?.transaction_no || "N/A",
+
+          item.organisation?.name || "N/A",
+          formatToCurrency(item.amount || 0),
+          item.currency?.currency_code || "N/A",
           new Date(item.created_at).toLocaleDateString(),
         ];
       case ReportType.TAXES:
@@ -732,6 +789,243 @@ const ReportsPage: React.FC = () => {
       default:
         return [];
     }
+  };
+
+  // Render totals row for specific report types
+  const renderTotalsRow = (items: ReportItem[]) => {
+    // Only show totals for specific report types
+    if (
+      selectedReport !== ReportType.OUTBOUND_TRANSACTIONS &&
+      selectedReport !== ReportType.INBOUND_TRANSACTIONS &&
+      selectedReport !== ReportType.COMMISSIONS
+    ) {
+      return null;
+    }
+
+    const totalsCells: string[] = [];
+
+    switch (selectedReport) {
+      case ReportType.OUTBOUND_TRANSACTIONS: {
+        const outboundTotals = {
+          count: items.length,
+
+          origin_amount: items.reduce(
+            (sum, item) => sum + (Number((item as any).origin_amount) || 0),
+            0
+          ),
+
+          amount_payable: items.reduce(
+            (sum, item) => sum + (Number((item as any).amount_payable) || 0),
+            0
+          ),
+
+          total_charges: items.reduce(
+            (sum, item) => sum + (Number((item as any).total_all_charges) || 0),
+            0
+          ),
+        };
+
+        totalsCells.push("TOTAL"); // Transaction No
+        totalsCells.push(formatToCurrency(outboundTotals.origin_amount)); // Origin Amount
+        totalsCells.push(formatToCurrency(outboundTotals.amount_payable)); // Amount Payable
+        totalsCells.push(formatToCurrency(outboundTotals.total_charges)); // Total Charges
+        totalsCells.push(""); // Currency
+        totalsCells.push(""); // Status
+        totalsCells.push(""); // Customer
+        totalsCells.push(""); // Beneficiary
+        totalsCells.push(""); // Origin Org
+        totalsCells.push(""); // Origin Country
+        totalsCells.push(""); // Destination Org
+        totalsCells.push(""); // Destination Country
+        totalsCells.push(`Count: ${outboundTotals.count}`); // Date
+        break;
+      }
+
+      case ReportType.INBOUND_TRANSACTIONS: {
+        const inboundTotals = {
+          count: items.length,
+
+          dest_amount: items.reduce(
+            (sum, item) => sum + (Number((item as any).dest_amount) || 0),
+            0
+          ),
+
+          amount_payable: items.reduce(
+            (sum, item) => sum + (Number((item as any).amount_payable) || 0),
+            0
+          ),
+
+          total_charges: items.reduce(
+            (sum, item) => sum + (Number((item as any).total_all_charges) || 0),
+            0
+          ),
+        };
+
+        totalsCells.push("TOTAL"); // Transaction No
+        totalsCells.push(formatToCurrency(inboundTotals.dest_amount)); // Dest Amount
+        totalsCells.push(formatToCurrency(inboundTotals.amount_payable)); // Amount Payable
+        totalsCells.push(formatToCurrency(inboundTotals.total_charges)); // Total Charges
+        totalsCells.push(""); // Currency
+        totalsCells.push(""); // Status
+        totalsCells.push(""); // Sender
+        totalsCells.push(""); // Receiver
+        totalsCells.push(""); // Origin Org
+        totalsCells.push(""); // Origin Country
+        totalsCells.push(""); // Destination Org
+        totalsCells.push(""); // Destination Country
+        totalsCells.push(`Count: ${inboundTotals.count}`); // Date
+        break;
+      }
+
+      case ReportType.COMMISSIONS: {
+        const commissionTotals = {
+          count: items.length,
+
+          amount: items.reduce(
+            (sum, item) => sum + (Number((item as any).amount) || 0),
+            0
+          ),
+        };
+
+        totalsCells.push("TOTAL"); // Charge Name
+        totalsCells.push(""); // Charge Type
+        totalsCells.push(""); // Transaction No
+        totalsCells.push(""); // Agency/Partner
+        totalsCells.push(formatToCurrency(commissionTotals.amount)); // Commission Amount
+        totalsCells.push(""); // Currency
+        totalsCells.push(`Count: ${commissionTotals.count}`); // Date
+        break;
+      }
+
+      default:
+        return null;
+    }
+
+    return (
+      <tr className="bg-gray-50 font-semibold">
+        {totalsCells.map((cell, index) => (
+          <td
+            key={index}
+            className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-t-2 border-gray-300"
+          >
+            {cell}
+          </td>
+        ))}
+      </tr>
+    );
+  };
+
+  // Render totals row cells as an array (for CSV and PDF export)
+  const renderTotalsRowCells = (items: ReportItem[]): string[] => {
+    // Only show totals for specific report types
+    if (
+      selectedReport !== ReportType.OUTBOUND_TRANSACTIONS &&
+      selectedReport !== ReportType.INBOUND_TRANSACTIONS &&
+      selectedReport !== ReportType.COMMISSIONS
+    ) {
+      return [];
+    }
+
+    const totalsCells: string[] = [];
+
+    switch (selectedReport) {
+      case ReportType.OUTBOUND_TRANSACTIONS: {
+        const outboundTotals = {
+          count: items.length,
+
+          origin_amount: items.reduce(
+            (sum, item) => sum + (Number((item as any).origin_amount) || 0),
+            0
+          ),
+
+          amount_payable: items.reduce(
+            (sum, item) => sum + (Number((item as any).amount_payable) || 0),
+            0
+          ),
+
+          total_charges: items.reduce(
+            (sum, item) => sum + (Number((item as any).total_all_charges) || 0),
+            0
+          ),
+        };
+
+        totalsCells.push("TOTAL"); // Transaction No
+        totalsCells.push(formatToCurrency(outboundTotals.origin_amount)); // Origin Amount
+        totalsCells.push(formatToCurrency(outboundTotals.amount_payable)); // Amount Payable
+        totalsCells.push(formatToCurrency(outboundTotals.total_charges)); // Total Charges
+        totalsCells.push(""); // Currency
+        totalsCells.push(""); // Status
+        totalsCells.push(""); // Customer
+        totalsCells.push(""); // Beneficiary
+        totalsCells.push(""); // Origin Org
+        totalsCells.push(""); // Origin Country
+        totalsCells.push(""); // Destination Org
+        totalsCells.push(""); // Destination Country
+        totalsCells.push(`Count: ${outboundTotals.count}`); // Date
+        break;
+      }
+
+      case ReportType.INBOUND_TRANSACTIONS: {
+        const inboundTotals = {
+          count: items.length,
+
+          dest_amount: items.reduce(
+            (sum, item) => sum + (Number((item as any).dest_amount) || 0),
+            0
+          ),
+
+          amount_payable: items.reduce(
+            (sum, item) => sum + (Number((item as any).amount_payable) || 0),
+            0
+          ),
+
+          total_charges: items.reduce(
+            (sum, item) => sum + (Number((item as any).total_all_charges) || 0),
+            0
+          ),
+        };
+
+        totalsCells.push("TOTAL"); // Transaction No
+        totalsCells.push(formatToCurrency(inboundTotals.dest_amount)); // Dest Amount
+        totalsCells.push(formatToCurrency(inboundTotals.amount_payable)); // Amount Payable
+        totalsCells.push(formatToCurrency(inboundTotals.total_charges)); // Total Charges
+        totalsCells.push(""); // Currency
+        totalsCells.push(""); // Status
+        totalsCells.push(""); // Sender
+        totalsCells.push(""); // Receiver
+        totalsCells.push(""); // Origin Org
+        totalsCells.push(""); // Origin Country
+        totalsCells.push(""); // Destination Org
+        totalsCells.push(""); // Destination Country
+        totalsCells.push(`Count: ${inboundTotals.count}`); // Date
+        break;
+      }
+
+      case ReportType.COMMISSIONS: {
+        const commissionTotals = {
+          count: items.length,
+
+          amount: items.reduce(
+            (sum, item) => sum + (Number((item as any).amount) || 0),
+            0
+          ),
+        };
+
+        totalsCells.push("TOTAL"); // Charge Name
+        totalsCells.push(""); // Charge Type
+        totalsCells.push(""); // Transaction No
+        totalsCells.push(""); // Agency/Partner
+        totalsCells.push(formatToCurrency(commissionTotals.amount)); // Commission Amount
+        totalsCells.push(""); // Currency
+        totalsCells.push(`Count: ${commissionTotals.count}`); // Date
+        break;
+      }
+
+      default:
+        return [];
+    }
+
+    return totalsCells;
   };
 
   return (

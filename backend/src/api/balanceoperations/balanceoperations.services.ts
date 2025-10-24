@@ -129,6 +129,7 @@ export class BalanceOperationService {
           description: data.description,
           created_by: userId,
           org_balance_id: orgBalance.id,
+          organisation_id: baseOrgId,
         },
       });
 
@@ -144,6 +145,7 @@ export class BalanceOperationService {
           description: data.description,
           created_by: userId,
           bank_account_id: data.source_id,
+          organisation_id: baseOrgId,
         },
       });
 
@@ -202,6 +204,283 @@ export class BalanceOperationService {
             id: data.source_id,
             name: sourceBankAccount.name,
           },
+        },
+      };
+    });
+  }
+
+  async reduceOrganisationFloat(
+    data: OrgFloatBalanceRequest,
+    userId: string,
+    baseOrgId: string
+  ): Promise<BalanceOperationResponse> {
+    return await prisma.$transaction(async (tx) => {
+      // Validate organisations
+      const baseOrg = await tx.organisation.findUnique({
+        where: { id: baseOrgId },
+      });
+
+      if (!baseOrg) {
+        throw new NotFoundError("Customer organisation not found");
+      }
+
+      if (baseOrg.type !== "CUSTOMER") {
+        throw new AppError(
+          "Base organisation must be a CUSTOMER organisation",
+          400
+        );
+      }
+
+      const destOrg = await tx.organisation.findUnique({
+        where: { id: data.dest_org_id },
+        include: { base_currency: true },
+      });
+
+      if (!destOrg) {
+        throw new NotFoundError("Agency organisation not found");
+      }
+
+      // Validate currency
+      const currencyId = destOrg.base_currency_id;
+      if (!currencyId) {
+        throw new AppError(
+          "Agency organisation must have a base currency",
+          400
+        );
+      }
+
+      // Get organisation float balance
+      const orgFloatBalance = await tx.orgBalance.findFirst({
+        where: {
+          base_org_id: baseOrgId,
+          dest_org_id: data.dest_org_id,
+          currency_id: currencyId,
+        },
+      });
+
+      if (!orgFloatBalance) {
+        throw new NotFoundError("Agency float balance not found");
+      }
+
+      // Check if organisation has sufficient balance
+      const orgBalanceAmount = parseFloat(orgFloatBalance.balance.toString());
+      if (orgBalanceAmount < data.amount) {
+        throw new InsufficientFundsError(
+          "Insufficient balance in agency float"
+        );
+      }
+
+      const oldBalance = new Decimal(orgBalanceAmount);
+      const newBalance = oldBalance.sub(new Decimal(data.amount));
+
+      // Update organisation float balance (reduce)
+      await tx.orgBalance.update({
+        where: { id: orgFloatBalance.id },
+        data: {
+          balance: newBalance,
+          updated_at: new Date(),
+        },
+        include: {
+          base_org: true,
+          dest_org: true,
+          currency: true,
+        },
+      });
+
+      // If bank_account_id provided, validate and add back to bank account
+      let bankAccount = null;
+      let bankAccountOldBalance = 0;
+      let bankAccountNewBalance = 0;
+      if (data.source_id) {
+        bankAccount = await tx.bankAccount.findUnique({
+          where: { id: data.source_id },
+        });
+
+        if (!bankAccount) {
+          throw new NotFoundError("Bank account not found");
+        }
+
+        bankAccountOldBalance = parseFloat(
+          bankAccount?.balance.toString() || "0"
+        );
+        bankAccountNewBalance = bankAccountOldBalance + data.amount;
+
+        // Add back to bank account
+        await tx.bankAccount.update({
+          where: { id: data.source_id },
+          data: {
+            balance: bankAccountNewBalance,
+          },
+        });
+      }
+
+      // Also reduce main organisation's balance (self-balance)
+      let mainOrgBalance = await tx.orgBalance.findFirst({
+        where: {
+          base_org_id: baseOrgId,
+          dest_org_id: baseOrgId, // Self-balance
+          currency_id: currencyId,
+        },
+      });
+
+      if (!mainOrgBalance) {
+        mainOrgBalance = await tx.orgBalance.create({
+          data: {
+            base_org_id: baseOrgId,
+            dest_org_id: baseOrgId,
+            currency_id: currencyId,
+            balance: 0,
+            locked_balance: 0,
+          },
+        });
+      }
+
+      let mainOrgOldBalance = new Decimal(0);
+      let mainOrgNewBalance = new Decimal(0);
+
+      if (mainOrgBalance) {
+        // Check if main org has sufficient balance
+        const mainOrgBalanceAmount = parseFloat(
+          mainOrgBalance.balance.toString()
+        );
+        if (mainOrgBalanceAmount < data.amount) {
+          throw new InsufficientFundsError(
+            "Insufficient balance in main organisation float"
+          );
+        }
+
+        mainOrgOldBalance = new Decimal(mainOrgBalanceAmount);
+        mainOrgNewBalance = mainOrgOldBalance.sub(new Decimal(data.amount));
+
+        await tx.orgBalance.update({
+          where: { id: mainOrgBalance.id },
+          data: {
+            balance: mainOrgNewBalance,
+          },
+        });
+      } else {
+        throw new NotFoundError("Main organisation balance not found");
+      }
+
+      // Create balance history records
+      await tx.balanceHistory.create({
+        data: {
+          action_type: BalanceHistoryAction.WITHDRAWAL,
+          entity_type: "AGENCY_FLOAT",
+          entity_id: orgFloatBalance.id,
+          currency_id: currencyId,
+          old_balance: oldBalance,
+          new_balance: newBalance,
+          change_amount: -data.amount,
+          description: data.description,
+          created_by: userId,
+          org_balance_id: orgFloatBalance.id,
+          float_org_id: destOrg.id,
+          organisation_id: baseOrgId,
+        },
+      });
+
+      // Create balance history for main org balance
+      await tx.balanceHistory.create({
+        data: {
+          action_type: BalanceHistoryAction.WITHDRAWAL,
+          entity_type: "ORG_BALANCE",
+          entity_id: mainOrgBalance.id,
+          currency_id: currencyId,
+          old_balance: mainOrgOldBalance,
+          new_balance: mainOrgNewBalance,
+          change_amount: -data.amount,
+          description: `Main org balance reduced due to agency float reduction: ${data.description}`,
+          created_by: userId,
+          org_balance_id: mainOrgBalance.id,
+          organisation_id: baseOrgId,
+        },
+      });
+
+      if (data.source_id) {
+        await tx.balanceHistory.create({
+          data: {
+            action_type: BalanceHistoryAction.DEPOSIT,
+            entity_type: "BANK_ACCOUNT",
+            entity_id: data.source_id,
+            currency_id: currencyId,
+            old_balance: bankAccountOldBalance,
+            new_balance: bankAccountNewBalance,
+            change_amount: data.amount,
+            description: data.description,
+            created_by: userId,
+            bank_account_id: data.source_id,
+            organisation_id: baseOrgId,
+          },
+        });
+      }
+
+      // Create GL Transaction for Agency Float Reduction
+      // CR Main Float (Customer org) ASSET account, DR Agency Float (LIABILITY)
+
+      const agencyFloatGlAccountId =
+        await glTransactionService.getGlAccountForEntity(
+          "AGENCY_FLOAT",
+          destOrg.id,
+          baseOrgId,
+          tx
+        );
+      const mainOrgGlAccountId =
+        await glTransactionService.getGlAccountForEntity(
+          "ORG_BALANCE",
+          mainOrgBalance.id,
+          baseOrgId,
+          tx
+        );
+
+      if (agencyFloatGlAccountId && mainOrgGlAccountId) {
+        await glTransactionService.createGlTransaction(
+          baseOrgId,
+          {
+            transaction_type: "AGENCY_FLOAT_TOPUP", // Using same type but with reversed entries
+            amount: data.amount,
+            currency_id: currencyId,
+            description: `Agency float reduction: ${data.description}`,
+            gl_entries: [
+              {
+                gl_account_id: mainOrgGlAccountId,
+                amount: data.amount,
+                dr_cr: "CR",
+                description: `Main Float (Customer org) ASSET decreased by ${data.amount}`,
+              },
+              {
+                gl_account_id: agencyFloatGlAccountId,
+                amount: data.amount,
+                dr_cr: "DR",
+                description: `Agency Float (LIABILITY) decreased by ${data.amount}`,
+              },
+            ],
+          },
+          userId
+        );
+      }
+
+      return {
+        success: true,
+        message: "Agency float reduced successfully",
+        data: {
+          id: orgFloatBalance.id,
+          old_balance: parseFloat(oldBalance.toString()),
+          new_balance: parseFloat(newBalance.toString()),
+          change_amount: -data.amount,
+          operation_type: "WITHDRAWAL",
+          source_entity: {
+            type: "AGENCY_FLOAT",
+            id: orgFloatBalance.id,
+            name: destOrg.name,
+          },
+          bank_entity: data.source_id
+            ? {
+                type: "BANK_ACCOUNT",
+                id: data.source_id,
+                name: bankAccount?.name || "Bank Account",
+              }
+            : undefined,
         },
       };
     });
@@ -291,6 +570,7 @@ export class BalanceOperationService {
           description: data.description,
           created_by: userId,
           till_id: tillId,
+          organisation_id: till.organisation_id,
         },
       });
 
@@ -306,6 +586,7 @@ export class BalanceOperationService {
           description: data.description,
           created_by: userId,
           vault_id: data.source_id,
+          organisation_id: sourceVault.organisation_id,
         },
       });
 
@@ -441,6 +722,7 @@ export class BalanceOperationService {
           description: data.description,
           created_by: userId,
           vault_id: vaultId,
+          organisation_id: vault.organisation_id,
         },
       });
 
@@ -623,6 +905,7 @@ export class BalanceOperationService {
           description: data.description,
           created_by: userId,
           vault_id: data.source_id,
+          organisation_id: destVault.organisation_id,
         },
       });
 
@@ -754,6 +1037,7 @@ export class BalanceOperationService {
           description: data.description,
           created_by: userId,
           vault_id: vaultId,
+          organisation_id: vault.organisation_id,
         },
       });
 
@@ -874,6 +1158,14 @@ export class BalanceOperationService {
           base_org: true,
           dest_org: true,
           currency: true,
+          balance_histories: {
+            orderBy: { created_at: "desc" },
+            include: {
+              created_by_user: true,
+              float_org: true,
+              currency: true,
+            },
+          },
         },
       }),
       prisma.orgBalance.count({ where }),
@@ -1269,6 +1561,49 @@ export class BalanceOperationService {
         });
       }
 
+      // Also update/create main organisation's balance (self-balance)
+      let mainOrgBalance = await tx.orgBalance.findFirst({
+        where: {
+          base_org_id: baseOrgId,
+          dest_org_id: baseOrgId, // Self-balance
+          currency_id: currencyId,
+        },
+      });
+
+      let mainOrgOldBalance = new Decimal(0);
+      let mainOrgNewBalance = new Decimal(0);
+
+      if (mainOrgBalance) {
+        // Update existing main org balance
+        mainOrgOldBalance = new Decimal(mainOrgBalance.balance || 0);
+        mainOrgNewBalance = mainOrgOldBalance.add(
+          new Decimal(data.amount || 0)
+        );
+
+        await tx.orgBalance.update({
+          where: { id: mainOrgBalance.id },
+          data: {
+            balance: mainOrgNewBalance,
+          },
+        });
+      } else {
+        // Create new main org balance
+        mainOrgOldBalance = new Decimal(0);
+        mainOrgNewBalance = new Decimal(data.amount || 0);
+
+        mainOrgBalance = await tx.orgBalance.create({
+          data: {
+            base_org_id: baseOrgId,
+            dest_org_id: baseOrgId, // Self-balance
+            currency_id: currencyId,
+            balance: data.amount,
+            locked_balance: 0,
+            created_by: userId,
+            limit: new Decimal(0), // No limit for main org balance
+          },
+        });
+      }
+
       // Create balance history records
       await tx.balanceHistory.create({
         data: {
@@ -1283,6 +1618,24 @@ export class BalanceOperationService {
           created_by: userId,
           org_balance_id: orgFloatBalance.id,
           float_org_id: destOrg.id,
+          organisation_id: baseOrgId,
+        },
+      });
+
+      // Create balance history for main org balance
+      await tx.balanceHistory.create({
+        data: {
+          action_type: BalanceHistoryAction.TOPUP,
+          entity_type: "ORG_BALANCE",
+          entity_id: mainOrgBalance.id,
+          currency_id: currencyId,
+          old_balance: mainOrgOldBalance,
+          new_balance: mainOrgNewBalance,
+          change_amount: data.amount,
+          description: `Main org balance increased due to agency float: ${data.description}`,
+          created_by: userId,
+          org_balance_id: mainOrgBalance.id,
+          organisation_id: baseOrgId,
         },
       });
       if (data.bank_account_id) {
@@ -1298,44 +1651,47 @@ export class BalanceOperationService {
             description: data.description,
             created_by: userId,
             bank_account_id: data.bank_account_id,
+            organisation_id: baseOrgId,
           },
         });
       }
 
       // Create GL Transaction for Organisation Prefund
+      // DR Main Float (Customer org) ASSET account, CR Agency Float (LIABILITY)
 
-      const bankGlAccountId = await glTransactionService.getGlAccountForEntity(
-        "BANK_ACCOUNT",
-        data.bank_account_id || "",
-        baseOrgId
-      );
       const agencyFloatGlAccountId =
         await glTransactionService.getGlAccountForEntity(
           "AGENCY_FLOAT",
           destOrg.id,
           baseOrgId
         );
+      const mainOrgGlAccountId =
+        await glTransactionService.getGlAccountForEntity(
+          "ORG_BALANCE",
+          mainOrgBalance.id,
+          baseOrgId
+        );
 
-      if (bankGlAccountId && agencyFloatGlAccountId) {
+      if (agencyFloatGlAccountId && mainOrgGlAccountId) {
         await glTransactionService.createGlTransaction(
           baseOrgId,
           {
-            transaction_type: "AGENCY_FLOAT_TOPUP", // Using closest match for org prefund
+            transaction_type: "AGENCY_FLOAT_TOPUP",
             amount: data.amount,
             currency_id: currencyId,
             description: `Agency float topup: ${data.description}`,
             gl_entries: [
               {
-                gl_account_id: bankGlAccountId,
+                gl_account_id: mainOrgGlAccountId,
                 amount: data.amount,
                 dr_cr: "DR",
-                description: `Cash balance increased by ${data.amount}`,
+                description: `Main Float (Customer org) ASSET increased by ${data.amount}`,
               },
               {
                 gl_account_id: agencyFloatGlAccountId,
                 amount: data.amount,
                 dr_cr: "CR",
-                description: `Agency float increased by ${data.amount}`,
+                description: `Agency Float (LIABILITY) increased by ${data.amount}`,
               },
             ],
           },
@@ -1399,6 +1755,7 @@ export class BalanceOperationService {
           } to ${limit}`,
           created_by: userId,
           org_balance_id: balanceId,
+          organisation_id: balance.base_org_id,
         },
       });
 

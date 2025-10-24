@@ -53,8 +53,16 @@ export class ChargeController {
   updateCharge = asyncHandler(
     async (req: CustomRequest, res: Response): Promise<void> => {
       const { id } = req.params;
-      const validatedData = updateChargeSchema.parse(req.body);
+      const validation = updateChargeSchema.safeParse(req.body);
+      console.log("body", req.body);
+      if (!validation.success) {
+        console.log("validation error", validation.error);
+        throw new AppError("Validation error", 400);
+      }
+      console.log("validation success", validation.data);
+      const validatedData = validation.data;
       const result = await this.chargeService.updateCharge(id, validatedData);
+      console.log("result", result);
       res.status(200).json(result);
     }
   );

@@ -1,3 +1,36 @@
+import type { Transaction } from "./TransactionsTypes";
+import type { Currency } from "./CurrenciesTypes";
+
+export interface BalanceHistory {
+  id: string;
+  action_type: string;
+  entity_type: string;
+  entity_id: string;
+  currency_id: string;
+  currency: Currency;
+  old_balance: number;
+  new_balance: number;
+  change_amount: number;
+  transaction_id: string;
+  transaction: Transaction;
+  created_at: string;
+  organisation?: {
+    id: string;
+    name: string;
+    type: string;
+  };
+  base_org?: {
+    id: string;
+    name: string;
+    type: string;
+  };
+  dest_org?: {
+    id: string;
+    name: string;
+    type: string;
+  };
+  description?: string;
+}
 export interface OrgBalance {
   id: string;
   base_org_id: string;
@@ -23,6 +56,7 @@ export interface OrgBalance {
   created_at: string;
   updated_at: string;
   limit?: number | null;
+  balance_histories: BalanceHistory[];
 }
 
 export interface OrgBalanceFilters {
@@ -177,6 +211,15 @@ export interface AgencyFloatRequest {
   currency_id: string; // Agency base currency
   bank_account_id?: string; // Optional bank account ID to deposit the float
   limit?: number; // Optional limit for the float
+  description?: string;
+}
+
+// Reduce Float Request Types
+export interface ReduceFloatRequest {
+  amount: number;
+  dest_org_id: string; // Agency organisation ID (from existing balance)
+  currency_id: string; // Agency base currency (from existing balance)
+  bank_account_id?: string; // Optional bank account ID to deposit the money
   description?: string;
 }
 

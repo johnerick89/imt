@@ -111,6 +111,7 @@ export class OrganisationsService {
             max_amount: standardCharge.max_amount,
             payment_authority: standardCharge.payment_authority,
             created_by: createdBy,
+            standard_charge_id: standardCharge.id,
           });
 
           // Charge with existing org as origin and new org as destination
@@ -134,6 +135,7 @@ export class OrganisationsService {
             max_amount: standardCharge.max_amount,
             payment_authority: standardCharge.payment_authority,
             created_by: createdBy,
+            standard_charge_id: standardCharge.id,
           });
         }
       }

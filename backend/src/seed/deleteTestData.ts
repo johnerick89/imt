@@ -1,13 +1,7 @@
 import { prisma } from "../lib/prisma.lib";
 
 async function main() {
-  const organisations = await prisma.organisation.findMany({
-    where: {
-      type: {
-        not: "CUSTOMER",
-      },
-    },
-  });
+  const organisations = await prisma.organisation.findMany();
 
   for (const organisation of organisations) {
     console.log(
@@ -30,6 +24,12 @@ async function main() {
         charges_payment_id: {
           in: chargesPayments.map((cp) => cp.id),
         },
+      },
+    });
+
+    await prisma.commissionSplit.deleteMany({
+      where: {
+        organisation_id: organisation.id,
       },
     });
 
@@ -125,6 +125,20 @@ async function main() {
     });
 
     // 7. Delete GLTransaction
+    console.log("  - Deleting gl entries...");
+    const glTransactions = await prisma.gLTransaction.findMany({
+      where: {
+        organisation_id: organisation.id,
+      },
+      select: { id: true },
+    });
+    await prisma.glEntry.deleteMany({
+      where: {
+        gl_transaction_id: {
+          in: glTransactions.map((ga) => ga.id),
+        },
+      },
+    });
     console.log("  - Deleting GL transactions...");
     await prisma.gLTransaction.deleteMany({
       where: {
@@ -205,6 +219,15 @@ async function main() {
       },
     });
 
+    await prisma.balanceHistory.deleteMany({
+      where: {
+        OR: [
+          { float_org_id: organisation.id },
+          { organisation_id: organisation.id },
+        ],
+      },
+    });
+
     // 16. Delete BankAccount
     console.log("  - Deleting bank accounts...");
     await prisma.bankAccount.deleteMany({
@@ -238,7 +261,7 @@ async function main() {
       where: {
         OR: [
           { origin_organisation_id: organisation.id },
-          { organisation_id: organisation.id },
+          { destination_organisation_id: organisation.id },
         ],
       },
     });
@@ -282,20 +305,27 @@ async function main() {
     });
 
     // 24. Delete User
-    console.log("  - Deleting users...");
-    await prisma.user.deleteMany({
-      where: {
-        organisation_id: organisation.id,
-      },
-    });
+    if (organisation.type !== "CUSTOMER") {
+      console.log("  - Deleting users...");
+      await prisma.user.deleteMany({
+        where: {
+          organisation_id: organisation.id,
+        },
+      });
 
-    // 25. Finally, delete Organisation
-    console.log("  - Deleting organisation...");
-    await prisma.organisation.delete({
-      where: { id: organisation.id },
-    });
+      // 25. Finally, delete Organisation
+      console.log("  - Deleting organisation...");
+      await prisma.organisation.delete({
+        where: {
+          id: organisation.id,
+          type: {
+            not: "CUSTOMER",
+          },
+        },
+      });
 
-    console.log(`✓ Successfully deleted organisation: ${organisation.name}`);
+      console.log(`✓ Successfully deleted organisation: ${organisation.name}`);
+    }
   }
 
   console.log(

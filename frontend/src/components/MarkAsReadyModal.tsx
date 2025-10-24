@@ -9,6 +9,7 @@ import type {
   Transaction,
   MarkAsReadyRequest,
 } from "../types/TransactionsTypes";
+import { useSession } from "../hooks";
 
 interface MarkAsReadyModalProps {
   isOpen: boolean;
@@ -27,10 +28,11 @@ const MarkAsReadyModal: React.FC<MarkAsReadyModalProps> = ({
 }) => {
   const [remarks, setRemarks] = useState("");
   const [assignedTo, setAssignedTo] = useState<string>("");
+  const { user } = useSession();
 
   // Get users from the same organisation
   const { data: usersData } = useUsers({
-    organisation_id: transaction?.origin_organisation_id || "",
+    organisation_id: user?.organisation_id || "",
   });
 
   // Reset form when modal opens/closes
