@@ -118,6 +118,7 @@ const OrgBalances: React.FC = () => {
 
   const handleCreateAgencyFloat = async (data: AgencyFloatRequest) => {
     try {
+      console.log("data", data);
       await createAgencyFloatMutation.mutateAsync(data);
       setShowAgencyFloatModal(false);
     } catch (error) {
