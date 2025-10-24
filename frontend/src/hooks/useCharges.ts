@@ -55,6 +55,7 @@ export const useCreateCharge = () => {
       );
       queryClient.invalidateQueries({ queryKey: chargeKeys.lists() });
       queryClient.invalidateQueries({ queryKey: chargeKeys.stats() });
+      queryClient.invalidateQueries({ queryKey: chargeKeys.standardLists() });
     },
     onError: (error: unknown) => {
       const errorMessage =
@@ -80,9 +81,14 @@ export const useUpdateCharge = () => {
         "Charge Updated Successfully",
         response.message || "The charge has been updated successfully."
       );
+
       queryClient.invalidateQueries({ queryKey: chargeKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: chargeKeys.lists() });
       queryClient.invalidateQueries({ queryKey: chargeKeys.stats() });
+      queryClient.invalidateQueries({ queryKey: chargeKeys.standardLists() });
+      queryClient.fetchQuery({ queryKey: chargeKeys.lists() });
+      queryClient.fetchQuery({ queryKey: chargeKeys.stats() });
+      queryClient.fetchQuery({ queryKey: chargeKeys.standardLists() });
     },
     onError: (error: unknown) => {
       const errorMessage =
@@ -109,6 +115,7 @@ export const useDeleteCharge = () => {
       );
       queryClient.invalidateQueries({ queryKey: chargeKeys.lists() });
       queryClient.invalidateQueries({ queryKey: chargeKeys.stats() });
+      queryClient.invalidateQueries({ queryKey: chargeKeys.standardLists() });
     },
     onError: (error: unknown) => {
       const errorMessage =
@@ -142,6 +149,7 @@ export const useCreateStandardCharge = () => {
         response.message || "The standard charge has been created successfully."
       );
       queryClient.invalidateQueries({ queryKey: chargeKeys.standardLists() });
+      queryClient.invalidateQueries({ queryKey: chargeKeys.lists() });
       queryClient.invalidateQueries({ queryKey: chargeKeys.stats() });
     },
     onError: (error: unknown) => {

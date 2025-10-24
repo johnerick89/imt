@@ -102,19 +102,25 @@ export const updateChargeSchema = z.object({
     .pipe(z.string().uuid("Currency ID must be a valid UUID"))
     .optional(),
   type: z.enum(ChargeType).optional(),
-  rate: z
-    .string()
-    .transform((val) => (val === "" ? undefined : parseFloat(val)))
-    .pipe(z.number().min(0, "Rate must be non-negative"))
-    .optional(),
-  origin_organisation_id: z
-    .string()
-    .uuid("Origin organisation ID must be a valid UUID")
-    .optional(),
-  destination_organisation_id: z
-    .string()
-    .uuid("Destination organisation ID must be a valid UUID")
-    .optional(),
+  rate: z.preprocess((val) => {
+    if (typeof val === "string") {
+      if (val === "") return undefined;
+      const parsed = parseFloat(val);
+      return isNaN(parsed) ? undefined : parsed;
+    }
+    return val;
+  }, z.number().nonnegative().optional()),
+  origin_organisation_id: z.preprocess(
+    (val) => (val === "" || val == null ? undefined : val),
+    z.string().uuid("Origin organisation ID must be a valid UUID").optional()
+  ),
+  destination_organisation_id: z.preprocess(
+    (val) => (val === "" || val == null ? undefined : val),
+    z
+      .string()
+      .uuid("Destination organisation ID must be a valid UUID")
+      .optional()
+  ),
   is_reversible: z
     .union([z.boolean(), z.string()])
     .transform((val) => {

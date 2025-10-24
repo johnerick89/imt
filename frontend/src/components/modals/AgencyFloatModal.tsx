@@ -5,17 +5,28 @@ import { SearchableSelect } from "../ui/SearchableSelect";
 import { Input } from "../ui/Input";
 import { Textarea } from "../ui/Textarea";
 import { FormItem } from "../ui/FormItem";
-import type { AgencyFloatRequest } from "../../types/BalanceOperationsTypes";
+import type {
+  AgencyFloatRequest,
+  ReduceFloatRequest,
+} from "../../types/BalanceOperationsTypes";
 import type { BankAccount } from "../../types/BankAccountsTypes";
 import type { Organisation } from "../../types/OrganisationsTypes";
 
 interface AgencyFloatModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: AgencyFloatRequest) => void;
+  onSubmit: (data: AgencyFloatRequest | ReduceFloatRequest) => void;
   isLoading?: boolean;
   bankAccounts: BankAccount[];
   agencies: Organisation[];
+  selectedOrganisationId?: string;
+  defaultCurrencyId?: string;
+  mode?: "create" | "reduce" | "edit";
+  title?: string;
+  existingBalance?: {
+    agency: Organisation;
+    currency: { id: string; currency_code: string; currency_name: string };
+  };
 }
 
 const AgencyFloatModal: React.FC<AgencyFloatModalProps> = ({
@@ -25,6 +36,11 @@ const AgencyFloatModal: React.FC<AgencyFloatModalProps> = ({
   isLoading = false,
   bankAccounts,
   agencies,
+  selectedOrganisationId,
+  defaultCurrencyId,
+  mode = "create",
+  title,
+  existingBalance,
 }) => {
   const {
     control,
@@ -32,17 +48,33 @@ const AgencyFloatModal: React.FC<AgencyFloatModalProps> = ({
     reset,
     watch,
     setValue,
+    register,
     formState: { errors },
   } = useForm<AgencyFloatRequest>({
     defaultValues: {
       amount: 0,
-      dest_org_id: "",
-      currency_id: "",
+      dest_org_id:
+        mode === "edit" && existingBalance
+          ? existingBalance.agency.id
+          : selectedOrganisationId || "",
+      currency_id:
+        mode === "edit" && existingBalance
+          ? existingBalance.currency.id
+          : defaultCurrencyId || "",
       bank_account_id: "",
       limit: 0,
       description: "",
     },
   });
+
+  console.log(
+    "mode",
+    mode,
+    "existingBalance",
+    existingBalance,
+    "selectedOrganisationId",
+    selectedOrganisationId
+  );
 
   const selectedAgencyId = watch("dest_org_id");
   const selectedAgency = agencies.find((org) => org.id === selectedAgencyId);
@@ -54,7 +86,9 @@ const AgencyFloatModal: React.FC<AgencyFloatModalProps> = ({
     }
   }, [selectedAgency, setValue]);
 
-  const handleFormSubmit = (data: AgencyFloatRequest) => {
+  const handleFormSubmit = (data: AgencyFloatRequest | ReduceFloatRequest) => {
+    data.dest_org_id = selectedOrganisationId || "";
+    console.log("data", data);
     onSubmit(data);
     reset();
   };
@@ -68,40 +102,66 @@ const AgencyFloatModal: React.FC<AgencyFloatModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Add Agency Float Balance"
+      title={
+        title ||
+        (mode === "reduce"
+          ? "Reduce Agency Float"
+          : mode === "edit"
+          ? "Topup Agency Float"
+          : "Add Agency Float Balance")
+      }
       size="md"
     >
       <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
-        <FormItem
-          label="Agency/Partner"
-          required
-          invalid={!!errors.dest_org_id}
-          errorMessage={errors.dest_org_id?.message}
-        >
-          <Controller
-            name="dest_org_id"
-            control={control}
-            rules={{ required: "Agency is required" }}
-            render={({ field }) => (
-              <SearchableSelect
-                {...field}
-                options={agencies.map((agency) => ({
-                  value: agency.id,
-                  label: `${agency.name} (${agency.type})`,
-                }))}
-                placeholder="Select agency/partner"
-                disabled={isLoading}
-                invalid={!!errors.dest_org_id}
+        {(mode === "create" || mode === "edit") && (
+          <FormItem
+            label="Agency/Partner"
+            required
+            invalid={!!errors.dest_org_id}
+            errorMessage={errors.dest_org_id?.message as string}
+          >
+            {mode === "edit" && existingBalance ? (
+              <Input
+                value={`${existingBalance.agency.name} (${existingBalance.agency.type})`}
+                disabled={true}
+                readOnly
+                className="bg-gray-50"
+              />
+            ) : (
+              <Controller
+                name="dest_org_id"
+                control={control}
+                rules={{ required: "Agency is required" }}
+                render={({ field }) => (
+                  <SearchableSelect
+                    {...field}
+                    options={agencies.map((agency) => ({
+                      value: agency.id,
+                      label: `${agency.name} (${agency.type})`,
+                    }))}
+                    placeholder="Select agency/partner"
+                    disabled={isLoading}
+                    invalid={!!errors.dest_org_id}
+                  />
+                )}
               />
             )}
-          />
-        </FormItem>
+          </FormItem>
+        )}
+
+        {/* Hidden fields for reduce mode */}
+        {mode === "reduce" && (
+          <>
+            <input type="hidden" {...register("dest_org_id")} />
+            <input type="hidden" {...register("currency_id")} />
+          </>
+        )}
 
         <FormItem
           label="Amount"
           required
           invalid={!!errors.amount}
-          errorMessage={errors.amount?.message}
+          errorMessage={errors.amount?.message as string}
         >
           <Controller
             name="amount"
@@ -125,34 +185,40 @@ const AgencyFloatModal: React.FC<AgencyFloatModalProps> = ({
           />
         </FormItem>
 
-        <FormItem
-          label="Currency"
-          required
-          invalid={!!errors.currency_id}
-          errorMessage={errors.currency_id?.message}
-        >
-          <Controller
-            name="currency_id"
-            control={control}
-            rules={{ required: "Currency is required" }}
-            render={({ field }) => (
-              <Input
-                {...field}
-                value={
-                  selectedAgency?.base_currency?.currency_code || field.value
-                }
-                placeholder="Currency (auto-selected from agency)"
-                disabled={true}
-                readOnly
-              />
-            )}
-          />
-        </FormItem>
+        {(mode === "create" || mode === "edit") && (
+          <FormItem
+            label="Currency"
+            required
+            invalid={!!errors.currency_id}
+            errorMessage={errors.currency_id?.message as string}
+          >
+            <Controller
+              name="currency_id"
+              control={control}
+              rules={{ required: "Currency is required" }}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  value={
+                    mode === "edit" && existingBalance
+                      ? existingBalance.currency.currency_code
+                      : selectedAgency?.base_currency?.currency_code ||
+                        field.value
+                  }
+                  placeholder="Currency (auto-selected from agency)"
+                  disabled={true}
+                  readOnly
+                  className="bg-gray-50"
+                />
+              )}
+            />
+          </FormItem>
+        )}
 
         <FormItem
           label="Deposit to Bank Account (Optional)"
           invalid={!!errors.bank_account_id}
-          errorMessage={errors.bank_account_id?.message}
+          errorMessage={errors.bank_account_id?.message as string}
         >
           <Controller
             name="bank_account_id"
@@ -175,36 +241,38 @@ const AgencyFloatModal: React.FC<AgencyFloatModalProps> = ({
           />
         </FormItem>
 
-        <FormItem
-          label="Float Limit (Optional)"
-          invalid={!!errors.limit}
-          errorMessage={errors.limit?.message}
-        >
-          <Controller
-            name="limit"
-            control={control}
-            rules={{
-              min: { value: 0, message: "Limit must be non-negative" },
-            }}
-            render={({ field }) => (
-              <Input
-                {...field}
-                type="number"
-                step="0.01"
-                placeholder="Enter float limit (optional)"
-                disabled={isLoading}
-                onChange={(e) =>
-                  field.onChange(parseFloat(e.target.value) || 0)
-                }
-              />
-            )}
-          />
-        </FormItem>
+        {mode === "create" && (
+          <FormItem
+            label="Float Limit (Optional)"
+            invalid={!!errors.limit}
+            errorMessage={errors.limit?.message as string}
+          >
+            <Controller
+              name="limit"
+              control={control}
+              rules={{
+                min: { value: 0, message: "Limit must be non-negative" },
+              }}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  type="number"
+                  step="0.01"
+                  placeholder="Enter float limit (optional)"
+                  disabled={isLoading}
+                  onChange={(e) =>
+                    field.onChange(parseFloat(e.target.value) || 0)
+                  }
+                />
+              )}
+            />
+          </FormItem>
+        )}
 
         <FormItem
           label="Description"
           invalid={!!errors.description}
-          errorMessage={errors.description?.message}
+          errorMessage={errors.description?.message as string}
         >
           <Controller
             name="description"
@@ -234,7 +302,13 @@ const AgencyFloatModal: React.FC<AgencyFloatModalProps> = ({
             disabled={isLoading}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? "Processing..." : "Add Float"}
+            {isLoading
+              ? "Processing..."
+              : mode === "reduce"
+              ? "Reduce Float"
+              : mode === "edit"
+              ? "Topup Float"
+              : "Add Float"}
           </button>
         </div>
       </form>

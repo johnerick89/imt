@@ -19,6 +19,13 @@ router.post(
   )
 );
 
+router.post(
+  "/organisations/reduce-float",
+  balanceOperationController.reduceOrganisationFloat.bind(
+    balanceOperationController
+  )
+);
+
 router.get(
   "/organisations/balances",
   balanceOperationController.getOrgBalances.bind(balanceOperationController)

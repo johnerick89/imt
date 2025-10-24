@@ -301,48 +301,157 @@ export class ChargeService {
     id: string,
     data: UpdateChargeRequest
   ): Promise<ChargeResponse> {
-    const charge = await prisma.charge.update({
-      where: { id },
-      data,
-      include: {
-        currency: {
-          select: {
-            id: true,
-            currency_name: true,
-            currency_code: true,
-            currency_symbol: true,
-          },
-        },
-        origin_organisation: {
-          select: {
-            id: true,
-            name: true,
-            type: true,
-          },
-        },
-        destination_organisation: {
-          select: {
-            id: true,
-            name: true,
-            type: true,
-          },
-        },
-        created_by_user: {
-          select: {
-            id: true,
-            first_name: true,
-            last_name: true,
-            email: true,
-          },
-        },
-      },
-    });
+    return await prisma.$transaction(async (tx) => {
+      const charge = await tx.charge.findUnique({
+        where: { id },
+      });
+      if (!charge) {
+        throw new NotFoundError("Charge not found");
+      }
 
-    return {
-      success: true,
-      message: "Charge updated successfully",
-      data: charge as ICharge,
-    };
+      let isStandard = false;
+      if (
+        charge.origin_organisation_id === null &&
+        charge.destination_organisation_id === null
+      ) {
+        isStandard = true;
+      }
+
+      // Validate source and destination organisations if they are being updated
+      if (data.origin_organisation_id && data.destination_organisation_id) {
+        if (data.origin_organisation_id === data.destination_organisation_id) {
+          throw new AppError(
+            "Source and destination organisations cannot be the same",
+            400
+          );
+        }
+
+        const sourceOrg = await tx.organisation.findUnique({
+          where: { id: data.origin_organisation_id },
+        });
+        const destOrg = await tx.organisation.findUnique({
+          where: { id: data.destination_organisation_id },
+        });
+
+        if (!sourceOrg) {
+          throw new NotFoundError("Source organisation not found");
+        }
+
+        if (!destOrg) {
+          throw new NotFoundError("Destination organisation not found");
+        }
+      }
+
+      // Validate share percentages if they are being updated
+      if (
+        data?.origin_share_percentage !== undefined &&
+        data?.destination_share_percentage !== undefined &&
+        data?.internal_share_percentage !== undefined
+      ) {
+        if (
+          data.origin_share_percentage +
+            data.destination_share_percentage +
+            data.internal_share_percentage !==
+          100
+        ) {
+          throw new AppError(
+            "Origin, destination and internal share percentages must add up to 100",
+            400
+          );
+        }
+      }
+
+      const updatedCharge = await tx.charge.update({
+        where: { id },
+        data,
+        include: {
+          currency: {
+            select: {
+              id: true,
+              currency_name: true,
+              currency_code: true,
+              currency_symbol: true,
+            },
+          },
+          origin_organisation: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+            },
+          },
+          destination_organisation: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+            },
+          },
+          created_by_user: {
+            select: {
+              id: true,
+              first_name: true,
+              last_name: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      // If this is a standard charge, update all child charges
+      if (isStandard) {
+        // Get all child charges that reference this standard charge with organisation details
+        const childCharges = await tx.charge.findMany({
+          where: {
+            standard_charge_id: id,
+          },
+          include: {
+            origin_organisation: {
+              select: {
+                name: true,
+              },
+            },
+            destination_organisation: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        });
+
+        // Update each child charge with the same data (excluding org details)
+        const updateData = { ...data };
+        // Remove organisation-specific fields that shouldn't be updated in child charges
+        delete updateData.origin_organisation_id;
+        delete updateData.destination_organisation_id;
+
+        // Update all child charges
+        await Promise.all(
+          childCharges.map(async (childCharge) => {
+            await tx.charge.update({
+              where: { id: childCharge.id },
+              data: {
+                ...updateData,
+                // Update the name to maintain the organisation-specific naming
+                name: `${data.name || charge.name} - ${
+                  childCharge.origin_organisation?.name || "Unknown"
+                } to ${
+                  childCharge.destination_organisation?.name || "Unknown"
+                }`,
+              },
+            });
+          })
+        );
+      }
+
+      return {
+        success: true,
+        message: isStandard
+          ? "Standard charge and all child charges updated successfully"
+          : "Charge updated successfully",
+        data: updatedCharge as ICharge,
+      };
+    });
   }
 
   async deleteCharge(
@@ -406,6 +515,7 @@ export class ChargeService {
     userId: string
   ): Promise<ChargeResponse> {
     return await prisma.$transaction(async (tx) => {
+      // Validate share percentages
       if (
         data?.origin_share_percentage &&
         data?.destination_share_percentage &&
@@ -442,9 +552,25 @@ export class ChargeService {
         }
       }
 
-      const charge = await tx.charge.create({
+      // Fetch all active organisations
+      const activeOrganisations = await tx.organisation.findMany({
+        where: {
+          status: "ACTIVE",
+        },
+        select: {
+          id: true,
+          name: true,
+          type: true,
+        },
+      });
+
+      // First, create the standard charge (without organisation-specific data)
+      const standardCharge = await tx.charge.create({
         data: {
           ...data,
+          origin_organisation_id: null,
+          destination_organisation_id: null,
+          direction: data.direction,
           created_by: userId,
           status: "ACTIVE",
         },
@@ -468,10 +594,73 @@ export class ChargeService {
         },
       });
 
+      const createdCharges = [standardCharge];
+
+      // Then create organisation-specific charges if there are multiple organisations
+      if (activeOrganisations.length > 1) {
+        // Create charges for all organisation combinations with the same direction
+        for (let i = 0; i < activeOrganisations.length; i++) {
+          for (let j = 0; j < activeOrganisations.length; j++) {
+            if (i !== j) {
+              const originOrg = activeOrganisations[i];
+              const destinationOrg = activeOrganisations[j];
+
+              // Create charge with the same direction as the original data
+              const organisationCharge = await tx.charge.create({
+                data: {
+                  ...data,
+                  name: `${data.name} - ${originOrg.name} to ${destinationOrg.name}`,
+                  origin_organisation_id: originOrg.id,
+                  destination_organisation_id: destinationOrg.id,
+                  direction: data.direction,
+                  standard_charge_id: standardCharge.id,
+                  created_by: userId,
+                  status: "ACTIVE",
+                },
+                include: {
+                  currency: {
+                    select: {
+                      id: true,
+                      currency_name: true,
+                      currency_code: true,
+                      currency_symbol: true,
+                    },
+                  },
+                  origin_organisation: {
+                    select: {
+                      id: true,
+                      name: true,
+                      type: true,
+                    },
+                  },
+                  destination_organisation: {
+                    select: {
+                      id: true,
+                      name: true,
+                      type: true,
+                    },
+                  },
+                  created_by_user: {
+                    select: {
+                      id: true,
+                      first_name: true,
+                      last_name: true,
+                      email: true,
+                    },
+                  },
+                },
+              });
+
+              createdCharges.push(organisationCharge);
+            }
+          }
+        }
+      }
+
       return {
         success: true,
-        message: "Standard charge created successfully",
-        data: charge as ICharge,
+        message: `Standard charges created successfully for ${activeOrganisations.length} organisations (${createdCharges.length} charges created)`,
+        data: createdCharges[0] as ICharge, // Return the first charge as an example
       };
     });
   }

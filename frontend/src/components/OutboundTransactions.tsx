@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { FaPlus } from "react-icons/fa";
 import { useSession } from "../hooks/useSession";
 import {
   useTransactions,
+  useCustomerOutboundTransactions,
   useTransactionStats,
   useCreateOutboundTransaction,
   useCancelTransaction,
@@ -13,7 +14,7 @@ import {
   useUpdateOutboundTransaction,
 } from "../hooks/useTransactions";
 import { useCurrencies } from "../hooks/useCurrencies";
-import { useOrganisations } from "../hooks/useOrganisations";
+import { useOrganisation, useOrganisations } from "../hooks/useOrganisations";
 import { useCorridors } from "../hooks/useCorridors";
 import { useTills } from "../hooks/useTills";
 import { useCustomers } from "../hooks/useCustomers";
@@ -51,21 +52,89 @@ const OutboundTransactions: React.FC = () => {
   const [isMarkAsReadyModalOpen, setIsMarkAsReadyModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const { canCreateTransactions } = usePermissions();
+  const [isCustomerOrganisation, setIsCustomerOrganisation] = useState(false);
   // Use the current user's organisation if no organisationId in URL
   const effectiveOrganisationId = organisationId || user?.organisation_id;
+  const { data: userOrganisationData } = useOrganisation(
+    user?.organisation_id || effectiveOrganisationId || ""
+  );
+  console.log(
+    "userOrganisationData",
+    userOrganisationData,
+    "effectiveOrganisationId",
+    effectiveOrganisationId,
+    "user",
+    user
+  );
+
+  useEffect(() => {
+    if (userOrganisationData) {
+      const userOrganisation = userOrganisationData?.data;
+      setIsCustomerOrganisation(userOrganisation?.type === "CUSTOMER");
+    }
+  }, [userOrganisationData]);
 
   // Filters state
-  const [filters, setFilters] = useState<TransactionFilters>({
+  const [baseFilters, setBaseFilters] = useState<TransactionFilters>({
     page: 1,
     limit: 10,
     search: "",
     direction: "OUTBOUND", // Default to outbound transactions
-    origin_organisation_id: effectiveOrganisationId || "",
   });
 
-  // Fetch data
-  const { data: transactionsData, isLoading: isLoadingTransactions } =
-    useTransactions(effectiveOrganisationId || "", filters);
+  // Computed filters that properly handle origin_organisation_id
+  const filters = useMemo(() => {
+    if (!isCustomerOrganisation && effectiveOrganisationId) {
+      return {
+        ...baseFilters,
+        origin_organisation_id: effectiveOrganisationId,
+      };
+    }
+    // For customer organisations, create a new object without origin_organisation_id
+    const restFilters = { ...baseFilters };
+    delete restFilters.origin_organisation_id;
+    return restFilters;
+  }, [baseFilters, isCustomerOrganisation, effectiveOrganisationId]);
+
+  console.log(
+    "filters",
+    filters,
+    "effectiveOrganisationId",
+    effectiveOrganisationId,
+    "isCustomerOrganisation",
+    isCustomerOrganisation
+  );
+
+  // Fetch data - call both hooks but use the appropriate one
+  const {
+    data: customerTransactionsData,
+    isLoading: isLoadingCustomerTransactions,
+  } = useCustomerOutboundTransactions(filters);
+  const {
+    data: agencyTransactionsData,
+    isLoading: isLoadingAgencyTransactions,
+  } = useTransactions(effectiveOrganisationId || "", filters);
+
+  console.log(
+    "customerTransactionsData",
+    customerTransactionsData,
+    "agencyTransactionsData",
+    agencyTransactionsData
+  );
+
+  // Use the appropriate data based on organization type
+  const transactionsData = isCustomerOrganisation
+    ? customerTransactionsData
+    : agencyTransactionsData;
+  console.log(
+    "isCustomerOrganisation",
+    isCustomerOrganisation,
+    "transactionsData",
+    transactionsData
+  );
+  const isLoadingTransactions = isCustomerOrganisation
+    ? isLoadingCustomerTransactions
+    : isLoadingAgencyTransactions;
   const { data: statsData, isLoading: isLoadingStats } = useTransactionStats(
     effectiveOrganisationId || ""
   );
@@ -100,7 +169,7 @@ const OutboundTransactions: React.FC = () => {
     key: keyof TransactionFilters,
     value: string | undefined
   ) => {
-    setFilters((prev) => ({
+    setBaseFilters((prev) => ({
       ...prev,
       [key]: value,
       page: 1, // Reset to first page when filters change
@@ -109,7 +178,7 @@ const OutboundTransactions: React.FC = () => {
 
   // Handle pagination
   const handlePageChange = (page: number) => {
-    setFilters((prev) => ({ ...prev, page }));
+    setBaseFilters((prev) => ({ ...prev, page }));
   };
 
   // Handle create transaction
@@ -263,7 +332,7 @@ const OutboundTransactions: React.FC = () => {
               transactions for your organisation.
             </p>
           </div>
-          {canCreateTransactions() && (
+          {canCreateTransactions() && !isCustomerOrganisation && (
             <Button
               onClick={() => setIsCreateModalOpen(true)}
               className="min-w-24 gap-2 min-h-18"
@@ -579,11 +648,10 @@ const OutboundTransactions: React.FC = () => {
           <div className="flex justify-end mt-4">
             <button
               onClick={() =>
-                setFilters({
+                setBaseFilters({
                   page: 1,
                   limit: 10,
                   search: "",
-                  origin_organisation_id: effectiveOrganisationId || "",
                   direction: "OUTBOUND",
                   status: undefined,
                   remittance_status: undefined,

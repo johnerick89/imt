@@ -41,24 +41,21 @@ export default function ChargesTable({
       ),
     },
     {
-      accessorKey: "application_method",
-      header: "Method",
-      cell: ({ row }) => (
-        <span className="text-sm text-gray-900">
-          {row.original.application_method}
-        </span>
-      ),
-    },
-    {
       accessorKey: "rate",
       header: "Rate",
       cell: ({ row }) => (
-        <span className="text-sm text-gray-900">
-          {row.original.rate}
-          {row.original.application_method === "PERCENTAGE" ? "%" : ""}
-        </span>
+        <div className="flex flex-col items-left space-x-2">
+          <span className="text-sm text-gray-900">
+            {row.original.application_method}
+          </span>
+          <span className="text-sm text-gray-900 text-left font-bold">
+            {row.original.rate}
+            {row.original.application_method === "PERCENTAGE" ? "%" : ""}
+          </span>
+        </div>
       ),
     },
+
     {
       accessorKey: "direction",
       header: "Direction",
@@ -107,15 +104,34 @@ export default function ChargesTable({
       cell: ({ row }) => <StatusBadge status={row.original.status} />,
     },
     {
-      accessorKey: "created_at",
-      header: "Created",
+      accessorKey: "internal_share_percentage",
+      header: "Internal Share %",
       cell: ({ row }) => (
         <span className="text-sm text-gray-900">
-          {new Date(row.original.created_at).toLocaleDateString()}
+          {row.original.internal_share_percentage}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "origin_share_percentage",
+      header: "Origin Share %",
+      cell: ({ row }) => (
+        <span className="text-sm text-gray-900">
+          {row.original.origin_share_percentage}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "destination_share_percentage",
+      header: "Destination Share %",
+      cell: ({ row }) => (
+        <span className="text-sm text-gray-900">
+          {row.original.destination_share_percentage}
         </span>
       ),
     },
     ChargeActionCell({
+      standard,
       onEdit,
       onToggleStatus,
       onDelete,

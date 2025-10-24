@@ -47,7 +47,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
     }
   };
   const {
-    canApproveTransactions,
+    canApproveOutboundTransactions,
     canReverseTransactions,
     canCancelTransactions,
     canEditTransactions,
@@ -68,6 +68,36 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
       ),
     },
     {
+      accessorKey: "origin_organisation",
+      header: "From Agency",
+      cell: ({ row }) => {
+        const org = row.original.origin_organisation;
+        return (
+          <div>
+            <div className="font-medium text-gray-900">
+              {org?.name || "N/A"}
+            </div>
+            <div className="text-sm text-gray-500">{org?.type || ""}</div>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "destination_organisation",
+      header: "To Agency",
+      cell: ({ row }) => {
+        const org = row.original.destination_organisation;
+        return (
+          <div>
+            <div className="font-medium text-gray-900">
+              {org?.name || "N/A"}
+            </div>
+            <div className="text-sm text-gray-500">{org?.type || ""}</div>
+          </div>
+        );
+      },
+    },
+    {
       accessorKey: "customer",
       header: "Customer (Sender)",
       cell: ({ row }) => {
@@ -84,7 +114,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
     },
     {
       accessorKey: "beneficiary",
-      header: "Beneficiary",
+      header: "Beneficiary (Receiver)",
       cell: ({ row }) => {
         const beneficiary = row.original.beneficiary;
         return (
@@ -95,21 +125,6 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
             <div className="text-sm text-gray-500">
               {beneficiary?.bank_name || ""}
             </div>
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: "destination_organisation",
-      header: "Receiving Organisation",
-      cell: ({ row }) => {
-        const org = row.original.destination_organisation;
-        return (
-          <div>
-            <div className="font-medium text-gray-900">
-              {org?.name || "N/A"}
-            </div>
-            <div className="text-sm text-gray-500">{org?.type || ""}</div>
           </div>
         );
       },
@@ -236,11 +251,11 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
           transaction.status === "APPROVED" &&
           transaction.remittance_status === "PENDING" &&
           canReverseTransactions();
-        const canApprove =
+        const canApproveOutbound =
           isOutbound &&
           transaction.status === "READY" &&
           transaction.remittance_status === "READY" &&
-          canApproveTransactions();
+          canApproveOutboundTransactions();
         const canUpdate =
           isOutbound &&
           ["PENDING", "PENDING_APPROVAL"].includes(transaction.status) &&
@@ -298,7 +313,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
                 </Button>
               </Tooltip>
             )}
-            {canApprove && (
+            {canApproveOutbound && (
               <Tooltip content="Approve transaction">
                 <Button
                   variant="default"

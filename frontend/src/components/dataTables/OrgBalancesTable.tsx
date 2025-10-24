@@ -1,31 +1,39 @@
 import React, { useState } from "react";
-import { FiPlus, FiEdit } from "react-icons/fi";
+import { FiPlus, FiEdit, FiMinus, FiEye } from "react-icons/fi";
 import { Button } from "../ui/Button";
 import { DataTable } from "../ui/DataTable";
 import { formatToCurrency } from "../../utils/textUtils";
 import type { OrgBalance } from "../../types/BalanceOperationsTypes";
-import type { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef, Row } from "@tanstack/react-table";
 import { usePermissions } from "../../hooks/usePermissions";
 import EditFloatLimitModal from "../modals/EditFloatLimitModal";
+import BalanceHistoryModal from "../modals/BalanceHistoryModal";
 
 interface OrgBalancesTableProps {
   data: OrgBalance[];
   loading: boolean;
   onPrefund: (orgId: string) => void;
+  onReduceFloat?: (orgId: string) => void;
   onEditLimit?: (balance: OrgBalance) => void;
+  mainFloat: boolean;
 }
 
 const OrgBalancesTable: React.FC<OrgBalancesTableProps> = ({
   data,
   loading,
   onPrefund,
+  onReduceFloat,
   onEditLimit,
+  mainFloat,
 }) => {
   const { canCreateOrgBalances } = usePermissions();
   const [selectedBalance, setSelectedBalance] = useState<OrgBalance | null>(
     null
   );
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [selectedHistoryBalance, setSelectedHistoryBalance] =
+    useState<OrgBalance | null>(null);
 
   const handleEditLimit = (balance: OrgBalance) => {
     setSelectedBalance(balance);
@@ -44,36 +52,56 @@ const OrgBalancesTable: React.FC<OrgBalancesTableProps> = ({
     handleCloseEditModal();
   };
 
+  const handleViewHistory = (balance: OrgBalance) => {
+    setSelectedHistoryBalance(balance);
+    setShowHistoryModal(true);
+  };
+
+  const handleCloseHistoryModal = () => {
+    setShowHistoryModal(false);
+    setSelectedHistoryBalance(null);
+  };
+
+  console.log("onReduceFloat", onReduceFloat);
+
   // Table columns
   const columns: ColumnDef<OrgBalance>[] = [
-    {
-      accessorKey: "base_org",
-      header: "Base Organisation",
-      cell: ({ row }) => (
-        <div>
-          <div className="font-medium text-gray-900">
-            {row.original.base_org.name}
-          </div>
-          <div className="text-sm text-gray-500">
-            {row.original.base_org.type}
-          </div>
-        </div>
-      ),
-    },
-    {
-      accessorKey: "dest_org",
-      header: "Agency/Partner",
-      cell: ({ row }) => (
-        <div>
-          <div className="font-medium text-gray-900">
-            {row.original.dest_org.name}
-          </div>
-          <div className="text-sm text-gray-500">
-            {row.original.dest_org.type}
-          </div>
-        </div>
-      ),
-    },
+    ...(!mainFloat
+      ? [
+          {
+            accessorKey: "base_org",
+            header: "Base Organisation",
+            cell: ({ row }: { row: Row<OrgBalance> }) => (
+              <div>
+                <div className="font-medium text-gray-900">
+                  {row.original.base_org.name}
+                </div>
+                <div className="text-sm text-gray-500">
+                  {row.original.base_org.type}
+                </div>
+              </div>
+            ),
+          },
+        ]
+      : []),
+    ...(!mainFloat
+      ? [
+          {
+            accessorKey: "dest_org",
+            header: "Agency/Partner",
+            cell: ({ row }: { row: Row<OrgBalance> }) => (
+              <div>
+                <div className="font-medium text-gray-900">
+                  {row.original.dest_org.name}
+                </div>
+                <div className="text-sm text-gray-500">
+                  {row.original.dest_org.type}
+                </div>
+              </div>
+            ),
+          },
+        ]
+      : []),
     {
       accessorKey: "currency",
       header: "Currency",
@@ -110,21 +138,34 @@ const OrgBalancesTable: React.FC<OrgBalancesTableProps> = ({
         </div>
       ),
     },
-    {
-      accessorKey: "created_at",
-      header: "Created",
-      cell: ({ row }) => (
-        <div className="text-sm text-gray-900">
-          {new Date(row.original.created_at).toLocaleDateString()}
-        </div>
-      ),
-    },
+    ...(!mainFloat
+      ? [
+          {
+            accessorKey: "created_at",
+            header: "Created",
+            cell: ({ row }: { row: Row<OrgBalance> }) => (
+              <div className="text-sm text-gray-900">
+                {new Date(row.original.created_at).toLocaleDateString()}
+              </div>
+            ),
+          },
+        ]
+      : []),
     {
       id: "actions",
       header: "Actions",
       cell: ({ row }) => (
         <div className="flex items-center space-x-2">
-          {canCreateOrgBalances() && (
+          <Button
+            onClick={() => handleViewHistory(row.original)}
+            size="sm"
+            variant="outline"
+            className="text-gray-600 hover:text-gray-700"
+          >
+            <FiEye className="h-4 w-4 mr-1" />
+            View
+          </Button>
+          {canCreateOrgBalances() && !mainFloat && (
             <Button
               onClick={() => onPrefund(row.original.dest_org_id)}
               size="sm"
@@ -132,10 +173,21 @@ const OrgBalancesTable: React.FC<OrgBalancesTableProps> = ({
               className="text-green-600 hover:text-green-700"
             >
               <FiPlus className="h-4 w-4 mr-1" />
-              Prefund
+              Topup Float
             </Button>
           )}
-          {canCreateOrgBalances() && (
+          {canCreateOrgBalances() && onReduceFloat && (
+            <Button
+              onClick={() => onReduceFloat(row.original.dest_org_id)}
+              size="sm"
+              variant="outline"
+              className="text-red-600 hover:text-red-700"
+            >
+              <FiMinus className="h-4 w-4 mr-1" />
+              Reduce Float
+            </Button>
+          )}
+          {canCreateOrgBalances() && !mainFloat && (
             <Button
               onClick={() => handleEditLimit(row.original)}
               size="sm"
@@ -170,6 +222,12 @@ const OrgBalancesTable: React.FC<OrgBalancesTableProps> = ({
           balance={selectedBalance}
         />
       )}
+
+      <BalanceHistoryModal
+        isOpen={showHistoryModal}
+        onClose={handleCloseHistoryModal}
+        balance={selectedHistoryBalance}
+      />
     </>
   );
 };

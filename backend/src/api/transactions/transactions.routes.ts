@@ -88,4 +88,11 @@ router.get(
   transactionController.getTransactionStats.bind(transactionController)
 );
 
+router.get(
+  "/organisations/transactions/outbound",
+  transactionController.getCustomerOutboundTransactions.bind(
+    transactionController
+  )
+);
+
 export default router;

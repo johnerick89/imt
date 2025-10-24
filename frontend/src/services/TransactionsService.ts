@@ -28,6 +28,19 @@ export const TransactionsService = {
     return response.data;
   },
 
+  // Get Customer Outbound Transactions
+  async getCustomerOutboundTransactions(
+    filters: TransactionFilters
+  ): Promise<TransactionListResponse> {
+    const response = await apiClient.get(
+      `/api/v1/transactions/organisations/transactions/outbound`,
+      {
+        params: filters,
+      }
+    );
+    return response.data;
+  },
+
   // Get Transaction by ID
   async getTransactionById(
     transactionId: string

@@ -31,6 +31,7 @@ class OrganisationsService {
 
   async getOrganisationById(id: string): Promise<OrganisationResponse> {
     const response = await apiClient.get(`/api/v1/organisations/${id}`);
+    console.log("response", response.data);
     return response.data;
   }
 

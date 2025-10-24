@@ -17,6 +17,7 @@ import {
   usePrefundOrganisation,
   useCreateAgencyFloat,
   useUpdateFloatLimit,
+  useReduceOrganisationFloat,
 } from "../hooks/useBalanceOperations";
 import { formatToCurrency } from "../utils/textUtils";
 import type {
@@ -25,6 +26,7 @@ import type {
   AgencyFloatRequest,
   OrgBalance,
 } from "../types/BalanceOperationsTypes";
+import type { Organisation } from "../types/OrganisationsTypes";
 import PrefundModal from "./modals/PrefundModal";
 import AgencyFloatModal from "./modals/AgencyFloatModal";
 import { usePermissions } from "../hooks/usePermissions";
@@ -51,6 +53,7 @@ const OrgBalances: React.FC = () => {
   // Modal states
   const [showPrefundModal, setShowPrefundModal] = useState(false);
   const [showAgencyFloatModal, setShowAgencyFloatModal] = useState(false);
+  const [showReduceFloatModal, setShowReduceFloatModal] = useState(false);
   const [selectedOrganisation, setSelectedOrganisation] = useState<
     string | null
   >(null);
@@ -66,16 +69,25 @@ const OrgBalances: React.FC = () => {
     organisation_id: user?.organisation_id,
   });
 
-  const balances = balancesData?.data?.balances || [];
+  const allBalances = balancesData?.data?.balances || [];
   const stats = statsData?.data;
   const currencies = currenciesData?.data?.currencies || [];
   const organisations = organisationsData?.data?.organisations || [];
   const bankAccounts = bankAccountsData?.data?.bankAccounts || [];
 
+  // Separate main float balances (self-balances) from agency float balances
+  const mainFloatBalances = allBalances.filter(
+    (balance) => balance.base_org_id === balance.dest_org_id
+  );
+  const agencyFloatBalances = allBalances.filter(
+    (balance) => balance.base_org_id !== balance.dest_org_id
+  );
+
   // Mutations
   const prefundOrganisationMutation = usePrefundOrganisation();
   const createAgencyFloatMutation = useCreateAgencyFloat();
   const updateFloatLimitMutation = useUpdateFloatLimit();
+  const reduceOrganisationFloatMutation = useReduceOrganisationFloat();
 
   // Handlers
   const handleFilterChange = (
@@ -127,6 +139,31 @@ const OrgBalances: React.FC = () => {
   const openPrefundModal = (orgId: string) => {
     setSelectedOrganisation(orgId);
     setShowPrefundModal(true);
+  };
+
+  const openAgencyFloatTopupModal = (orgId: string) => {
+    setSelectedOrganisation(orgId);
+    setShowAgencyFloatModal(true);
+  };
+
+  // Get the selected balance for edit mode
+  const selectedBalance = allBalances.find(
+    (balance) => balance.dest_org_id === selectedOrganisation
+  );
+
+  const openReduceFloatModal = (orgId: string) => {
+    setSelectedOrganisation(orgId);
+    setShowReduceFloatModal(true);
+  };
+
+  const handleReduceOrganisationFloat = async (data: AgencyFloatRequest) => {
+    try {
+      await reduceOrganisationFloatMutation.mutateAsync(data);
+      setShowReduceFloatModal(false);
+      setSelectedOrganisation(null);
+    } catch (error) {
+      console.error("Failed to reduce organisation float:", error);
+    }
   };
 
   // const agencyOrganisations = organisations.filter(
@@ -227,6 +264,34 @@ const OrgBalances: React.FC = () => {
         </div>
       )}
 
+      {/* Main Float Balance Section */}
+      {mainFloatBalances.length > 0 && (
+        <div className="bg-white rounded-lg shadow mb-6">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Main Float Balance
+                </h2>
+                <p className="text-sm text-gray-600">
+                  Your organisation's internal float balance
+                </p>
+              </div>
+              <div className="text-sm text-gray-500">
+                {mainFloatBalances.length} balance
+                {mainFloatBalances.length !== 1 ? "s" : ""}
+              </div>
+            </div>
+          </div>
+          <OrgBalancesTable
+            data={mainFloatBalances}
+            loading={balancesLoading}
+            onPrefund={openPrefundModal}
+            onEditLimit={handleEditLimit}
+            mainFloat={true}
+          />
+        </div>
+      )}
       {/* Filters */}
       <div className="bg-white p-6 rounded-lg shadow">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -294,17 +359,55 @@ const OrgBalances: React.FC = () => {
         </div>
       </div>
 
-      {/* Table */}
-      <OrgBalancesTable
-        data={balances}
-        loading={balancesLoading}
-        onPrefund={openPrefundModal}
-        onEditLimit={handleEditLimit}
-      />
+      {/* Agency Float Balances Section */}
+      {agencyFloatBalances.length > 0 && (
+        <div className="bg-white rounded-lg shadow">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Agency Float Balances
+                </h2>
+                <p className="text-sm text-gray-600">
+                  Float balances with partner agencies and organisations
+                </p>
+              </div>
+              <div className="text-sm text-gray-500">
+                {agencyFloatBalances.length} balance
+                {agencyFloatBalances.length !== 1 ? "s" : ""}
+              </div>
+            </div>
+          </div>
+          <OrgBalancesTable
+            data={agencyFloatBalances}
+            loading={balancesLoading}
+            onPrefund={openAgencyFloatTopupModal}
+            onEditLimit={handleEditLimit}
+            mainFloat={false}
+            onReduceFloat={openReduceFloatModal}
+          />
+        </div>
+      )}
+
+      {/* No balances message */}
+      {allBalances.length === 0 && !balancesLoading && (
+        <div className="bg-white rounded-lg shadow p-8 text-center">
+          <div className="text-gray-500">
+            <FiRefreshCw className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              No Float Balances Found
+            </h3>
+            <p className="text-gray-600">
+              No float balances have been created yet. Create an agency float to
+              get started.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Pagination */}
-      {balancesData?.data?.pagination && (
-        <div className="flex items-center justify-between">
+      {balancesData?.data?.pagination && allBalances.length > 0 && (
+        <div className="flex items-center justify-between mt-6">
           <p className="text-sm text-gray-700">
             Showing {((filters.page || 1) - 1) * (filters.limit || 10) + 1} to{" "}
             {Math.min(
@@ -349,16 +452,59 @@ const OrgBalances: React.FC = () => {
         isLoading={prefundOrganisationMutation.isPending}
         bankAccounts={bankAccounts}
         currencies={currencies}
+        defaultCurrencyId={currentOrganisation?.base_currency_id || undefined}
+        balanceExists={true}
       />
 
       {/* Agency Float Modal */}
       <AgencyFloatModal
         isOpen={showAgencyFloatModal}
-        onClose={() => setShowAgencyFloatModal(false)}
-        onSubmit={handleCreateAgencyFloat}
+        onClose={() => {
+          setShowAgencyFloatModal(false);
+          setSelectedOrganisation(null);
+        }}
+        onSubmit={(data) => handleCreateAgencyFloat(data as AgencyFloatRequest)}
         isLoading={createAgencyFloatMutation.isPending}
         bankAccounts={bankAccounts}
         agencies={agencyOrganisations || []}
+        selectedOrganisationId={selectedOrganisation || ""}
+        defaultCurrencyId={currentOrganisation?.base_currency_id || ""}
+        mode={selectedBalance ? "edit" : "create"}
+        existingBalance={
+          selectedBalance
+            ? {
+                agency: selectedBalance.dest_org as Organisation,
+                currency: selectedBalance.currency,
+              }
+            : undefined
+        }
+      />
+
+      {/* Reduce Float Modal */}
+      <AgencyFloatModal
+        isOpen={showReduceFloatModal}
+        onClose={() => {
+          setShowReduceFloatModal(false);
+          setSelectedOrganisation(null);
+        }}
+        onSubmit={(data) =>
+          handleReduceOrganisationFloat(data as AgencyFloatRequest)
+        }
+        isLoading={reduceOrganisationFloatMutation.isPending}
+        bankAccounts={bankAccounts}
+        agencies={[]}
+        selectedOrganisationId={selectedOrganisation || ""}
+        defaultCurrencyId={currentOrganisation?.base_currency_id || ""}
+        mode="reduce"
+        title="Reduce Agency Float"
+        existingBalance={
+          selectedBalance
+            ? {
+                agency: selectedBalance.dest_org as Organisation,
+                currency: selectedBalance.currency,
+              }
+            : undefined
+        }
       />
     </>
   );

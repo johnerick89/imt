@@ -35,6 +35,8 @@ export class ReportsController {
         user_organisation_id: req.user?.organisation_id || "",
       });
 
+      console.log("getOutboundTransactionsReport result", result);
+
       res.status(200).json(result);
     }
   );

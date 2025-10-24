@@ -165,4 +165,14 @@ export const BalanceOperationsService = {
     );
     return response.data;
   },
+
+  async reduceOrganisationFloat(
+    data: AgencyFloatRequest
+  ): Promise<BalanceOperationResponse> {
+    const response = await apiClient.post(
+      `/api/v1/balance/organisations/reduce-float`,
+      data
+    );
+    return response.data;
+  },
 };

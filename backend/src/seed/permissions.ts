@@ -208,8 +208,12 @@ const permissions = [
     permission_description: "Add Transactions",
   },
   {
-    permission_name: "admin.transactions.approve",
-    permission_description: "Approve Transactions",
+    permission_name: "admin.transactions.approveOutbound",
+    permission_description: "Approve Outbound Transactions",
+  },
+  {
+    permission_name: "admin.transactions.approveInbound",
+    permission_description: "Approve Inbound Transactions",
   },
   {
     permission_name: "admin.transactions.cancel",

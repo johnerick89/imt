@@ -18,6 +18,7 @@ const organisations = [
     contact_state: "Customer Organisation",
     contact_zip: "1234567890",
     country_code: "KE",
+    base_currency: "USD",
   },
 ];
 

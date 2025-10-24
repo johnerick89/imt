@@ -22,6 +22,15 @@ export const useTransactions = (
   });
 };
 
+export const useCustomerOutboundTransactions = (
+  filters: TransactionFilters
+) => {
+  return useQuery({
+    queryKey: ["customerOutboundTransactions", filters],
+    queryFn: () => TransactionsService.getCustomerOutboundTransactions(filters),
+  });
+};
+
 export const useTransactionById = (transactionId: string) => {
   return useQuery({
     queryKey: ["transaction", transactionId],
@@ -139,6 +148,9 @@ export const useApproveTransaction = () => {
       queryClient.invalidateQueries({ queryKey: ["glTransactions"] });
       queryClient.invalidateQueries({ queryKey: ["orgBalances"] });
       queryClient.invalidateQueries({ queryKey: ["orgBalanceStats"] });
+      queryClient.invalidateQueries({
+        queryKey: ["customerOutboundTransactions"],
+      });
     },
     onError: (error: unknown) => {
       const errorMessage =
@@ -179,6 +191,9 @@ export const useReverseTransaction = () => {
       queryClient.invalidateQueries({ queryKey: ["glTransactions"] });
       queryClient.invalidateQueries({ queryKey: ["orgBalances"] });
       queryClient.invalidateQueries({ queryKey: ["orgBalanceStats"] });
+      queryClient.invalidateQueries({
+        queryKey: ["customerOutboundTransactions"],
+      });
     },
     onError: (error: unknown) => {
       const errorMessage =
@@ -217,6 +232,9 @@ export const useMarkAsReady = () => {
       queryClient.invalidateQueries({
         queryKey: ["transaction", result.data.id],
       });
+      queryClient.invalidateQueries({
+        queryKey: ["customerOutboundTransactions"],
+      });
     },
     onError: (error) => {
       const errorMessage =
@@ -253,6 +271,9 @@ export const useUpdateOutboundTransaction = () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({
         queryKey: ["transaction", result.data.id],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["customerOutboundTransactions"],
       });
     },
     onError: (error) => {
