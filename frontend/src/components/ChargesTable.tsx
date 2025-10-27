@@ -104,6 +104,20 @@ export default function ChargesTable({
       cell: ({ row }) => <StatusBadge status={row.original.status} />,
     },
     {
+      accessorKey: "minimum_amount",
+      header: "Minimum Amount",
+      cell: ({ row }) => (
+        <span className="text-sm text-gray-900">{row.original.min_amount}</span>
+      ),
+    },
+    {
+      accessorKey: "maximum_amount",
+      header: "Maximum Amount",
+      cell: ({ row }) => (
+        <span className="text-sm text-gray-900">{row.original.max_amount}</span>
+      ),
+    },
+    {
       accessorKey: "internal_share_percentage",
       header: "Internal Share %",
       cell: ({ row }) => (

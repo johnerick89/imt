@@ -42,6 +42,7 @@ const AgencyFloatModal: React.FC<AgencyFloatModalProps> = ({
   title,
   existingBalance,
 }) => {
+  console.log("defaultCurrencyId", defaultCurrencyId);
   const {
     control,
     handleSubmit,
@@ -58,9 +59,7 @@ const AgencyFloatModal: React.FC<AgencyFloatModalProps> = ({
           ? existingBalance.agency.id
           : selectedOrganisationId || "",
       currency_id:
-        mode === "edit" && existingBalance
-          ? existingBalance.currency.id
-          : defaultCurrencyId || "",
+        mode === "edit" && existingBalance ? existingBalance.currency.id : "",
       bank_account_id: "",
       limit: 0,
       description: "",
@@ -188,7 +187,7 @@ const AgencyFloatModal: React.FC<AgencyFloatModalProps> = ({
           />
         </FormItem>
 
-        {(mode === "create" || mode === "edit") && (
+        {/* {(mode == "create" || mode === "edit") && (
           <FormItem
             label="Currency"
             required
@@ -216,7 +215,7 @@ const AgencyFloatModal: React.FC<AgencyFloatModalProps> = ({
               )}
             />
           </FormItem>
-        )}
+        )} */}
 
         <FormItem
           label="Deposit to Bank Account (Optional)"

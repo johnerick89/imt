@@ -5,10 +5,12 @@ import {
   updateOrganisationSchema,
   organisationFiltersSchema,
   organisationIdSchema,
+  toggleOrganisationStatusSchema,
 } from "./organisations.validation";
 import { OrganisationStatus } from "@prisma/client";
-import { AppError } from "../../utils/AppError";
 import { asyncHandler } from "../../middlewares/error.middleware";
+import { AppError, ZodValidationError } from "../../utils/AppError";
+import { parseZodError } from "../../utils/validation.utils";
 
 const organisationsService = new OrganisationsService();
 
@@ -16,7 +18,16 @@ export class OrganisationsController {
   createOrganisation = asyncHandler(
     async (req: Request, res: Response): Promise<void> => {
       // Validate request body
-      const validatedData = createOrganisationSchema.parse(req.body);
+      const validation = createOrganisationSchema.safeParse(req.body);
+      if (!validation.success) {
+        console.error(
+          "validation error",
+          parseZodError(validation.error),
+          "req.body",
+          req.body
+        );
+        throw new ZodValidationError(parseZodError(validation.error));
+      }
 
       // Get user ID from request (set by auth middleware)
       const userId = (req as any).user?.id;
@@ -25,7 +36,7 @@ export class OrganisationsController {
       }
 
       const result = await organisationsService.createOrganisation(
-        validatedData,
+        validation.data,
         userId
       );
 
@@ -40,10 +51,19 @@ export class OrganisationsController {
   getOrganisations = asyncHandler(
     async (req: Request, res: Response): Promise<void> => {
       // Validate query parameters
-      const validatedFilters = organisationFiltersSchema.parse(req.query);
+      const validation = organisationFiltersSchema.safeParse(req.query);
+      if (!validation.success) {
+        console.error(
+          "validation error",
+          parseZodError(validation.error),
+          "req.query",
+          req.query
+        );
+        throw new ZodValidationError(parseZodError(validation.error));
+      }
 
       const result = await organisationsService.getOrganisations(
-        validatedFilters
+        validation.data
       );
 
       if (result.success) {
@@ -57,9 +77,20 @@ export class OrganisationsController {
   getOrganisationById = asyncHandler(
     async (req: Request, res: Response): Promise<void> => {
       // Validate organisation ID
-      const { id } = organisationIdSchema.parse(req.params);
+      const validation = organisationIdSchema.safeParse(req.params);
+      if (!validation.success) {
+        console.error(
+          "validation error",
+          parseZodError(validation.error),
+          "req.params",
+          req.params
+        );
+        throw new ZodValidationError(parseZodError(validation.error));
+      }
 
-      const result = await organisationsService.getOrganisationById(id);
+      const result = await organisationsService.getOrganisationById(
+        validation.data.id
+      );
 
       if (result.success) {
         res.status(200).json(result);
@@ -72,12 +103,31 @@ export class OrganisationsController {
   updateOrganisation = asyncHandler(
     async (req: Request, res: Response): Promise<void> => {
       // Validate organisation ID and request body
-      const { id } = organisationIdSchema.parse(req.params);
-      const validatedData = updateOrganisationSchema.parse(req.body);
+      const idValidation = organisationIdSchema.safeParse(req.params);
+      const bodyValidation = updateOrganisationSchema.safeParse(req.body);
+      if (!idValidation.success) {
+        console.error(
+          "validation error",
+          parseZodError(idValidation.error),
+          "req.params",
+          req.params
+        );
+        throw new ZodValidationError(parseZodError(idValidation.error));
+      }
+
+      if (!bodyValidation.success) {
+        console.error(
+          "validation error",
+          parseZodError(bodyValidation.error),
+          "req.body",
+          req.body
+        );
+        throw new ZodValidationError(parseZodError(bodyValidation.error));
+      }
 
       const result = await organisationsService.updateOrganisation(
-        id,
-        validatedData
+        idValidation.data.id,
+        bodyValidation.data
       );
 
       if (result.success) {
@@ -91,9 +141,20 @@ export class OrganisationsController {
   deleteOrganisation = asyncHandler(
     async (req: Request, res: Response): Promise<void> => {
       // Validate organisation ID
-      const { id } = organisationIdSchema.parse(req.params);
+      const validation = organisationIdSchema.safeParse(req.params);
+      if (!validation.success) {
+        console.error(
+          "validation error",
+          parseZodError(validation.error),
+          "req.params",
+          req.params
+        );
+        throw new ZodValidationError(parseZodError(validation.error));
+      }
 
-      const result = await organisationsService.deleteOrganisation(id);
+      const result = await organisationsService.deleteOrganisation(
+        validation.data.id
+      );
 
       if (result.success) {
         res.status(200).json(result);
@@ -106,16 +167,30 @@ export class OrganisationsController {
   toggleOrganisationStatus = asyncHandler(
     async (req: Request, res: Response): Promise<void> => {
       // Validate organisation ID and status
-      const { id } = organisationIdSchema.parse(req.params);
-      const { status } = req.body;
-
-      if (!status || !Object.values(OrganisationStatus).includes(status)) {
-        throw new AppError("Invalid status value", 400);
+      const idValidation = organisationIdSchema.safeParse(req.params);
+      const bodyValidation = toggleOrganisationStatusSchema.safeParse(req.body);
+      if (!idValidation.success) {
+        console.error(
+          "validation error",
+          parseZodError(idValidation.error),
+          "req.params",
+          req.params
+        );
+        throw new ZodValidationError(parseZodError(idValidation.error));
+      }
+      if (!bodyValidation.success) {
+        console.error(
+          "validation error",
+          parseZodError(bodyValidation.error),
+          "req.body",
+          req.body
+        );
+        throw new ZodValidationError(parseZodError(bodyValidation.error));
       }
 
       const result = await organisationsService.toggleOrganisationStatus(
-        id,
-        status
+        idValidation.data.id,
+        bodyValidation.data.status
       );
 
       if (result.success) {
