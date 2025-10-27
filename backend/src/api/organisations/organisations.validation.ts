@@ -141,3 +141,7 @@ export const organisationFiltersSchema = z.object({
 export const organisationIdSchema = z.object({
   id: z.string().uuid("Invalid organisation ID"),
 });
+
+export const toggleOrganisationStatusSchema = z.object({
+  status: z.nativeEnum(OrganisationStatus),
+});

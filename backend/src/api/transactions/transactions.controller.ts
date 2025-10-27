@@ -30,7 +30,7 @@ export class TransactionController {
 
       const validation = createOutboundTransactionSchema.safeParse(req.body);
       if (!validation.success) {
-        console.log("validation error", parseZodError(validation.error));
+        console.error("validation error", parseZodError(validation.error));
         throw new ZodValidationError(parseZodError(validation.error));
       }
 
@@ -63,7 +63,7 @@ export class TransactionController {
 
       const validation = cancelTransactionSchema.safeParse(req.body);
       if (!validation.success) {
-        console.log("validation error", parseZodError(validation.error));
+        console.error("validation error", parseZodError(validation.error));
         throw new ZodValidationError(parseZodError(validation.error));
       }
 
@@ -92,7 +92,7 @@ export class TransactionController {
 
       const validation = approveTransactionSchema.safeParse(req.body);
       if (!validation.success) {
-        console.log("validation error", parseZodError(validation.error));
+        console.error("validation error", parseZodError(validation.error));
         throw new ZodValidationError(parseZodError(validation.error));
       }
 
@@ -121,7 +121,7 @@ export class TransactionController {
 
       const validation = markAsReadySchema.safeParse(req.body);
       if (!validation.success) {
-        console.log("validation error", parseZodError(validation.error));
+        console.error("validation error", parseZodError(validation.error));
         throw new ZodValidationError(parseZodError(validation.error));
       }
 
@@ -150,8 +150,12 @@ export class TransactionController {
 
       const validation = updateTransactionSchema.safeParse(req.body);
       if (!validation.success) {
-        console.log("req.body", req.body);
-        console.log("validation error", parseZodError(validation.error));
+        console.error(
+          "validation error",
+          parseZodError(validation.error),
+          "req.body",
+          req.body
+        );
         throw new ZodValidationError(parseZodError(validation.error));
       }
 
@@ -180,7 +184,7 @@ export class TransactionController {
 
       const validation = reverseTransactionSchema.safeParse(req.body);
       if (!validation.success) {
-        console.log("validation error", parseZodError(validation.error));
+        console.error("validation error", parseZodError(validation.error));
         throw new ZodValidationError(parseZodError(validation.error));
       }
 
@@ -209,7 +213,7 @@ export class TransactionController {
 
       const validation = transactionFiltersSchema.safeParse(req.query);
       if (!validation.success) {
-        console.log("validation error", parseZodError(validation.error));
+        console.error("validation error", parseZodError(validation.error));
         throw new ZodValidationError(parseZodError(validation.error));
       }
 
@@ -257,7 +261,7 @@ export class TransactionController {
 
       const validation = transactionFiltersSchema.safeParse(req.query);
       if (!validation.success) {
-        console.log("validation error", parseZodError(validation.error));
+        console.error("validation error", parseZodError(validation.error));
         throw new ZodValidationError(parseZodError(validation.error));
       }
 
@@ -296,7 +300,7 @@ export class TransactionController {
 
       const validation = approveTransactionSchema.safeParse(req.body);
       if (!validation.success) {
-        console.log("validation error", parseZodError(validation.error));
+        console.error("validation error", parseZodError(validation.error));
         throw new ZodValidationError(parseZodError(validation.error));
       }
 
@@ -326,7 +330,7 @@ export class TransactionController {
 
       const validation = reverseTransactionSchema.safeParse(req.body);
       if (!validation.success) {
-        console.log("validation error", parseZodError(validation.error));
+        console.error("validation error", parseZodError(validation.error));
         throw new ZodValidationError(parseZodError(validation.error));
       }
 
@@ -371,7 +375,7 @@ export class TransactionController {
       const validation =
         updateInboundTransactionReceiverDetailsSchema.safeParse(req.body);
       if (!validation.success) {
-        console.log("validation error", parseZodError(validation.error));
+        console.error("validation error", parseZodError(validation.error));
         throw new ZodValidationError(parseZodError(validation.error));
       }
 
@@ -398,7 +402,7 @@ export class TransactionController {
 
       const validation = transactionFiltersSchema.safeParse(req.query);
       if (!validation.success) {
-        console.log("validation error", parseZodError(validation.error));
+        console.error("validation error", parseZodError(validation.error));
         throw new ZodValidationError(parseZodError(validation.error));
       }
 
@@ -414,7 +418,12 @@ export class TransactionController {
     async (req: CustomRequest, res: Response): Promise<void> => {
       const validation = transactionFiltersSchema.safeParse(req.query);
       if (!validation.success) {
-        console.log("validation error", parseZodError(validation.error));
+        console.error(
+          "validation error",
+          parseZodError(validation.error),
+          "req.query",
+          req.query
+        );
         throw new ZodValidationError(parseZodError(validation.error));
       }
 

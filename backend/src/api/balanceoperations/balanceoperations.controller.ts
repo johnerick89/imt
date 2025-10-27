@@ -8,8 +8,9 @@ import {
   orgBalanceFiltersSchema,
 } from "./balanceoperations.validation";
 import type CustomRequest from "../../types/CustomReq.type";
-import { AppError } from "../../utils/AppError";
+import { AppError, ZodValidationError } from "../../utils/AppError";
 import { asyncHandler } from "../../middlewares/error.middleware";
+import { parseZodError } from "../../utils/validation.utils";
 
 const balanceOperationService = new BalanceOperationService();
 
@@ -25,9 +26,13 @@ export class BalanceOperationController {
       const validation = orgBalanceOperationSchema.safeParse(req.body);
 
       if (!validation.success) {
-        console.log("body", req.body);
-        console.log("validation error", validation.error);
-        throw new AppError("Validation error", 400);
+        console.error(
+          "validation error",
+          parseZodError(validation.error),
+          "req.body",
+          req.body
+        );
+        throw new ZodValidationError(parseZodError(validation.error));
       }
 
       const userId = req.user?.id;
@@ -51,9 +56,8 @@ export class BalanceOperationController {
       const validation = orgFloatBalanceSchema.safeParse(req.body);
 
       if (!validation.success) {
-        console.log("body", req.body);
-        console.log("validation error", validation.error);
-        throw new AppError("Validation error", 400);
+        console.error("validation error", parseZodError(validation.error));
+        throw new ZodValidationError(parseZodError(validation.error));
       }
 
       const userId = req.user?.id;
@@ -82,7 +86,8 @@ export class BalanceOperationController {
       const validation = tillBalanceOperationSchema.safeParse(req.body);
 
       if (!validation.success) {
-        throw new AppError("Validation error", 400);
+        console.error("validation error", parseZodError(validation.error));
+        throw new ZodValidationError(parseZodError(validation.error));
       }
 
       const userId = req.user?.id;
@@ -109,7 +114,8 @@ export class BalanceOperationController {
 
       const validation = vaultBalanceOperationSchema.safeParse(req.body);
       if (!validation.success) {
-        throw new AppError("Validation error", 400);
+        console.error("validation error", parseZodError(validation.error));
+        throw new ZodValidationError(parseZodError(validation.error));
       }
 
       const userId = req.user?.id;
@@ -136,7 +142,8 @@ export class BalanceOperationController {
 
       const validation = tillBalanceOperationSchema.safeParse(req.body);
       if (!validation.success) {
-        throw new AppError("Validation error", 400);
+        console.error("validation error", parseZodError(validation.error));
+        throw new ZodValidationError(parseZodError(validation.error));
       }
 
       const userId = req.user?.id;
@@ -163,7 +170,8 @@ export class BalanceOperationController {
 
       const validation = vaultBalanceOperationSchema.safeParse(req.body);
       if (!validation.success) {
-        throw new AppError("Validation error", 400);
+        console.error("validation error", parseZodError(validation.error));
+        throw new ZodValidationError(parseZodError(validation.error));
       }
 
       const userId = req.user?.id;
@@ -185,7 +193,8 @@ export class BalanceOperationController {
     async (req: CustomRequest, res: Response): Promise<void> => {
       const validation = orgBalanceFiltersSchema.safeParse(req.query);
       if (!validation.success) {
-        throw new AppError("Validation error", 400);
+        console.error("validation error", parseZodError(validation.error));
+        throw new ZodValidationError(parseZodError(validation.error));
       }
 
       const result = await balanceOperationService.getOrgBalances(
@@ -266,9 +275,13 @@ export class BalanceOperationController {
       const validation = orgFloatBalanceSchema.safeParse(req.body);
 
       if (!validation.success) {
-        console.log("body", req.body);
-        console.log("validation error", validation.error);
-        throw new AppError("Validation error", 400);
+        console.error(
+          "validation error",
+          parseZodError(validation.error),
+          "req.body",
+          req.body
+        );
+        throw new ZodValidationError(parseZodError(validation.error));
       }
 
       const userId = req.user?.id;

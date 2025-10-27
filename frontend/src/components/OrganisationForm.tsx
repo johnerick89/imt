@@ -276,13 +276,88 @@ const OrganisationForm: React.FC<OrganisationFormProps> = ({
             )}
           />
         </FormItem>
+        {/* Base Currency */}
+        <FormItem
+          label="Base Currency"
+          invalid={Boolean(errors.base_currency_id)}
+          errorMessage={errors.base_currency_id?.message}
+          required
+        >
+          <Controller
+            name="base_currency_id"
+            control={control}
+            rules={{
+              required: "Base currency is required",
+            }}
+            render={({ field }) => (
+              <SearchableSelect
+                value={field.value}
+                onChange={field.onChange}
+                options={
+                  currenciesData?.data
+                    ? currenciesData.data.map((currency) => ({
+                        value: currency.id,
+                        label: `${currency.currency_name} (${currency.currency_code})`,
+                      }))
+                    : []
+                }
+                placeholder="Select a currency"
+                searchPlaceholder="Search currencies..."
+                loading={currenciesLoading}
+                invalid={Boolean(errors.base_currency_id)}
+              />
+            )}
+          />
+        </FormItem>
 
-        <FormItem label="Contact Person">
+        {/* Country */}
+        <FormItem
+          label="Country"
+          invalid={Boolean(errors.country_id)}
+          errorMessage={errors.country_id?.message}
+          required
+        >
+          <Controller
+            name="country_id"
+            control={control}
+            rules={{
+              required: "Country is required",
+            }}
+            render={({ field }) => (
+              <SearchableSelect
+                value={field.value}
+                onChange={field.onChange}
+                options={
+                  countriesData?.data
+                    ? countriesData.data.countries.map((country: Country) => ({
+                        value: country.id,
+                        label: `${country.name} (${country.code})`,
+                      }))
+                    : []
+                }
+                placeholder="Select a country"
+                searchPlaceholder="Search countries..."
+                loading={countriesLoading}
+                invalid={Boolean(errors.country_id)}
+              />
+            )}
+          />
+        </FormItem>
+
+        <FormItem
+          label="Contact Person"
+          invalid={Boolean(errors.contact_person)}
+          errorMessage={errors.contact_person?.message}
+          required
+        >
           <Controller
             name="contact_person"
             control={control}
+            rules={{
+              required: "Contact person is required",
+            }}
             render={({ field }) => (
-              <Input type="text" placeholder="Full name" {...field} />
+              <Input type="text" placeholder="Full name" {...field} required />
             )}
           />
         </FormItem>
@@ -292,11 +367,13 @@ const OrganisationForm: React.FC<OrganisationFormProps> = ({
           label="Contact Email"
           invalid={Boolean(errors.contact_email)}
           errorMessage={errors.contact_email?.message}
+          required
         >
           <Controller
             name="contact_email"
             control={control}
             rules={{
+              required: "Contact email is required",
               pattern: {
                 value: /\S+@\S+\.\S+/,
                 message: "Contact email is invalid",
@@ -320,6 +397,7 @@ const OrganisationForm: React.FC<OrganisationFormProps> = ({
             label="Contact Password"
             invalid={Boolean(errors.contact_password)}
             errorMessage={errors.contact_password?.message}
+            required
           >
             <Controller
               name="contact_password"
@@ -349,6 +427,7 @@ const OrganisationForm: React.FC<OrganisationFormProps> = ({
             label="Contact Role"
             invalid={Boolean(errors.contact_role_id)}
             errorMessage={errors.contact_role_id?.message}
+            required
           >
             <Controller
               name="contact_role_id"
@@ -425,58 +504,6 @@ const OrganisationForm: React.FC<OrganisationFormProps> = ({
             control={control}
             render={({ field }) => (
               <Input type="text" placeholder="ZIP/Postal Code" {...field} />
-            )}
-          />
-        </FormItem>
-
-        {/* Base Currency */}
-        <FormItem label="Base Currency">
-          <Controller
-            name="base_currency_id"
-            control={control}
-            render={({ field }) => (
-              <SearchableSelect
-                value={field.value}
-                onChange={field.onChange}
-                options={
-                  currenciesData?.data
-                    ? currenciesData.data.map((currency) => ({
-                        value: currency.id,
-                        label: `${currency.currency_name} (${currency.currency_code})`,
-                      }))
-                    : []
-                }
-                placeholder="Select a currency"
-                searchPlaceholder="Search currencies..."
-                loading={currenciesLoading}
-                invalid={Boolean(errors.base_currency_id)}
-              />
-            )}
-          />
-        </FormItem>
-
-        {/* Country */}
-        <FormItem label="Country">
-          <Controller
-            name="country_id"
-            control={control}
-            render={({ field }) => (
-              <SearchableSelect
-                value={field.value}
-                onChange={field.onChange}
-                options={
-                  countriesData?.data
-                    ? countriesData.data.countries.map((country: Country) => ({
-                        value: country.id,
-                        label: `${country.name} (${country.code})`,
-                      }))
-                    : []
-                }
-                placeholder="Select a country"
-                searchPlaceholder="Search countries..."
-                loading={countriesLoading}
-                invalid={Boolean(errors.country_id)}
-              />
             )}
           />
         </FormItem>

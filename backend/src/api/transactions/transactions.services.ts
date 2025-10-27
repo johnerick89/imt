@@ -1045,7 +1045,7 @@ export class TransactionService {
   ): Promise<TransactionResponse> {
     return await prisma.$transaction(async (tx) => {
       // Get transaction with relations
-      console.log("data", data);
+
       const transaction = await tx.transaction.findUnique({
         where: { id: transactionId },
         include: {
@@ -1796,7 +1796,6 @@ export class TransactionService {
       amount_max,
       direction,
     } = filters;
-    console.log("filters....2", JSON.stringify(filters, null, 2));
 
     const skip = (page - 1) * limit;
     const where: any = {
@@ -1841,8 +1840,6 @@ export class TransactionService {
       if (amount_min) where.origin_amount.gte = amount_min;
       if (amount_max) where.origin_amount.lte = amount_max;
     }
-
-    console.log("where....3", JSON.stringify(where, null, 2));
 
     const [transactions, total] = await Promise.all([
       prisma.transaction.findMany({
@@ -2050,8 +2047,6 @@ export class TransactionService {
           : {}),
         direction: "OUTBOUND" as Direction,
       };
-
-      console.log("where....4", JSON.stringify(where, null, 2));
 
       const [
         totalCount,
@@ -2624,6 +2619,17 @@ export class TransactionService {
     userId: string
   ): Promise<void> {
     return await prisma.$transaction(async (tx) => {
+      //check if transaction is already created
+      const existingTransaction = await tx.transaction.findFirst({
+        where: {
+          outbound_transaction_id: transaction.id,
+          outbound_transaction_no: transaction.transaction_no,
+        },
+      });
+      if (existingTransaction) {
+        throw new AppError("Inbound transaction already created", 400);
+      }
+
       // Get the destination organisation
       const destinationOrg = await tx.organisation.findUnique({
         where: { id: transaction.destination_organisation_id },
