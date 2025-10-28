@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { FiX } from "react-icons/fi";
 import { Button } from "../components/ui/Button";
@@ -82,6 +82,33 @@ const CommissionsPage: React.FC = () => {
 
   const { data: organisationsData } = useOrganisations();
   const { data: currenciesData } = useCurrencies({ limit: 1000 });
+
+  // Ensure initial fetch uses resolved organisation context once available
+  useEffect(() => {
+    if (!financialOrganisationId) return;
+
+    // Pending commissions filters sync
+    setPendingFilters((prev) => ({
+      ...prev,
+      page: 1,
+      limit: prev.limit || 10,
+      type: (prev.type as ChargeType) || ("COMMISSION" as ChargeType),
+      ...(userOrganisationType !== "CUSTOMER"
+        ? { organisation_id: financialOrganisationId }
+        : { organisation_id: undefined }),
+    }));
+
+    // Payments filters sync
+    setPaymentFilters((prev) => ({
+      ...prev,
+      page: 1,
+      limit: prev.limit || 10,
+      type: "COMMISSION" as ChargeType,
+      ...(userOrganisationType !== "CUSTOMER"
+        ? { organisation_id: financialOrganisationId }
+        : { organisation_id: undefined }),
+    }));
+  }, [financialOrganisationId, userOrganisationType]);
 
   const updatePendingFilters = (
     updates: Partial<PendingTransactionChargesFilters>

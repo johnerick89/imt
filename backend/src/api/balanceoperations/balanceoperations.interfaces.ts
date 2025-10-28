@@ -1,4 +1,9 @@
-import type { Organisation, Currency, BalanceHistory } from "@prisma/client";
+import type {
+  Organisation,
+  Currency,
+  BalanceHistory,
+  PeriodicOrgBalance,
+} from "@prisma/client";
 export interface BalanceOperationRequest {
   amount: number;
   source_type?: "BANK_ACCOUNT" | "VAULT" | "TILL";
@@ -82,6 +87,7 @@ export interface OrgBalance {
   created_at: string;
   updated_at: string;
   balance_histories: BalanceHistory[];
+  periodic_org_balances: PeriodicOrgBalance[];
 }
 
 export interface OrgBalanceListResponse {

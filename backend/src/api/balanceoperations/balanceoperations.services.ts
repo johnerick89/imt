@@ -21,8 +21,11 @@ import {
   ValidationError,
 } from "../../utils/AppError";
 import { Decimal } from "@prisma/client/runtime/library";
+import { OrgBalanceService } from "../orgbalances/orgbalances.service";
+import { IUpdateOrgBalance } from "../orgbalances/orgabalances.interfaces";
 
 const glTransactionService = new GlTransactionService();
+const orgBalanceService = new OrgBalanceService();
 
 export class BalanceOperationService {
   // Organisation Balance Operations
@@ -32,7 +35,9 @@ export class BalanceOperationService {
     userId: string,
     baseOrgId: string
   ): Promise<BalanceOperationResponse> {
-    return await prisma.$transaction(async (tx) => {
+    let periodicUpdates: Array<IUpdateOrgBalance> = [];
+
+    const result = await prisma.$transaction(async (tx) => {
       //validate source and destination organisations
       if (baseOrgId === orgId) {
         throw new AppError(
@@ -117,7 +122,7 @@ export class BalanceOperationService {
       });
 
       // Create balance history records
-      await tx.balanceHistory.create({
+      const orgBalanceHistory = await tx.balanceHistory.create({
         data: {
           action_type: BalanceHistoryAction.TOPUP,
           entity_type: "ORG_BALANCE",
@@ -190,6 +195,15 @@ export class BalanceOperationService {
         );
       }
 
+      // queue periodic update for dest org
+      periodicUpdates.push({
+        organisationId: orgId,
+        amount: data.amount,
+        type: "deposit",
+        userId,
+        balanceHistoryId: orgBalanceHistory.id,
+      });
+
       return {
         success: true,
         message: "Organisation prefunded successfully",
@@ -198,7 +212,7 @@ export class BalanceOperationService {
           old_balance: oldBalance,
           new_balance: newBalance,
           change_amount: data.amount,
-          operation_type: "TOPUP",
+          operation_type: "TOPUP" as const,
           source_entity: {
             type: "AGENCY_FLOAT",
             id: data.source_id,
@@ -207,6 +221,23 @@ export class BalanceOperationService {
         },
       };
     });
+
+    // Apply periodic updates after transaction
+    for (const u of periodicUpdates) {
+      try {
+        await orgBalanceService.updatePeriodicOrgBalance({
+          organisationId: u.organisationId,
+          amount: u.amount,
+          type: u.type,
+          userId: u.userId,
+          balanceHistoryId: u.balanceHistoryId,
+        });
+      } catch (e) {
+        console.error("Failed to update periodic org balance", e);
+      }
+    }
+
+    return result;
   }
 
   async reduceOrganisationFloat(
@@ -214,7 +245,9 @@ export class BalanceOperationService {
     userId: string,
     baseOrgId: string
   ): Promise<BalanceOperationResponse> {
-    return await prisma.$transaction(async (tx) => {
+    let periodicUpdates: Array<IUpdateOrgBalance> = [];
+
+    const result = await prisma.$transaction(async (tx) => {
       // Validate organisations
       const baseOrg = await tx.organisation.findUnique({
         where: { id: baseOrgId },
@@ -363,7 +396,7 @@ export class BalanceOperationService {
       }
 
       // Create balance history records
-      await tx.balanceHistory.create({
+      const agencyHistory = await tx.balanceHistory.create({
         data: {
           action_type: BalanceHistoryAction.WITHDRAWAL,
           entity_type: "AGENCY_FLOAT",
@@ -381,7 +414,7 @@ export class BalanceOperationService {
       });
 
       // Create balance history for main org balance
-      await tx.balanceHistory.create({
+      const mainOrgHistory = await tx.balanceHistory.create({
         data: {
           action_type: BalanceHistoryAction.WITHDRAWAL,
           entity_type: "ORG_BALANCE",
@@ -414,6 +447,22 @@ export class BalanceOperationService {
           },
         });
       }
+
+      // queue periodic updates for agency (withdrawal) and main org (withdrawal)
+      periodicUpdates.push({
+        organisationId: destOrg.id,
+        amount: data.amount,
+        type: "withdrawal",
+        userId,
+        balanceHistoryId: agencyHistory.id,
+      });
+      periodicUpdates.push({
+        organisationId: baseOrgId,
+        amount: data.amount,
+        type: "withdrawal",
+        userId,
+        balanceHistoryId: mainOrgHistory.id,
+      });
 
       // Create GL Transaction for Agency Float Reduction
       // CR Main Float (Customer org) ASSET account, DR Agency Float (LIABILITY)
@@ -468,7 +517,7 @@ export class BalanceOperationService {
           old_balance: parseFloat(oldBalance.toString()),
           new_balance: parseFloat(newBalance.toString()),
           change_amount: -data.amount,
-          operation_type: "WITHDRAWAL",
+          operation_type: "WITHDRAWAL" as const,
           source_entity: {
             type: "AGENCY_FLOAT",
             id: orgFloatBalance.id,
@@ -484,6 +533,22 @@ export class BalanceOperationService {
         },
       };
     });
+
+    for (const u of periodicUpdates) {
+      try {
+        await orgBalanceService.updatePeriodicOrgBalance({
+          organisationId: u.organisationId,
+          amount: u.amount,
+          type: u.type,
+          userId: u.userId,
+          balanceHistoryId: u.balanceHistoryId,
+        });
+      } catch (e) {
+        console.error("Failed to update periodic org balance", e);
+      }
+    }
+
+    return result;
   }
 
   // Till Balance Operations
@@ -1166,6 +1231,9 @@ export class BalanceOperationService {
               currency: true,
             },
           },
+          periodic_org_balances: {
+            where: { is_current: true },
+          },
         },
       }),
       prisma.orgBalance.count({ where }),
@@ -1435,7 +1503,9 @@ export class BalanceOperationService {
     data: OrgFloatBalanceRequest,
     userId: string
   ): Promise<OrgBalanceResponse> {
-    return await prisma.$transaction(async (tx) => {
+    let periodicUpdates: Array<IUpdateOrgBalance> = [];
+
+    const result = await prisma.$transaction(async (tx) => {
       // Validate organisations
       const baseOrg = await tx.organisation.findUnique({
         where: { id: baseOrgId },
@@ -1605,7 +1675,7 @@ export class BalanceOperationService {
       }
 
       // Create balance history records
-      await tx.balanceHistory.create({
+      const agencyHistory = await tx.balanceHistory.create({
         data: {
           action_type: BalanceHistoryAction.TOPUP,
           entity_type: "AGENCY_FLOAT",
@@ -1623,7 +1693,7 @@ export class BalanceOperationService {
       });
 
       // Create balance history for main org balance
-      await tx.balanceHistory.create({
+      const mainOrgHistory = await tx.balanceHistory.create({
         data: {
           action_type: BalanceHistoryAction.TOPUP,
           entity_type: "ORG_BALANCE",
@@ -1699,12 +1769,44 @@ export class BalanceOperationService {
         );
       }
 
+      // queue periodic updates for agency (deposit) and main org (deposit)
+      periodicUpdates.push({
+        organisationId: destOrg.id,
+        amount: data.amount,
+        type: "deposit",
+        userId,
+        balanceHistoryId: agencyHistory.id,
+      });
+      periodicUpdates.push({
+        organisationId: baseOrgId,
+        amount: data.amount,
+        type: "deposit",
+        userId,
+        balanceHistoryId: mainOrgHistory.id,
+      });
+
       return {
         success: true,
         message: "Agency float balance created successfully",
         data: orgFloatBalance as unknown as OrgBalance,
       };
     });
+
+    for (const u of periodicUpdates) {
+      try {
+        await orgBalanceService.updatePeriodicOrgBalance({
+          organisationId: u.organisationId,
+          amount: u.amount,
+          type: u.type,
+          userId: u.userId,
+          balanceHistoryId: u.balanceHistoryId,
+        });
+      } catch (e) {
+        console.error("Failed to update periodic org balance", e);
+      }
+    }
+
+    return result;
   }
 
   async updateFloatLimit(
@@ -1712,7 +1814,7 @@ export class BalanceOperationService {
     limit: number,
     userId: string
   ): Promise<OrgBalanceResponse> {
-    return await prisma.$transaction(async (tx) => {
+    const updated = await prisma.$transaction(async (tx) => {
       // Find the balance
       const balance = await tx.orgBalance.findUnique({
         where: { id: balanceId },
@@ -1740,30 +1842,27 @@ export class BalanceOperationService {
         },
       });
 
-      // Create balance history record
-      await tx.balanceHistory.create({
-        data: {
-          action_type: BalanceHistoryAction.SETTLEMENT,
-          entity_type: "ORG_BALANCE",
-          entity_id: balanceId,
-          currency_id: balance.currency_id,
-          old_balance: balance.limit || 0,
-          new_balance: limit,
-          change_amount: limit - parseFloat((balance.limit || 0).toString()),
-          description: `Float limit updated from ${
-            balance.limit || 0
-          } to ${limit}`,
-          created_by: userId,
-          org_balance_id: balanceId,
-          organisation_id: balance.base_org_id,
-        },
-      });
+      const periodicBalance =
+        await orgBalanceService.getCurrentPeriodicOrgBalance({
+          organisationId: updatedBalance.dest_org_id,
+        });
 
-      return {
-        success: true,
-        message: "Float limit updated successfully",
-        data: updatedBalance as unknown as OrgBalance,
-      };
+      if (periodicBalance) {
+        await prisma.periodicOrgBalance.updateMany({
+          where: {
+            id: periodicBalance.id,
+          },
+          data: { limit: new Decimal(limit) },
+        });
+      }
+
+      return updatedBalance as unknown as OrgBalance;
     });
+
+    return {
+      success: true,
+      message: "Float limit updated successfully",
+      data: updated,
+    };
   }
 }

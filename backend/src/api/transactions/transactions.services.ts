@@ -29,10 +29,13 @@ import {
   OrgBalance,
 } from "@prisma/client";
 import { UserTillService } from "../usertills/usertills.services";
+import { OrgBalanceService } from "../orgbalances/orgbalances.service";
+import { IUpdateOrgBalance } from "../orgbalances/orgabalances.interfaces";
 import { getValidateTillParameter } from "./transactions.utils";
 
 const glTransactionService = new GlTransactionService();
 const userTillService = new UserTillService();
+const orgBalanceService = new OrgBalanceService();
 
 export class TransactionService {
   private mainOrganisationId?: string | undefined;
@@ -3095,7 +3098,9 @@ export class TransactionService {
     userId: string,
     ipAddress: string
   ): Promise<TransactionResponse> {
-    return await prisma.$transaction(async (tx) => {
+    let periodicUpdates: Array<IUpdateOrgBalance> = [];
+
+    const result = await prisma.$transaction(async (tx) => {
       const validateTill = await getValidateTillParameter();
       // Get transaction with relations
       const transaction = await tx.transaction.findUnique({
@@ -3307,7 +3312,7 @@ export class TransactionService {
           },
         });
 
-        await tx.balanceHistory.create({
+        const originHistory = await tx.balanceHistory.create({
           data: {
             action_type: BalanceHistoryAction.PAYOUT,
             entity_type: "AGENCY_FLOAT",
@@ -3322,6 +3327,15 @@ export class TransactionService {
             org_balance_id: orgBalance.id,
             float_org_id: orgBalance.base_org_id,
           },
+        });
+
+        // Queue periodic update for origin org (withdrawal)
+        periodicUpdates.push({
+          organisationId: orgBalance.dest_org_id,
+          amount: parseFloat(transactionAmount.toString()),
+          type: "transaction_out",
+          userId,
+          balanceHistoryId: originHistory.id,
         });
       }
       if (destinationBalance) {
@@ -3342,7 +3356,7 @@ export class TransactionService {
           },
         });
 
-        await tx.balanceHistory.create({
+        const destinationHistory = await tx.balanceHistory.create({
           data: {
             action_type: BalanceHistoryAction.PAYOUT,
             entity_type: "AGENCY_FLOAT",
@@ -3357,6 +3371,15 @@ export class TransactionService {
             org_balance_id: orgBalance.id,
             float_org_id: orgBalance.base_org_id,
           },
+        });
+
+        // Queue periodic update for destination org (deposit)
+        periodicUpdates.push({
+          organisationId: orgBalance.dest_org_id,
+          amount: parseFloat(transactionAmount.toString()),
+          type: "transaction_in",
+          userId,
+          balanceHistoryId: destinationHistory.id,
         });
       }
 
@@ -3493,6 +3516,27 @@ export class TransactionService {
         data: result as unknown as ITransaction,
       };
     });
+
+    // Apply periodic updates after transaction completes
+    for (const update of periodicUpdates) {
+      try {
+        await orgBalanceService.updatePeriodicOrgBalance({
+          organisationId: update.organisationId,
+          amount: update.amount,
+          type: update.type,
+          userId: update.userId,
+          balanceHistoryId: update.balanceHistoryId,
+        });
+      } catch (error) {
+        console.error(
+          `Failed to update periodic balance for org ${update.organisationId}:`,
+          error
+        );
+        // Don't throw error to avoid breaking the main flow
+      }
+    }
+
+    return result;
   }
 
   // Reverse Inbound Transaction

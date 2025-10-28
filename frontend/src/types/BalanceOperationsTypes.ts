@@ -31,6 +31,28 @@ export interface BalanceHistory {
   };
   description?: string;
 }
+
+export interface PeriodicOrgBalance {
+  id: string;
+  opening_balance?: number;
+  commissions?: number;
+  transactions_in?: number;
+  transactions_out?: number;
+  deposits_amount?: number;
+  withdrawals_amount?: number;
+  limit?: number;
+  closing_balance?: number;
+  is_current: boolean;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+  created_by_user: {
+    id: string;
+    name: string;
+  };
+  org_balance_id: string;
+  org_balance: OrgBalance;
+}
 export interface OrgBalance {
   id: string;
   base_org_id: string;
@@ -57,6 +79,8 @@ export interface OrgBalance {
   updated_at: string;
   limit?: number | null;
   balance_histories: BalanceHistory[];
+  // Periodic balance fields for current month
+  periodic_org_balances?: PeriodicOrgBalance[];
 }
 
 export interface OrgBalanceFilters {

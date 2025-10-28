@@ -42,7 +42,12 @@ const AgencyFloatModal: React.FC<AgencyFloatModalProps> = ({
   title,
   existingBalance,
 }) => {
-  console.log("defaultCurrencyId", defaultCurrencyId);
+  console.log(
+    "defaultCurrencyId",
+    defaultCurrencyId,
+    "existingBalance",
+    existingBalance
+  );
   const {
     control,
     handleSubmit,
@@ -59,21 +64,14 @@ const AgencyFloatModal: React.FC<AgencyFloatModalProps> = ({
           ? existingBalance.agency.id
           : selectedOrganisationId || "",
       currency_id:
-        mode === "edit" && existingBalance ? existingBalance.currency.id : "",
+        mode === "edit" && existingBalance
+          ? existingBalance.currency.id
+          : defaultCurrencyId || "",
       bank_account_id: "",
       limit: 0,
       description: "",
     },
   });
-
-  console.log(
-    "mode",
-    mode,
-    "existingBalance",
-    existingBalance,
-    "selectedOrganisationId",
-    selectedOrganisationId
-  );
 
   const selectedAgencyId = watch("dest_org_id");
   const selectedAgency = agencies.find((org) => org.id === selectedAgencyId);
@@ -86,7 +84,10 @@ const AgencyFloatModal: React.FC<AgencyFloatModalProps> = ({
   }, [selectedAgency, setValue]);
 
   const handleFormSubmit = (data: AgencyFloatRequest | ReduceFloatRequest) => {
-    console.log("data...0", data);
+    if (existingBalance) {
+      data.currency_id = existingBalance.currency.id;
+      data.dest_org_id = existingBalance.agency.id;
+    }
     if (!data.dest_org_id) {
       data.dest_org_id = selectedOrganisationId || "";
     }
