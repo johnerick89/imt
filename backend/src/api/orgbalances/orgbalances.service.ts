@@ -2,7 +2,7 @@ import { AppError } from "../../utils/AppError";
 import { prisma } from "../../lib/prisma.lib";
 import { OrgBalance, PeriodicOrgBalance } from "@prisma/client";
 import { Decimal } from "@prisma/client/runtime/library";
-import { startOfMonth, endOfMonth } from "date-fns";
+import { startOfMonth, endOfMonth, differenceInDays } from "date-fns";
 import { IUpdateOrgBalance } from "./orgabalances.interfaces";
 
 export class OrgBalanceService {
@@ -329,6 +329,20 @@ export class OrgBalanceService {
         return; // Initialization done; nothing to close this round
       }
 
+      // Check if we're within 3 days of month end before allowing closure
+      const now = new Date();
+      const currentMonthEnd = endOfMonth(current.date_from);
+      const daysToMonthEnd = differenceInDays(currentMonthEnd, now);
+
+      if (daysToMonthEnd > 3) {
+        console.warn(
+          `Cannot close periodic balance for organisation ${organisationId}: ` +
+            `Still ${daysToMonthEnd} days until month end (threshold: 3 days). ` +
+            `Current period: ${current.date_from.toISOString().split("T")[0]}`
+        );
+        return; // Skip closing and continue without error
+      }
+
       // Close: Compute & set closing
       const closing = current.opening_balance
         .add(current.transactions_in ?? new Decimal(0))
@@ -376,5 +390,37 @@ export class OrgBalanceService {
         },
       });
     });
+  }
+
+  async closeAllPeriodicOrgBalances({ userId }: { userId: string }) {
+    const agencies = await prisma.organisation.findMany({
+      where: {
+        status: "ACTIVE",
+      },
+    });
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const agency of agencies) {
+      try {
+        await this.closePeriodicOrgBalance({
+          userId,
+          organisationId: agency.id,
+        });
+        successCount++;
+      } catch (error) {
+        errorCount++;
+        console.error(
+          `Error closing periodic org balance for agency ${agency.id}:`,
+          error
+        );
+      }
+    }
+
+    return {
+      success: true,
+      message: `All periodic org balances closed successfully. Success: ${successCount}, Error: ${errorCount}`,
+    };
   }
 }

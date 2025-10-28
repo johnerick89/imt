@@ -488,6 +488,169 @@ class ReportsService {
     };
   }
 
+  // Organisation Balances History Report
+  static async getOrganisationBalancesHistoryReport({
+    filters,
+    user_organisation_id,
+  }: {
+    filters: any;
+    user_organisation_id: string;
+  }) {
+    const {
+      date_from,
+      date_to,
+      organisation_id,
+      currency_id,
+      page = 1,
+      limit = 100,
+    } = filters;
+
+    // Use the provided organisation_id or default to user's organisation
+    const targetOrgId = organisation_id || user_organisation_id;
+
+    const where: any = {
+      entity_type: "AGENCY_FLOAT",
+      float_org_id: targetOrgId,
+      // organisation_id: targetOrgId,
+    };
+
+    if (date_from || date_to) {
+      where.created_at = {};
+      if (date_from) where.created_at.gte = date_from;
+      if (date_to) where.created_at.lte = date_to;
+    }
+
+    if (currency_id) where.currency_id = currency_id;
+
+    console.log("where", where);
+
+    const balanceHistory = await prisma.balanceHistory.findMany({
+      where,
+      include: {
+        currency: true,
+        transaction: {
+          include: {
+            customer: true,
+            beneficiary: true,
+            corridor: {
+              include: {
+                origin_organisation: true,
+                destination_organisation: true,
+              },
+            },
+          },
+        },
+        org_balance: {
+          include: {
+            dest_org: true,
+            base_org: true,
+          },
+        },
+        till: {
+          include: {
+            organisation: true,
+          },
+        },
+        vault: {
+          include: {
+            organisation: true,
+          },
+        },
+        bank_account: {
+          include: {
+            organisation: true,
+          },
+        },
+        float_org: true,
+        created_by_user: true,
+        gl_transactions: {
+          include: {
+            gl_entries: true,
+          },
+        },
+        commission_split: {
+          include: {
+            transaction_charge: {
+              include: {
+                charge: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { created_at: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    console.log("balanceHistory", balanceHistory);
+
+    const total = await prisma.balanceHistory.count({ where });
+
+    // Get organisation balance summary
+    const orgBalance = await prisma.orgBalance.findFirst({
+      where: { dest_org_id: targetOrgId },
+      include: {
+        dest_org: true,
+        currency: true,
+      },
+    });
+
+    // Get periodic balance summary
+    const periodicBalance = await prisma.periodicOrgBalance.findFirst({
+      where: {
+        OR: [
+          { organisation_id: targetOrgId },
+          { org_balance: { dest_org_id: targetOrgId } },
+        ],
+        is_current: true,
+      },
+      include: {
+        org_balance: {
+          include: {
+            dest_org: true,
+            currency: true,
+          },
+        },
+      },
+    });
+
+    return {
+      success: true,
+      data: {
+        balanceHistory,
+        summary: {
+          currentBalance: orgBalance?.balance || 0,
+          currency: orgBalance?.currency?.currency_code || "N/A",
+          organisation: orgBalance?.dest_org?.name || "N/A",
+          periodicBalance: periodicBalance
+            ? {
+                openingBalance: periodicBalance.opening_balance,
+                closingBalance: periodicBalance.closing_balance,
+                transactionsIn: periodicBalance.transactions_in,
+                transactionsOut: periodicBalance.transactions_out,
+                commissions: periodicBalance.commissions,
+                depositsAmount: periodicBalance.deposits_amount,
+                withdrawalsAmount: periodicBalance.withdrawals_amount,
+                period: {
+                  year: periodicBalance.year,
+                  month: periodicBalance.month,
+                  dateFrom: periodicBalance.date_from,
+                  dateTo: periodicBalance.date_to,
+                },
+              }
+            : null,
+        },
+        pagination: {
+          page: Number(page),
+          limit: Number(limit),
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
+    };
+  }
+
   // GL Accounts Report
   static async getGlAccountsReport({
     filters,

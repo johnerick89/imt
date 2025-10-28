@@ -7,6 +7,7 @@ import dotenv from "dotenv";
 import routes from "./routes";
 import cookieParser from "cookie-parser";
 import { errorHandler, notFoundHandler } from "./middlewares/error.middleware";
+import { closePeriodicOrgBalancesJob } from "./jobs/closeperiodicorgbalances.jobs";
 
 dotenv.config();
 
@@ -93,6 +94,9 @@ app.use("/", routes);
 // Error handling
 app.use("*", notFoundHandler);
 app.use(errorHandler);
+
+// Initialize scheduled jobs
+closePeriodicOrgBalancesJob.initializeJob();
 
 // Start server
 app.listen(PORT, () => {

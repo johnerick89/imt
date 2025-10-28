@@ -761,6 +761,7 @@ export class TransactionService {
             description: `Outbound transaction approved: ${updatedTransaction.id}`,
             created_by: userId,
             organisation_id: orgBalance.base_org_id,
+            float_org_id: orgBalance.base_org_id,
           },
         });
       }
@@ -1348,7 +1349,7 @@ export class TransactionService {
     userId: string,
     ipAddress: string
   ): Promise<TransactionResponse> {
-    return await prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async (tx: any) => {
       const mainOrganisation = await tx.organisation.findFirst({
         where: {
           type: "CUSTOMER",
@@ -1478,6 +1479,7 @@ export class TransactionService {
             description: `Outbound transaction reversed: ${updatedTransaction.id}`,
             created_by: userId,
             organisation_id: orgBalance.base_org_id,
+            float_org_id: orgBalance.base_org_id,
           },
         });
       }

@@ -1684,7 +1684,7 @@ export class BalanceOperationService {
           old_balance: oldBalance,
           new_balance: newBalance,
           change_amount: data.amount,
-          description: data.description,
+          description: `Agency float topup: ${data.description}`,
           created_by: userId,
           org_balance_id: orgFloatBalance.id,
           float_org_id: destOrg.id,
@@ -1706,6 +1706,7 @@ export class BalanceOperationService {
           created_by: userId,
           org_balance_id: mainOrgBalance.id,
           organisation_id: baseOrgId,
+          float_org_id: baseOrgId,
         },
       });
       if (data.bank_account_id) {
@@ -1718,7 +1719,8 @@ export class BalanceOperationService {
             old_balance: bankAccountOldBalance,
             new_balance: bankAccountNewBalance,
             change_amount: data.amount,
-            description: data.description,
+            description:
+              data.description || `Bank account deposit: ${data.description}`,
             created_by: userId,
             bank_account_id: data.bank_account_id,
             organisation_id: baseOrgId,

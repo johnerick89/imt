@@ -17,6 +17,7 @@ import { formatToCurrency } from "../utils/textUtils";
 import type { ReportItem } from "../types/ReportsTypes";
 import { ReportsService } from "../services/ReportsService";
 import { ReportsPDFService } from "../services/ReportsPDFService";
+import type { Transaction } from "../types/TransactionsTypes";
 
 const ReportsPage: React.FC = () => {
   const { user } = useSession();
@@ -46,10 +47,7 @@ const ReportsPage: React.FC = () => {
   const { data: organisationsData } = useOrganisations({ limit: 100 });
 
   const currencies = currenciesData?.data?.currencies || [];
-  const organisations =
-    organisationsData?.data?.organisations.filter(
-      (org) => org.id !== userOrganisationid
-    ) || [];
+  const organisations = organisationsData?.data?.organisations || [];
 
   // Data fetching will be done directly from service when preview is clicked
 
@@ -149,6 +147,11 @@ const ReportsPage: React.FC = () => {
         // case ReportType.BALANCES_HISTORY:
         //   data = await ReportsService.getBalancesHistoryReport(filters);
         //   break;
+        case ReportType.ORGANISATION_BALANCES_HISTORY:
+          data = await ReportsService.getOrganisationBalancesHistoryReport(
+            filters
+          );
+          break;
         case ReportType.GL_ACCOUNTS:
           data = await ReportsService.getGlAccountsReport(filters);
           break;
@@ -211,6 +214,8 @@ const ReportsPage: React.FC = () => {
         return reportData?.data.agencyCommissions;
       case ReportType.TAXES:
         return reportData?.data.taxes;
+      case ReportType.ORGANISATION_BALANCES_HISTORY:
+        return reportData?.data.balanceHistory;
       default:
         return [];
     }
@@ -354,6 +359,91 @@ const ReportsPage: React.FC = () => {
 
     return (
       <div className="space-y-4">
+        {/* Summary section for Organisation Balances History Report */}
+        {selectedReport === ReportType.ORGANISATION_BALANCES_HISTORY &&
+          data.summary && (
+            <div className="bg-white p-6 rounded-lg shadow">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Balance Summary
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">
+                    Current Balance
+                  </h4>
+                  <p className="text-2xl font-bold text-blue-600">
+                    {formatToCurrency(data.summary.currentBalance)}{" "}
+                    {data.summary.currency}
+                  </p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {data.summary.organisation}
+                  </p>
+                </div>
+                {data.summary.periodicBalance && (
+                  <>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">
+                        Period Summary
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        {data.summary.periodicBalance.period.year}/
+                        {data.summary.periodicBalance.period.month}
+                      </p>
+                      <p className="text-lg font-semibold text-green-600 mt-1">
+                        Opening:{" "}
+                        {formatToCurrency(
+                          data.summary.periodicBalance.openingBalance
+                        )}
+                      </p>
+                      <p className="text-lg font-semibold text-blue-600">
+                        Closing:{" "}
+                        {formatToCurrency(
+                          data.summary.periodicBalance.closingBalance
+                        )}
+                      </p>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">
+                        Activity Summary
+                      </h4>
+                      <div className="space-y-1 text-sm">
+                        <p className="text-green-600">
+                          In:{" "}
+                          {formatToCurrency(
+                            data.summary.periodicBalance.transactionsIn
+                          )}
+                        </p>
+                        <p className="text-red-600">
+                          Out:{" "}
+                          {formatToCurrency(
+                            data.summary.periodicBalance.transactionsOut
+                          )}
+                        </p>
+                        <p className="text-blue-600">
+                          Commissions:{" "}
+                          {formatToCurrency(
+                            data.summary.periodicBalance.commissions
+                          )}
+                        </p>
+                        <p className="text-purple-600">
+                          Deposits:{" "}
+                          {formatToCurrency(
+                            data.summary.periodicBalance.depositsAmount
+                          )}
+                        </p>
+                        <p className="text-orange-600">
+                          Withdrawals:{" "}
+                          {formatToCurrency(
+                            data.summary.periodicBalance.withdrawalsAmount
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -573,6 +663,21 @@ const ReportsPage: React.FC = () => {
       //     "Currency",
       //     "Date",
       //   ];
+      case ReportType.ORGANISATION_BALANCES_HISTORY:
+        return [
+          "Entity Type",
+          "Entity Name",
+          "Old Balance",
+          "New Balance",
+          "Change Amount",
+          "Currency",
+          "Transaction No",
+          "Customer",
+          "Beneficiary",
+          "Description",
+          "Created By",
+          "Date",
+        ];
       case ReportType.GL_ACCOUNTS:
         return ["Account Name", "Type", "Balance", "Currency", "Date"];
       case ReportType.PARTNER_BALANCES:
@@ -697,6 +802,23 @@ const ReportsPage: React.FC = () => {
       //     item.currency?.currency_code,
       //     new Date(item.created_at).toLocaleDateString(),
       //   ];
+      case ReportType.ORGANISATION_BALANCES_HISTORY:
+        return [
+          item.entity_type,
+          getEntityName(item),
+          formatToCurrency(item.old_balance || 0),
+          formatToCurrency(item.new_balance || 0),
+          formatToCurrency(item.change_amount || 0),
+          item.currency?.currency_code,
+          item.transaction?.transaction_no || "N/A",
+          item.transaction?.customer?.full_name || "N/A",
+          item.transaction?.beneficiary?.name || "N/A",
+          item.description || "N/A",
+          item.created_by_user
+            ? `${item.created_by_user.first_name} ${item.created_by_user.last_name}`
+            : "System",
+          new Date(item.created_at).toLocaleDateString(),
+        ];
       case ReportType.GL_ACCOUNTS:
         return [
           item.name,
@@ -810,17 +932,20 @@ const ReportsPage: React.FC = () => {
           count: items.length,
 
           origin_amount: items.reduce(
-            (sum, item) => sum + (Number((item as any).origin_amount) || 0),
+            (sum, item) =>
+              sum + (Number((item as Transaction).origin_amount) || 0),
             0
           ),
 
           amount_payable: items.reduce(
-            (sum, item) => sum + (Number((item as any).amount_payable) || 0),
+            (sum, item) =>
+              sum + (Number((item as Transaction).amount_payable) || 0),
             0
           ),
 
           total_charges: items.reduce(
-            (sum, item) => sum + (Number((item as any).total_all_charges) || 0),
+            (sum, item) =>
+              sum + (Number((item as Transaction).total_all_charges) || 0),
             0
           ),
         };
@@ -846,17 +971,20 @@ const ReportsPage: React.FC = () => {
           count: items.length,
 
           dest_amount: items.reduce(
-            (sum, item) => sum + (Number((item as any).dest_amount) || 0),
+            (sum, item) =>
+              sum + (Number((item as Transaction).dest_amount) || 0),
             0
           ),
 
           amount_payable: items.reduce(
-            (sum, item) => sum + (Number((item as any).amount_payable) || 0),
+            (sum, item) =>
+              sum + (Number((item as Transaction).amount_payable) || 0),
             0
           ),
 
           total_charges: items.reduce(
-            (sum, item) => sum + (Number((item as any).total_all_charges) || 0),
+            (sum, item) =>
+              sum + (Number((item as Transaction).total_all_charges) || 0),
             0
           ),
         };
@@ -1026,6 +1154,26 @@ const ReportsPage: React.FC = () => {
     }
 
     return totalsCells;
+  };
+
+  // Helper function to get entity name based on entity type
+  const getEntityName = (item: any) => {
+    switch (item.entity_type) {
+      case "ORG_BALANCE":
+        return (
+          item.org_balance?.dest_org?.name ||
+          item.float_org?.name ||
+          "Organisation Balance"
+        );
+      case "TILL":
+        return item.till?.name || "Till";
+      case "VAULT":
+        return item.vault?.name || "Vault";
+      case "BANK_ACCOUNT":
+        return item.bank_account?.name || "Bank Account";
+      default:
+        return item.entity_id || "Unknown Entity";
+    }
   };
 
   return (

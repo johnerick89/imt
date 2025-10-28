@@ -86,6 +86,11 @@ export const balancesHistoryReportSchema = baseReportSchema.extend({
   entity_id: z.string().optional(),
 });
 
+// Organisation Balances History Report
+export const organisationBalancesHistoryReportSchema = baseReportSchema.extend({
+  organisation_id: z.string().optional(),
+});
+
 // GL Accounts Report
 export const glAccountsReportSchema = baseReportSchema.extend({
   account_id: z.string().optional(),

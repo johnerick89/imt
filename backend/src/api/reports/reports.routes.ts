@@ -31,6 +31,12 @@ router.get("/user-tills", ReportsController.getUserTillsReport);
 // Balances History Report
 router.get("/balances-history", ReportsController.getBalancesHistoryReport);
 
+// Organisation Balances History Report
+router.get(
+  "/organisation-balances-history",
+  ReportsController.getOrganisationBalancesHistoryReport
+);
+
 // GL Accounts Report
 router.get("/gl-accounts", ReportsController.getGlAccountsReport);
 

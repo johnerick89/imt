@@ -226,6 +226,111 @@ export interface BalanceHistoryReportItem {
   created_at: string;
 }
 
+// Organisation Balances History Report
+export interface OrganisationBalancesHistoryReportFilters
+  extends BaseReportFilters {
+  organisation_id?: string;
+}
+
+export interface OrganisationBalanceHistoryReportItem {
+  id: string;
+  entity_type: string;
+  entity_id: string;
+  old_balance: number;
+  new_balance: number;
+  change_amount: number;
+  currency: {
+    currency_code: string;
+  };
+  transaction?: {
+    id: string;
+    transaction_no: string;
+    customer?: {
+      full_name: string;
+    };
+    beneficiary?: {
+      name: string;
+    };
+    corridor?: {
+      origin_organisation?: {
+        name: string;
+      };
+      destination_organisation?: {
+        name: string;
+      };
+    };
+  };
+  org_balance?: {
+    dest_org?: {
+      name: string;
+    };
+    base_org?: {
+      name: string;
+    };
+  };
+  till?: {
+    name: string;
+    organisation?: {
+      name: string;
+    };
+  };
+  vault?: {
+    name: string;
+    organisation?: {
+      name: string;
+    };
+  };
+  bank_account?: {
+    name: string;
+    organisation?: {
+      name: string;
+    };
+  };
+  float_org?: {
+    name: string;
+  };
+  created_by_user?: {
+    first_name: string;
+    last_name: string;
+  };
+  gl_transactions?: Array<{
+    transaction_type: string;
+    amount: number;
+    description: string;
+  }>;
+  commission_split?: {
+    transaction_charge?: {
+      charge?: {
+        name: string;
+        type: string;
+      };
+    };
+  };
+  description?: string;
+  created_at: string;
+}
+
+export interface OrganisationBalancesHistoryReportSummary {
+  currentBalance: number;
+  currency: string;
+  organisation: string;
+  periodicBalance?: {
+    openingBalance: number;
+    closingBalance: number;
+    transactionsIn: number;
+    transactionsOut: number;
+    commissions: number;
+    depositsAmount: number;
+    withdrawalsAmount: number;
+    period: {
+      year: number;
+      month: number;
+      dateFrom: string;
+      dateTo?: string;
+    };
+  };
+}
+
 // GL Accounts Report
 export interface GlAccountsReportFilters extends BaseReportFilters {
   account_id?: string;
@@ -454,6 +559,7 @@ export const ReportType = {
   TAXES: "taxes",
   // USER_TILLS: "user-tills",
   // BALANCES_HISTORY: "balances-history",
+  ORGANISATION_BALANCES_HISTORY: "organisation-balances-history",
   GL_ACCOUNTS: "gl-accounts",
   // PROFIT_LOSS: "profit-loss",
   // BALANCE_SHEET: "balance-sheet",
@@ -564,6 +670,14 @@ export const REPORT_METADATA: Record<ReportType, ReportMetadata> = {
   //   ],
   //   exportFormats: ["csv", "pdf"],
   // },
+  [ReportType.ORGANISATION_BALANCES_HISTORY]: {
+    type: ReportType.ORGANISATION_BALANCES_HISTORY,
+    name: "Organisation Balances History Report",
+    description:
+      "Detailed balance history for organisations with transaction details and summaries",
+    filters: ["date_from", "date_to", "organisation_id", "currency_id"],
+    exportFormats: ["csv", "pdf"],
+  },
   [ReportType.GL_ACCOUNTS]: {
     type: ReportType.GL_ACCOUNTS,
     name: "GL Accounts Report",
