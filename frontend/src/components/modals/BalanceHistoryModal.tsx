@@ -21,6 +21,11 @@ const BalanceHistoryModal: React.FC<BalanceHistoryModalProps> = ({
 
   const { balance_histories = [] } = balance;
 
+  // Get current periodic balance
+  const currentPeriodicBalance = balance.periodic_org_balances?.find(
+    (periodic) => periodic.is_current
+  );
+
   // Calculate summary statistics
   const totalInflows = balance_histories
     .filter((h) => h.change_amount > 0)
@@ -118,6 +123,93 @@ const BalanceHistoryModal: React.FC<BalanceHistoryModalProps> = ({
             )}
           </div>
         </div>
+
+        {/* Current Period Details */}
+        {currentPeriodicBalance && (
+          <div className="bg-blue-50 rounded-lg p-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">
+              Current Period Details
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="text-sm text-gray-600">Opening Balance</div>
+                <div className="text-lg font-semibold text-gray-900">
+                  {formatToCurrency(
+                    currentPeriodicBalance.opening_balance || 0
+                  )}
+                </div>
+              </div>
+              <div>
+                <div className="text-sm text-gray-600">Period Limit</div>
+                <div className="text-lg font-semibold text-gray-900">
+                  {formatToCurrency(currentPeriodicBalance.limit || 0)}
+                </div>
+              </div>
+              <div>
+                <div className="text-sm text-gray-600">Commissions</div>
+                <div className="text-lg font-semibold text-green-600">
+                  {formatToCurrency(currentPeriodicBalance.commissions || 0)}
+                </div>
+              </div>
+              <div>
+                <div className="text-sm text-gray-600">
+                  Incoming Transactions
+                </div>
+                <div className="text-lg font-semibold text-green-600">
+                  {formatToCurrency(
+                    currentPeriodicBalance.transactions_in || 0
+                  )}
+                </div>
+              </div>
+              <div>
+                <div className="text-sm text-gray-600">
+                  Outgoing Transactions
+                </div>
+                <div className="text-lg font-semibold text-red-600">
+                  {formatToCurrency(
+                    currentPeriodicBalance.transactions_out || 0
+                  )}
+                </div>
+              </div>
+              <div>
+                <div className="text-sm text-gray-600">Deposits</div>
+                <div className="text-lg font-semibold text-green-600">
+                  {formatToCurrency(
+                    currentPeriodicBalance.deposits_amount || 0
+                  )}
+                </div>
+              </div>
+              <div>
+                <div className="text-sm text-gray-600">Withdrawals</div>
+                <div className="text-lg font-semibold text-red-600">
+                  {formatToCurrency(
+                    currentPeriodicBalance.withdrawals_amount || 0
+                  )}
+                </div>
+              </div>
+              {currentPeriodicBalance.closing_balance && (
+                <div>
+                  <div className="text-sm text-gray-600">Closing Balance</div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {formatToCurrency(currentPeriodicBalance.closing_balance)}
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="mt-3 pt-3 border-t border-blue-200">
+              <div className="text-sm text-gray-600">
+                Period Created:{" "}
+                {new Date(
+                  currentPeriodicBalance.created_at
+                ).toLocaleDateString()}
+              </div>
+              <div className="text-sm text-gray-600">
+                Created by:{" "}
+                {currentPeriodicBalance.created_by_user?.name || "System"}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Transaction History */}
         <div>

@@ -35,6 +35,9 @@ CREATE INDEX "commission_splits_transaction_charges_id_idx" ON "public"."commiss
 -- CreateIndex
 CREATE UNIQUE INDEX "commission_splits_transaction_charges_id_organisation_id_key" ON "public"."commission_splits"("transaction_charges_id", "organisation_id");
 
+-- -- AddForeignKey
+-- ALTER TABLE "public"."corridors" ADD CONSTRAINT "corridors_base_country_id_fkey" FOREIGN KEY ("base_country_id") REFERENCES "public"."countries"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
 -- AddForeignKey
 ALTER TABLE "public"."commission_splits" ADD CONSTRAINT "commission_splits_transaction_charges_id_fkey" FOREIGN KEY ("transaction_charges_id") REFERENCES "public"."transaction_charges"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 

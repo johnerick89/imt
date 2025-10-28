@@ -138,19 +138,76 @@ const OrgBalancesTable: React.FC<OrgBalancesTableProps> = ({
         </div>
       ),
     },
-    ...(!mainFloat
-      ? [
-          {
-            accessorKey: "created_at",
-            header: "Created",
-            cell: ({ row }: { row: Row<OrgBalance> }) => (
-              <div className="text-sm text-gray-900">
-                {new Date(row.original.created_at).toLocaleDateString()}
-              </div>
-            ),
-          },
-        ]
-      : []),
+    {
+      accessorKey: "commissions",
+      header: "Commissions",
+      cell: ({ row }) => {
+        const periodicBalance = row.original.periodic_org_balances?.find(
+          (balance) => balance.is_current
+        );
+        return (
+          <div className="text-sm text-gray-900">
+            {formatToCurrency(periodicBalance?.commissions || 0)}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "transactions_in",
+      header: "Incoming Transactions",
+      cell: ({ row }) => {
+        const periodicBalance = row.original.periodic_org_balances?.find(
+          (balance) => balance.is_current
+        );
+        return (
+          <div className="text-sm text-gray-900">
+            {formatToCurrency(periodicBalance?.transactions_in || 0)}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "transactions_out",
+      header: "Outgoing Transactions",
+      cell: ({ row }) => {
+        const periodicBalance = row.original.periodic_org_balances?.find(
+          (balance) => balance.is_current
+        );
+        return (
+          <div className="text-sm text-gray-900">
+            {formatToCurrency(periodicBalance?.transactions_out || 0)}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "deposits",
+      header: "Deposits",
+      cell: ({ row }) => {
+        const periodicBalance = row.original.periodic_org_balances?.find(
+          (balance) => balance.is_current
+        );
+        return (
+          <div className="text-sm text-gray-900">
+            {formatToCurrency(periodicBalance?.deposits_amount || 0)}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "withdrawals",
+      header: "Withdrawals",
+      cell: ({ row }) => {
+        const periodicBalance = row.original.periodic_org_balances?.find(
+          (balance) => balance.is_current
+        );
+        return (
+          <div className="text-sm text-gray-900">
+            {formatToCurrency(periodicBalance?.withdrawals_amount || 0)}
+          </div>
+        );
+      },
+    },
     {
       id: "actions",
       header: "Actions",

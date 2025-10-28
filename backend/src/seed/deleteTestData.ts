@@ -219,6 +219,12 @@ async function main() {
       },
     });
 
+    await prisma.periodicOrgBalance.deleteMany({
+      where: {
+        organisation_id: organisation.id,
+      },
+    });
+
     await prisma.balanceHistory.deleteMany({
       where: {
         OR: [

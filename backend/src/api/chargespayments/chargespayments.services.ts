@@ -1,6 +1,7 @@
 import { ChargeType, type Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.lib";
 import { GlTransactionService } from "../gltransactions/gltransactions.services";
+import { OrgBalanceService } from "../orgbalances/orgbalances.service";
 import type {
   IChargesPayment,
   IChargesPaymentItem,
@@ -31,6 +32,7 @@ type Tx = Omit<
 
 export class ChargesPaymentService {
   private glTransactionService = new GlTransactionService();
+  private orgBalanceService = new OrgBalanceService();
   // Generate reference number for charges payment
   private async generateReferenceNumber(
     type: ChargeType,
@@ -1527,7 +1529,14 @@ export class ChargesPaymentService {
     data: ApproveChargesPaymentRequest,
     userId?: string
   ): Promise<ChargesPaymentResponse> {
-    return await prisma.$transaction(async (tx) => {
+    let periodicBalanceUpdates: Array<{
+      organisationId: string;
+      amount: number;
+      userId: string;
+      balanceHistoryId: string;
+    }> = [];
+
+    const result = await prisma.$transaction(async (tx) => {
       const commissionPayment = await tx.chargesPayment.findUnique({
         where: { id: paymentId },
         include: {
@@ -1677,7 +1686,7 @@ export class ChargesPaymentService {
           });
 
           // Create balance history
-          await tx.balanceHistory.create({
+          const balanceHistory = await tx.balanceHistory.create({
             data: {
               action_type: "TOPUP",
               entity_type: "AGENCY_FLOAT",
@@ -1692,6 +1701,15 @@ export class ChargesPaymentService {
               float_org_id: orgId,
               organisation_id: customerOrganisation.id,
             },
+          });
+
+          // Store balance history ID for periodic balance update after transaction
+          if (!periodicBalanceUpdates) periodicBalanceUpdates = [];
+          periodicBalanceUpdates.push({
+            organisationId: orgId,
+            amount: settledAmount,
+            userId: userId ?? commissionPayment.created_by ?? "",
+            balanceHistoryId: balanceHistory.id,
           });
 
           // Accumulate balance updates for GL posting
@@ -1770,5 +1788,26 @@ export class ChargesPaymentService {
         } as any,
       };
     });
+
+    // Update periodic balances after main transaction completes
+    for (const update of periodicBalanceUpdates) {
+      try {
+        await this.orgBalanceService.updatePeriodicOrgBalance({
+          organisationId: update.organisationId,
+          amount: update.amount,
+          type: "commission",
+          userId: update.userId,
+          balanceHistoryId: update.balanceHistoryId,
+        });
+      } catch (error) {
+        console.error(
+          `Failed to update periodic balance for org ${update.organisationId}:`,
+          error
+        );
+        // Don't throw error to avoid breaking the main flow
+      }
+    }
+
+    return result;
   }
 }
