@@ -1,12 +1,20 @@
 import { Router } from "express";
 import { OrganisationsController } from "./organisations.controller";
+import { authMiddleware } from "../../middlewares/auth.middleware";
+import { aclMiddleware } from "../../middlewares/acl.middleware";
 
 const router = Router();
 const organisationsController = new OrganisationsController();
 
+router.use(authMiddleware);
+
 // Create organisation
 router.post(
   "/",
+  aclMiddleware({
+    errorMessage: "You do not have permission to create new organisations",
+    resource: "admin.organisations.create",
+  }),
   organisationsController.createOrganisation.bind(organisationsController)
 );
 

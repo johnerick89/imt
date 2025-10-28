@@ -7,6 +7,7 @@ import type {
   TaxesReportFilters,
   UserTillsReportFilters,
   BalancesHistoryReportFilters,
+  OrganisationBalancesHistoryReportFilters,
   GlAccountsReportFilters,
   PartnerBalancesReportFilters,
   ComplianceReportFilters,
@@ -74,6 +75,19 @@ export class ReportsService {
     const response = await AxiosBase.get("/api/v1/reports/balances-history", {
       params: filters,
     });
+    return response.data;
+  }
+
+  // Organisation Balances History Report
+  static async getOrganisationBalancesHistoryReport(
+    filters: OrganisationBalancesHistoryReportFilters
+  ) {
+    const response = await AxiosBase.get(
+      "/api/v1/reports/organisation-balances-history",
+      {
+        params: filters,
+      }
+    );
     return response.data;
   }
 

@@ -359,3 +359,35 @@ export const useReduceOrganisationFloat = () => {
     },
   });
 };
+
+// Trigger Close Periodic Balances Job Hook
+export const useTriggerClosePeriodicBalancesJob = () => {
+  const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
+
+  return useMutation({
+    mutationFn: () =>
+      BalanceOperationsService.triggerClosePeriodicBalancesJob(),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ["orgBalances"] });
+      queryClient.invalidateQueries({ queryKey: ["orgBalanceStats"] });
+      showSuccess(
+        "Periodic Balances Closure Job Triggered",
+        response.message ||
+          "The periodic balances closure job has been triggered successfully."
+      );
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to trigger periodic balances closure job";
+      showError("Job Trigger Failed", errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        error,
+      };
+    },
+  });
+};

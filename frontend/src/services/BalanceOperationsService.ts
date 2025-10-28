@@ -175,4 +175,15 @@ export const BalanceOperationsService = {
     );
     return response.data;
   },
+
+  // Close Periodic Org Balances Job
+  async triggerClosePeriodicBalancesJob(): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    const response = await apiClient.post(
+      "/api/v1/orgbalances/jobs/close-periodic-balances"
+    );
+    return response.data;
+  },
 };

@@ -10,6 +10,7 @@ import {
   taxesReportSchema,
   userTillsReportSchema,
   balancesHistoryReportSchema,
+  organisationBalancesHistoryReportSchema,
   glAccountsReportSchema,
   profitLossReportSchema,
   balanceSheetReportSchema,
@@ -96,6 +97,20 @@ export class ReportsController {
       console.log(req.query);
       const validatedFilters = balancesHistoryReportSchema.parse(req.query);
       const result = await ReportsService.getBalancesHistoryReport({
+        filters: validatedFilters,
+        user_organisation_id: req.user?.organisation_id || "",
+      });
+      res.status(200).json(result);
+    }
+  );
+
+  // Organisation Balances History Report
+  static getOrganisationBalancesHistoryReport = asyncHandler(
+    async (req: CustomRequest, res: Response) => {
+      const validatedFilters = organisationBalancesHistoryReportSchema.parse(
+        req.query
+      );
+      const result = await ReportsService.getOrganisationBalancesHistoryReport({
         filters: validatedFilters,
         user_organisation_id: req.user?.organisation_id || "",
       });
