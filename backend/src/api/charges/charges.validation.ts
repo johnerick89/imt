@@ -11,7 +11,7 @@ export const createChargeSchema = z.object({
     .string()
     .min(1, "Name is required")
     .max(256, "Name must be less than 256 characters"),
-  description: z.string().min(1, "Description is required"),
+  description: z.string().optional(),
   application_method: z.enum(ApplicationMethod),
   currency_id: z
     .string()

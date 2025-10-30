@@ -13,8 +13,9 @@ export const createUserSchema = z.object({
     .max(50, "First name must be less than 50 characters"),
   last_name: z
     .string()
-    .min(1, "Last name is required")
-    .max(50, "Last name must be less than 50 characters"),
+    .min(1, "Last name must be at least 1 character")
+    .max(50, "Last name must be less than 50 characters")
+    .optional(),
   role: z
     .string()
     .min(1, "Role is required")
@@ -35,7 +36,7 @@ export const updateUserSchema = z.object({
     .optional(),
   last_name: z
     .string()
-    .min(1, "Last name is required")
+    .min(1, "Last name must be at least 1 character")
     .max(50, "Last name must be less than 50 characters")
     .optional(),
   role: z

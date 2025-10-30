@@ -67,6 +67,9 @@ const OrganisationForm: React.FC<OrganisationFormProps> = ({
   const roles = rolesData?.data?.roles.filter(
     (role) => role.name !== "System Engineer" && role.name !== "Super Admin"
   );
+  const adminRole = rolesData?.data?.roles.find(
+    (role) => role.name === "Admin"
+  );
   const createOrganisationMutation = useCreateOrganisation();
   const updateOrganisationMutation = useUpdateOrganisation();
   const { data: userOrganisationData, isLoading: userOrganisationLoading } =
@@ -91,7 +94,7 @@ const OrganisationForm: React.FC<OrganisationFormProps> = ({
       contact_person: "",
       contact_email: "",
       contact_password: "",
-      contact_role_id: "",
+      contact_role_id: adminRole?.id || "",
       contact_phone: "",
       contact_address: "",
       contact_city: "",
