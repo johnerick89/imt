@@ -918,7 +918,8 @@ export class TransactionService {
         transaction.status !== "PENDING_APPROVAL"
       ) {
         throw new AppError(
-          "Transaction can only be made ready when in PENDING or PENDING_APPROVAL status",
+          "Transaction can only be made ready when in PENDING or PENDING_APPROVAL status, current status is " +
+            transaction.status,
           400
         );
       }

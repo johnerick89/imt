@@ -1,6 +1,6 @@
 import { prisma } from "../../lib/prisma.lib";
 import { GlTransactionService } from "../gltransactions/gltransactions.services";
-import { BalanceHistoryAction } from "@prisma/client";
+import { BalanceHistoryAction, Organisation } from "@prisma/client";
 import type {
   BalanceOperationRequest,
   BalanceOperationResponse,
@@ -1268,6 +1268,18 @@ export class BalanceOperationService {
   async getOrgBalanceStats(
     organisationId?: string
   ): Promise<OrgBalanceStatsResponse> {
+    console.log("organisationId", organisationId);
+    let organisation: Organisation | null = null;
+    if (organisationId) {
+      organisation = await prisma.organisation.findUnique({
+        where: { id: organisationId },
+      });
+    }
+
+    if (organisation && organisation.type === "CUSTOMER") {
+      organisationId = undefined;
+    }
+
     const where = organisationId
       ? {
           OR: [
@@ -1277,26 +1289,49 @@ export class BalanceOperationService {
         }
       : {};
 
-    const [totalCount, balanceData, currencyData] = await Promise.all([
-      prisma.orgBalance.count({ where }),
-      prisma.orgBalance.aggregate({
-        where,
-        _sum: {
-          balance: true,
-          locked_balance: true,
-        },
-      }),
-      prisma.orgBalance.groupBy({
-        by: ["currency_id"],
-        where,
-        _count: {
-          id: true,
-        },
-        _sum: {
-          balance: true,
-        },
-      }),
-    ]);
+    const [totalCount, balanceData, currencyData, periodicAgg] =
+      await Promise.all([
+        prisma.orgBalance.count({ where }),
+        prisma.orgBalance.aggregate({
+          where,
+          _sum: {
+            balance: true,
+            locked_balance: true,
+            limit: true,
+          },
+        }),
+        prisma.orgBalance.groupBy({
+          by: ["currency_id"],
+          where,
+          _count: {
+            id: true,
+          },
+          _sum: {
+            balance: true,
+          },
+        }),
+        // Aggregate current period movements and limits
+        prisma.periodicOrgBalance.aggregate({
+          where: {
+            is_current: true,
+            OR: organisationId
+              ? [
+                  { organisation_id: organisationId },
+                  { org_balance: { dest_org_id: organisationId } },
+                ]
+              : undefined,
+          },
+          _sum: {
+            limit: true,
+            transactions_in: true,
+            transactions_out: true,
+            deposits_amount: true,
+            withdrawals_amount: true,
+            commissions: true,
+            opening_balance: true,
+          },
+        }),
+      ]);
 
     const currencyStats = await Promise.all(
       currencyData.map(async (item) => {
@@ -1316,6 +1351,8 @@ export class BalanceOperationService {
       })
     );
 
+    console.log("periodicAgg", periodicAgg, "balanceData", balanceData);
+
     return {
       success: true,
       message: "Organisation balance stats retrieved successfully",
@@ -1326,6 +1363,51 @@ export class BalanceOperationService {
           : 0,
         totalLockedBalance: balanceData._sum.locked_balance
           ? parseFloat(balanceData._sum.locked_balance.toString())
+          : 0,
+        totalLimit:
+          balanceData._sum.limit != null
+            ? parseFloat(balanceData._sum.limit.toString())
+            : 0,
+        totalMovements:
+          (periodicAgg._sum.transactions_in != null
+            ? parseFloat(periodicAgg._sum.transactions_in.toString())
+            : 0) -
+          (periodicAgg._sum.transactions_out
+            ? parseFloat(periodicAgg._sum.transactions_out.toString())
+            : 0) +
+          (periodicAgg._sum.deposits_amount
+            ? parseFloat(periodicAgg._sum.deposits_amount.toString())
+            : 0) -
+          (periodicAgg._sum.withdrawals_amount
+            ? parseFloat(periodicAgg._sum.withdrawals_amount.toString())
+            : 0) +
+          (periodicAgg._sum.commissions
+            ? parseFloat(periodicAgg._sum.commissions.toString())
+            : 0),
+        finalBalance: (() => {
+          const opening = periodicAgg._sum.opening_balance
+            ? parseFloat(periodicAgg._sum.opening_balance.toString())
+            : 0;
+          const movements =
+            (periodicAgg._sum.transactions_in
+              ? parseFloat(periodicAgg._sum.transactions_in.toString())
+              : 0) -
+            (periodicAgg._sum.transactions_out
+              ? parseFloat(periodicAgg._sum.transactions_out.toString())
+              : 0) +
+            (periodicAgg._sum.deposits_amount
+              ? parseFloat(periodicAgg._sum.deposits_amount.toString())
+              : 0) -
+            (periodicAgg._sum.withdrawals_amount
+              ? parseFloat(periodicAgg._sum.withdrawals_amount.toString())
+              : 0) +
+            (periodicAgg._sum.commissions
+              ? parseFloat(periodicAgg._sum.commissions.toString())
+              : 0);
+          return opening + movements;
+        })(),
+        openingBalance: periodicAgg._sum.opening_balance
+          ? parseFloat(periodicAgg._sum.opening_balance.toString())
           : 0,
         byCurrency: currencyStats,
       },

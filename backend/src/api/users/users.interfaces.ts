@@ -4,7 +4,7 @@ export interface IUser {
   id: string;
   email: string;
   first_name: string;
-  last_name: string;
+  last_name?: string | null | undefined;
   role: string;
   avatar: string | null;
   status: UserStatus;
@@ -21,7 +21,7 @@ export interface ICreateUserRequest {
   email: string;
   password: string;
   first_name: string;
-  last_name: string;
+  last_name?: string;
   role: string;
   role_id: string;
   avatar?: string;
@@ -33,7 +33,7 @@ export interface ICreateUserRequest {
 export interface IUpdateUserRequest {
   email?: string;
   first_name?: string;
-  last_name?: string;
+  last_name?: string | null | undefined;
   role?: string;
   role_id?: string;
   avatar?: string;

@@ -73,6 +73,7 @@ const OrgBalances: React.FC = () => {
 
   const allBalances = balancesData?.data?.balances || [];
   const stats = statsData?.data;
+  console.log("stats", stats);
   const currencies = currenciesData?.data?.currencies || [];
   const organisations = organisationsData?.data?.organisations || [];
   const bankAccounts = bankAccountsData?.data?.bankAccounts || [];
@@ -219,8 +220,8 @@ const OrgBalances: React.FC = () => {
 
       {/* Stats */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white p-6 rounded-lg shadow">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+          {/* <div className="bg-white p-6 rounded-lg shadow">
             <div className="flex items-center">
               <div className="p-2 bg-blue-100 rounded-lg">
                 <FiRefreshCw className="h-6 w-6 text-blue-600" />
@@ -231,6 +232,34 @@ const OrgBalances: React.FC = () => {
                 </p>
                 <p className="text-2xl font-bold text-gray-900">
                   {stats.totalBalances}
+                </p>
+              </div>
+            </div>
+          </div> */}
+          <div className="bg-white p-6 rounded-lg shadow">
+            <div className="flex items-center">
+              <div className="p-2 bg-indigo-100 rounded-lg">
+                <FiRefreshCw className="h-6 w-6 text-indigo-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">
+                  Opening Balance
+                </p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {formatToCurrency(stats.openingBalance || 0)}
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow">
+            <div className="flex items-center">
+              <div className="p-2 bg-teal-100 rounded-lg">
+                <FiRefreshCw className="h-6 w-6 text-teal-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Movements</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {formatToCurrency(stats.totalMovements || 0)}
                 </p>
               </div>
             </div>

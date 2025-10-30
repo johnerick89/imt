@@ -111,6 +111,10 @@ export interface OrgBalanceStats {
   totalBalances: number;
   totalBalance: number;
   totalLockedBalance: number;
+  totalLimit?: number;
+  totalMovements?: number;
+  finalBalance?: number;
+  openingBalance?: number;
   byCurrency: {
     currency_id: string;
     currency_code: string;

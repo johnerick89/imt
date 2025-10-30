@@ -52,7 +52,7 @@ export interface ICharge {
 
 export interface CreateChargeRequest {
   name: string;
-  description: string;
+  description?: string;
   application_method: ApplicationMethod;
   currency_id?: string;
   type: ChargeType;

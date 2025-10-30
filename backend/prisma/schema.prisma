@@ -27,7 +27,7 @@ model User {
   created_at                  DateTime             @default(now())
   updated_at                  DateTime             @updatedAt
   first_name                  String
-  last_name                   String
+  last_name                   String?
   role                        String
   avatar                      String?
   status                      UserStatus           @default(PENDING)
@@ -486,7 +486,7 @@ enum ChargeStatus {
 model Charge {
   id                           String              @id @default(uuid()) @db.Uuid
   name                         String
-  description                  String
+  description                  String?
   application_method           ApplicationMethod   @default(PERCENTAGE)
   currency_id                  String?             @db.Uuid
   currency                     Currency?           @relation(fields: [currency_id], references: [id])
